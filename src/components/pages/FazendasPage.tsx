@@ -78,6 +78,11 @@ const FazendasPage = () => {
     handleAddTalhao(fazendaId, talhaoForm);
   };
 
+  const handleAddTalhaoFromForm = (fazendaId: string) => {
+    setSelectedFazenda(fazendas.find(f => f.id === fazendaId) || null);
+    setShowTalhoesModal(true);
+  };
+
   return (
     <div className="space-y-6">
       <FazendasPageHeader onNewFazenda={() => setShowFazendaForm(true)} />
@@ -108,6 +113,7 @@ const FazendasPage = () => {
         onSubmit={handleSubmit}
         onCancel={resetForm}
         onDeleteTalhao={handleDeleteTalhao}
+        onAddTalhao={handleAddTalhaoFromForm}
       />
 
       <TalhoesModal

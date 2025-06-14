@@ -1,11 +1,10 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2 } from "lucide-react";
+import { Trash2, Plus } from "lucide-react";
 import { Fazenda } from "../FazendasPage";
 
 interface FazendaFormProps {
@@ -17,6 +16,7 @@ interface FazendaFormProps {
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
   onDeleteTalhao?: (fazendaId: string, talhaoId: string) => void;
+  onAddTalhao?: (fazendaId: string) => void;
 }
 
 export const FazendaForm = ({
@@ -27,7 +27,8 @@ export const FazendaForm = ({
   onInputChange,
   onSubmit,
   onCancel,
-  onDeleteTalhao
+  onDeleteTalhao,
+  onAddTalhao
 }: FazendaFormProps) => {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -138,52 +139,72 @@ export const FazendaForm = ({
             </div>
           </div>
 
-          {editingFazenda && formData.talhoes.length > 0 && (
+          {editingFazenda && (
             <div className="mt-6">
-              <h4 className="text-lg font-medium mb-4">Talhões da Fazenda</h4>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Área (ha)</TableHead>
-                    <TableHead>Cidade</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead>Matrícula</TableHead>
-                    <TableHead>Lote</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {formData.talhoes.map((talhao) => (
-                    <TableRow key={talhao.id}>
-                      <TableCell className="font-medium">{talhao.nome}</TableCell>
-                      <TableCell>{talhao.area}</TableCell>
-                      <TableCell>{talhao.cidade}</TableCell>
-                      <TableCell>{talhao.estado}</TableCell>
-                      <TableCell>{talhao.matricula}</TableCell>
-                      <TableCell>{talhao.lote}</TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(talhao.status)}`}>
-                          {talhao.status}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {onDeleteTalhao && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onDeleteTalhao(formData.id, talhao.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </TableCell>
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="text-lg font-medium">Talhões da Fazenda</h4>
+                {onAddTalhao && (
+                  <Button
+                    type="button"
+                    onClick={() => onAddTalhao(formData.id)}
+                    className="bg-green-600 hover:bg-green-700"
+                    size="sm"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar Talhão
+                  </Button>
+                )}
+              </div>
+              
+              {formData.talhoes.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Área (ha)</TableHead>
+                      <TableHead>Cidade</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead>Matrícula</TableHead>
+                      <TableHead>Lote</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {formData.talhoes.map((talhao) => (
+                      <TableRow key={talhao.id}>
+                        <TableCell className="font-medium">{talhao.nome}</TableCell>
+                        <TableCell>{talhao.area}</TableCell>
+                        <TableCell>{talhao.cidade}</TableCell>
+                        <TableCell>{talhao.estado}</TableCell>
+                        <TableCell>{talhao.matricula}</TableCell>
+                        <TableCell>{talhao.lote}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(talhao.status)}`}>
+                            {talhao.status}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {onDeleteTalhao && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => onDeleteTalhao(formData.id, talhao.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <p className="text-gray-500 text-center py-8">
+                  Nenhum talhão cadastrado para esta fazenda
+                </p>
+              )}
             </div>
           )}
           
