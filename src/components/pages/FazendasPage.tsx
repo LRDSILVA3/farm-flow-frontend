@@ -553,6 +553,18 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
                   ` - ${fazendas.find(f => f.id === selectedFazendaForTalhao)?.nome}`
                 }
               </CardTitle>
+              {editingFazenda && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setSelectedFazendaForTalhao(editingFazenda.id);
+                    setShowTalhaoForm(true);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Talhão
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent>
