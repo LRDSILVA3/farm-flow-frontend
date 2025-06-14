@@ -439,6 +439,20 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
                 <Button type="button" variant="outline" onClick={resetFazendaForm}>
                   Cancelar
                 </Button>
+                {editingFazenda && (
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => {
+                      setSelectedFazendaForTalhao(editingFazenda.id);
+                      setShowTalhaoForm(true);
+                    }}
+                    className="ml-auto"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar Talhão
+                  </Button>
+                )}
               </div>
             </form>
           </CardContent>
