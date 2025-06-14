@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit, MapPin, Search, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -55,6 +57,8 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
   const [editingTalhao, setEditingTalhao] = useState<Talhao | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedFazenda, setExpandedFazenda] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const { toast } = useToast();
 
   const [fazendaForm, setFazendaForm] = useState({
@@ -334,6 +338,21 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
 
   const shouldShowTalhoesList = editingFazenda || selectedFazendaForTalhao;
   const talhoesForDisplay = getTalhoesForSelectedFazenda();
+
+  const totalItems = filteredFazendas.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentFazendas = filteredFazendas.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (value: string) => {
+    setItemsPerPage(Number(value));
+    setCurrentPage(1);
+  };
 
   return (
     <div className="space-y-6">
@@ -628,7 +647,7 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {filteredFazendas.map((fazenda) => (
+              {currentFazendas.map((fazenda) => (
                 <div key={fazenda.id} className="border rounded-lg p-4">
                   <div className="flex justify-between items-center">
                     <div className="grid grid-cols-1 md:grid-cols-6 gap-4 flex-1">
@@ -735,6 +754,61 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
                   )}
                 </div>
               ))}
+
+              {/* Pagination Controls for Fazendas */}
+              {totalItems > 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600">
+                      Mostrando {startIndex + 1} a {Math.min(endIndex, totalItems)} de {totalItems} fazendas
+                    </span>
+                    <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm text-gray-600">por página</span>
+                  </div>
+                  
+                  {totalPages > 1 && (
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious 
+                            onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                            className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          />
+                        </PaginationItem>
+                        
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              onClick={() => handlePageChange(page)}
+                              isActive={currentPage === page}
+                              className="cursor-pointer"
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        ))}
+                        
+                        <PaginationItem>
+                          <PaginationNext 
+                            onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                            className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  )}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
