@@ -51,7 +51,7 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
 
   const [showFazendaForm, setShowFazendaForm] = useState(false);
   const [showTalhaoForm, setShowTalhaoForm] = useState(false);
-  const [selectedFazenda, setSelectedFazenda] = useState<string | null>(null);
+  const [selectedFazendaForTalhao, setSelectedFazendaForTalhao] = useState<string | null>(null);
   const [editingFazenda, setEditingFazenda] = useState<Fazenda | null>(null);
   const [editingTalhao, setEditingTalhao] = useState<Talhao | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -78,6 +78,7 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
   });
 
   useEffect(() => {
+    console.log("selectedClienteCpf mudou:", selectedClienteCpf);
     if (selectedClienteCpf) {
       setFazendaForm(prev => ({ ...prev, clienteCpf: selectedClienteCpf }));
     }
@@ -136,26 +137,37 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
 
   const handleFazendaSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Submetendo fazenda:", fazendaForm);
     
     const alqueires = parseFloat(fazendaForm.alqueires) || 0;
     const hectares = parseFloat(fazendaForm.hectares) || 0;
 
     if (editingFazenda) {
+      console.log("Editando fazenda existente:", editingFazenda.id);
       setFazendas(fazendas.map(f => 
         f.id === editingFazenda.id ? {
           ...f,
-          ...fazendaForm,
+          nome: fazendaForm.nome,
+          matricula: fazendaForm.matricula,
+          cidade: fazendaForm.cidade,
+          estado: fazendaForm.estado,
           alqueires,
-          hectares
+          hectares,
+          clienteCpf: fazendaForm.clienteCpf
         } : f
       ));
       toast({ title: "Fazenda atualizada com sucesso!" });
     } else {
+      console.log("Criando nova fazenda");
       const newFazenda: Fazenda = {
         id: Date.now().toString(),
-        ...fazendaForm,
+        nome: fazendaForm.nome,
+        matricula: fazendaForm.matricula,
+        cidade: fazendaForm.cidade,
+        estado: fazendaForm.estado,
         alqueires,
         hectares,
+        clienteCpf: fazendaForm.clienteCpf,
         talhoes: []
       };
       setFazendas([...fazendas, newFazenda]);
@@ -167,18 +179,31 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
 
   const handleTalhaoSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Submetendo talhão:", talhaoForm);
     
-    if (!selectedFazenda) return;
+    if (!selectedFazendaForTalhao) {
+      console.log("Nenhuma fazenda selecionada para o talhão");
+      return;
+    }
 
     const alqueires = parseFloat(talhaoForm.alqueires) || 0;
     const hectares = parseFloat(talhaoForm.hectares) || 0;
 
     if (editingTalhao) {
+      console.log("Editando talhão existente:", editingTalhao.id);
       setFazendas(prev => prev.map(f => {
-        if (f.id === selectedFazenda) {
+        if (f.id === selectedFazendaForTalhao) {
           const updatedTalhoes = f.talhoes.map(t => 
             t.id === editingTalhao.id 
-              ? { ...talhaoForm, id: editingTalhao.id, alqueires, hectares }
+              ? { 
+                  ...t,
+                  nome: talhaoForm.nome,
+                  matricula: talhaoForm.matricula,
+                  cidade: talhaoForm.cidade,
+                  estado: talhaoForm.estado,
+                  alqueires,
+                  hectares
+                }
               : t
           );
           updateTotaisFazenda(f.id, updatedTalhoes);
@@ -188,15 +213,19 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
       }));
       toast({ title: "Talhão atualizado com sucesso!" });
     } else {
+      console.log("Criando novo talhão");
       const newTalhao: Talhao = {
         id: Date.now().toString(),
-        ...talhaoForm,
+        nome: talhaoForm.nome,
+        matricula: talhaoForm.matricula,
+        cidade: talhaoForm.cidade,
+        estado: talhaoForm.estado,
         alqueires,
         hectares
       };
 
       setFazendas(prev => prev.map(f => {
-        if (f.id === selectedFazenda) {
+        if (f.id === selectedFazendaForTalhao) {
           const updatedTalhoes = [...f.talhoes, newTalhao];
           updateTotaisFazenda(f.id, updatedTalhoes);
           return { ...f, talhoes: updatedTalhoes };
@@ -210,6 +239,7 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
   };
 
   const handleDeleteTalhao = (fazendaId: string, talhaoId: string) => {
+    console.log("Deletando talhão:", talhaoId, "da fazenda:", fazendaId);
     setFazendas(prev => prev.map(f => {
       if (f.id === fazendaId) {
         const updatedTalhoes = f.talhoes.filter(t => t.id !== talhaoId);
@@ -222,6 +252,7 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
   };
 
   const resetFazendaForm = () => {
+    console.log("Resetando formulário de fazenda");
     setFazendaForm({
       nome: "",
       matricula: "",
@@ -236,6 +267,7 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
   };
 
   const resetTalhaoForm = () => {
+    console.log("Resetando formulário de talhão");
     setTalhaoForm({
       nome: "",
       matricula: "",
@@ -245,11 +277,12 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
       hectares: ""
     });
     setShowTalhaoForm(false);
-    setSelectedFazenda(null);
+    setSelectedFazendaForTalhao(null);
     setEditingTalhao(null);
   };
 
   const handleEditFazenda = (fazenda: Fazenda) => {
+    console.log("Iniciando edição da fazenda:", fazenda);
     setFazendaForm({
       nome: fazenda.nome,
       matricula: fazenda.matricula,
@@ -264,6 +297,7 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
   };
 
   const handleEditTalhao = (fazendaId: string, talhao: Talhao) => {
+    console.log("Iniciando edição do talhão:", talhao, "da fazenda:", fazendaId);
     setTalhaoForm({
       nome: talhao.nome,
       matricula: talhao.matricula,
@@ -272,7 +306,7 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
       alqueires: talhao.alqueires.toString(),
       hectares: talhao.hectares.toString()
     });
-    setSelectedFazenda(fazendaId);
+    setSelectedFazendaForTalhao(fazendaId);
     setEditingTalhao(talhao);
     setShowTalhaoForm(true);
   };
@@ -538,7 +572,8 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        setSelectedFazenda(fazenda.id);
+                        console.log("Abrindo formulário de talhão para fazenda:", fazenda.id);
+                        setSelectedFazendaForTalhao(fazenda.id);
                         setShowTalhaoForm(true);
                       }}
                     >
