@@ -320,6 +320,21 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
     return matchesSearch && matchesClient;
   });
 
+  // Get talhões for the selected fazenda when editing/creating
+  const getTalhoesForSelectedFazenda = () => {
+    if (editingFazenda) {
+      return editingFazenda.talhoes;
+    }
+    if (selectedFazendaForTalhao) {
+      const fazenda = fazendas.find(f => f.id === selectedFazendaForTalhao);
+      return fazenda?.talhoes || [];
+    }
+    return [];
+  };
+
+  const shouldShowTalhoesList = editingFazenda || selectedFazendaForTalhao;
+  const talhoesForDisplay = getTalhoesForSelectedFazenda();
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -513,133 +528,205 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Lista de Talhões</CardTitle>
-            <div className="flex items-center space-x-2">
-              <Search className="h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Buscar fazenda..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-64"
-              />
+      {shouldShowTalhoesList && (
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle>
+                Lista de Talhões
+                {editingFazenda && ` - ${editingFazenda.nome}`}
+                {selectedFazendaForTalhao && !editingFazenda && 
+                  ` - ${fazendas.find(f => f.id === selectedFazendaForTalhao)?.nome}`
+                }
+              </CardTitle>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {filteredFazendas.map((fazenda) => (
-              <div key={fazenda.id} className="border rounded-lg p-4">
-                <div className="flex justify-between items-center">
-                  <div className="grid grid-cols-1 md:grid-cols-6 gap-4 flex-1">
-                    <div>
-                      <div className="font-medium">{fazenda.nome}</div>
-                      <div className="text-sm text-gray-500">Mat: {fazenda.matricula}</div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {talhoesForDisplay.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">
+                  Nenhum talhão cadastrado para esta fazenda.
+                </p>
+              ) : (
+                talhoesForDisplay.map((talhao) => (
+                  <div key={talhao.id} className="bg-gray-50 p-3 rounded flex justify-between items-center">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 flex-1">
+                      <div>
+                        <div className="font-medium">{talhao.nome}</div>
+                        <div className="text-sm text-gray-500">Mat: {talhao.matricula}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-500">Localização</div>
+                        <div>{talhao.cidade}/{talhao.estado}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-500">Alqueires</div>
+                        <div>{talhao.alqueires.toFixed(2)}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-500">Hectares</div>
+                        <div>{talhao.hectares.toFixed(2)}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-sm text-gray-500">CPF Cliente</div>
-                      <div className="font-medium">{fazenda.clienteCpf}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500">Localização</div>
-                      <div>{fazenda.cidade}/{fazenda.estado}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500">Alqueires</div>
-                      <div>{fazenda.alqueires.toFixed(2)}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500">Hectares</div>
-                      <div>{fazenda.hectares.toFixed(2)}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500">Talhões</div>
-                      <div>{fazenda.talhoes.length}</div>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditTalhao(
+                          editingFazenda?.id || selectedFazendaForTalhao || '', 
+                          talhao
+                        )}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteTalhao(
+                          editingFazenda?.id || selectedFazendaForTalhao || '', 
+                          talhao.id
+                        )}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditFazenda(fazenda)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        console.log("Abrindo formulário de talhão para fazenda:", fazenda.id);
-                        setSelectedFazendaForTalhao(fazenda.id);
-                        setShowTalhaoForm(true);
-                      }}
-                    >
-                      <Plus className="h-4 w-4" />
-                      Talhão
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setExpandedFazenda(expandedFazenda === fazenda.id ? null : fazenda.id)}
-                    >
-                      <MapPin className="h-4 w-4" />
-                      Ver Talhões
-                    </Button>
-                  </div>
-                </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-                {expandedFazenda === fazenda.id && fazenda.talhoes.length > 0 && (
-                  <div className="mt-4 border-t pt-4">
-                    <h4 className="font-medium mb-2">Talhões</h4>
-                    <div className="space-y-2">
-                      {fazenda.talhoes.map((talhao) => (
-                        <div key={talhao.id} className="bg-gray-50 p-3 rounded flex justify-between items-center">
-                          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 flex-1">
-                            <div>
-                              <div className="font-medium">{talhao.nome}</div>
-                              <div className="text-sm text-gray-500">Mat: {talhao.matricula}</div>
-                            </div>
-                            <div>
-                              <div className="text-sm text-gray-500">Localização</div>
-                              <div>{talhao.cidade}/{talhao.estado}</div>
-                            </div>
-                            <div>
-                              <div className="text-sm text-gray-500">Alqueires</div>
-                              <div>{talhao.alqueires.toFixed(2)}</div>
-                            </div>
-                            <div>
-                              <div className="text-sm text-gray-500">Hectares</div>
-                              <div>{talhao.hectares.toFixed(2)}</div>
-                            </div>
-                          </div>
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditTalhao(fazenda.id, talhao)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteTalhao(fazenda.id, talhao.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+      {!shouldShowTalhoesList && (
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle>Lista de Fazendas</CardTitle>
+              <div className="flex items-center space-x-2">
+                <Search className="h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Buscar fazenda..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-64"
+                />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {filteredFazendas.map((fazenda) => (
+                <div key={fazenda.id} className="border rounded-lg p-4">
+                  <div className="flex justify-between items-center">
+                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4 flex-1">
+                      <div>
+                        <div className="font-medium">{fazenda.nome}</div>
+                        <div className="text-sm text-gray-500">Mat: {fazenda.matricula}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-500">CPF Cliente</div>
+                        <div className="font-medium">{fazenda.clienteCpf}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-500">Localização</div>
+                        <div>{fazenda.cidade}/{fazenda.estado}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-500">Alqueires</div>
+                        <div>{fazenda.alqueires.toFixed(2)}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-500">Hectares</div>
+                        <div>{fazenda.hectares.toFixed(2)}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-500">Talhões</div>
+                        <div>{fazenda.talhoes.length}</div>
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditFazenda(fazenda)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          console.log("Abrindo formulário de talhão para fazenda:", fazenda.id);
+                          setSelectedFazendaForTalhao(fazenda.id);
+                          setShowTalhaoForm(true);
+                        }}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Talhão
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setExpandedFazenda(expandedFazenda === fazenda.id ? null : fazenda.id)}
+                      >
+                        <MapPin className="h-4 w-4" />
+                        Ver Talhões
+                      </Button>
                     </div>
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+
+                  {expandedFazenda === fazenda.id && fazenda.talhoes.length > 0 && (
+                    <div className="mt-4 border-t pt-4">
+                      <h4 className="font-medium mb-2">Talhões</h4>
+                      <div className="space-y-2">
+                        {fazenda.talhoes.map((talhao) => (
+                          <div key={talhao.id} className="bg-gray-50 p-3 rounded flex justify-between items-center">
+                            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 flex-1">
+                              <div>
+                                <div className="font-medium">{talhao.nome}</div>
+                                <div className="text-sm text-gray-500">Mat: {talhao.matricula}</div>
+                              </div>
+                              <div>
+                                <div className="text-sm text-gray-500">Localização</div>
+                                <div>{talhao.cidade}/{talhao.estado}</div>
+                              </div>
+                              <div>
+                                <div className="text-sm text-gray-500">Alqueires</div>
+                                <div>{talhao.alqueires.toFixed(2)}</div>
+                              </div>
+                              <div>
+                                <div className="text-sm text-gray-500">Hectares</div>
+                                <div>{talhao.hectares.toFixed(2)}</div>
+                              </div>
+                            </div>
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditTalhao(fazenda.id, talhao)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteTalhao(fazenda.id, talhao.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
