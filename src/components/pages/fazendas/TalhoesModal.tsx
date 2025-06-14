@@ -53,7 +53,8 @@ export const TalhoesModal = ({
         status: "Ativo",
         cidade: "",
         estado: "",
-        matricula: ""
+        matricula: "",
+        lote: ""
       });
       setShowTalhaoForm(false);
       setEditingTalhao(null);

@@ -1,11 +1,11 @@
-import { Button } from "@/components/ui/button";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { FazendasTable } from "./fazendas/FazendasTable";
 import { FazendaForm } from "./fazendas/FazendaForm";
 import { TalhoesModal } from "./fazendas/TalhoesModal";
+import { FazendasPageHeader } from "./fazendas/FazendasPageHeader";
 import { useFazendas } from "./fazendas/useFazendas";
+import { useFazendaHandlers } from "./fazendas/useFazendaHandlers";
 
 export interface Talhao {
   id: string;
@@ -32,7 +32,6 @@ export interface Fazenda {
 }
 
 const FazendasPage = () => {
-  const { toast } = useToast();
   const {
     fazendas,
     setFazendas,
@@ -54,139 +53,34 @@ const FazendasPage = () => {
     setTalhaoForm
   } = useFazendas();
 
-  const handleEdit = (fazenda: Fazenda) => {
-    console.log("Editando fazenda:", fazenda);
-    setEditingFazenda(fazenda);
-    setFormData(fazenda);
-    setShowFazendaForm(true);
-  };
+  const {
+    handleEdit,
+    handleViewTalhoes,
+    handleSubmit,
+    resetForm,
+    handleInputChange,
+    handleAddTalhao,
+    handleDeleteTalhao
+  } = useFazendaHandlers(
+    fazendas,
+    setFazendas,
+    setEditingFazenda,
+    setFormData,
+    setShowFazendaForm,
+    setSelectedFazenda,
+    setShowTalhoesModal,
+    editingFazenda,
+    formData,
+    setTalhaoForm
+  );
 
-  const handleViewTalhoes = (fazenda: Fazenda) => {
-    setSelectedFazenda(fazenda);
-    setShowTalhoesModal(true);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (editingFazenda) {
-      setFazendas(prev => prev.map(f => f.id === editingFazenda.id ? formData : f));
-      toast({
-        title: "Fazenda atualizada",
-        description: "A fazenda foi atualizada com sucesso.",
-      });
-    } else {
-      const newFazenda = { ...formData, id: Date.now().toString() };
-      setFazendas(prev => [...prev, newFazenda]);
-      toast({
-        title: "Fazenda criada",
-        description: "A fazenda foi criada com sucesso.",
-      });
-    }
-    
-    resetForm();
-  };
-
-  const resetForm = () => {
-    setFormData({
-      id: "",
-      nome: "",
-      proprietario: "",
-      area: "",
-      localizacao: "",
-      contato: "",
-      status: "Ativo",
-      matricula: "",
-      lote: "",
-      talhoes: []
-    });
-    setEditingFazenda(null);
-    setShowFazendaForm(false);
-  };
-
-  const handleInputChange = (field: keyof Fazenda, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleAddTalhao = (fazendaId: string) => {
-    const newTalhao = {
-      ...talhaoForm,
-      id: Date.now().toString()
-    };
-
-    setFazendas(prev => prev.map(fazenda => 
-      fazenda.id === fazendaId 
-        ? { ...fazenda, talhoes: [...fazenda.talhoes, newTalhao] }
-        : fazenda
-    ));
-
-    if (selectedFazenda && selectedFazenda.id === fazendaId) {
-      setSelectedFazenda(prev => prev ? {
-        ...prev,
-        talhoes: [...prev.talhoes, newTalhao]
-      } : null);
-    }
-
-    setTalhaoForm({
-      id: "",
-      nome: "",
-      area: "",
-      status: "Ativo",
-      cidade: "",
-      estado: "",
-      matricula: "",
-      lote: ""
-    });
-
-    toast({
-      title: "Talhão adicionado",
-      description: "O talhão foi adicionado com sucesso.",
-    });
-  };
-
-  const handleDeleteTalhao = (fazendaId: string, talhaoId: string) => {
-    setFazendas(prev => prev.map(fazenda => 
-      fazenda.id === fazendaId 
-        ? { ...fazenda, talhoes: fazenda.talhoes.filter(t => t.id !== talhaoId) }
-        : fazenda
-    ));
-
-    if (selectedFazenda && selectedFazenda.id === fazendaId) {
-      setSelectedFazenda(prev => prev ? {
-        ...prev,
-        talhoes: prev.talhoes.filter(t => t.id !== talhaoId)
-      } : null);
-    }
-
-    // Atualizar formData se estiver editando a mesma fazenda
-    if (editingFazenda && editingFazenda.id === fazendaId) {
-      setFormData(prev => ({
-        ...prev,
-        talhoes: prev.talhoes.filter(t => t.id !== talhaoId)
-      }));
-    }
-
-    toast({
-      title: "Talhão removido",
-      description: "O talhão foi removido com sucesso.",
-    });
+  const handleAddTalhaoWrapper = (fazendaId: string) => {
+    handleAddTalhao(fazendaId, talhaoForm);
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Fazendas</h1>
-          <p className="text-gray-600">Gerencie as fazendas e seus talhões</p>
-        </div>
-        <Button 
-          className="bg-green-600 hover:bg-green-700"
-          onClick={() => setShowFazendaForm(true)}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Nova Fazenda
-        </Button>
-      </div>
+      <FazendasPageHeader onNewFazenda={() => setShowFazendaForm(true)} />
 
       <Card>
         <CardHeader>
@@ -222,7 +116,7 @@ const FazendasPage = () => {
         fazenda={selectedFazenda}
         talhaoForm={talhaoForm}
         setTalhaoForm={setTalhaoForm}
-        onAddTalhao={handleAddTalhao}
+        onAddTalhao={handleAddTalhaoWrapper}
         onDeleteTalhao={handleDeleteTalhao}
       />
     </div>
