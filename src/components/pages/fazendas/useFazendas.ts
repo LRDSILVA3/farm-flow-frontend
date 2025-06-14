@@ -13,9 +13,9 @@ export const useFazendas = () => {
       contato: "(11) 99999-9999",
       status: "Ativo",
       talhoes: [
-        { id: "1", nome: "Talhão A", area: "45.5", status: "Plantado" },
-        { id: "2", nome: "Talhão B", area: "35.0", status: "Preparando" },
-        { id: "3", nome: "Talhão C", area: "70.0", status: "Colheita" }
+        { id: "1", nome: "Talhão A", area: "45.5", status: "Ativo" },
+        { id: "2", nome: "Talhão B", area: "35.0", status: "Inativo" },
+        { id: "3", nome: "Talhão C", area: "70.0", status: "Ativo" }
       ]
     },
     {
@@ -27,8 +27,8 @@ export const useFazendas = () => {
       contato: "(31) 88888-8888",
       status: "Ativo",
       talhoes: [
-        { id: "4", nome: "Talhão Norte", area: "120.0", status: "Produção" },
-        { id: "5", nome: "Talhão Sul", area: "200.0", status: "Plantado" }
+        { id: "4", nome: "Talhão Norte", area: "120.0", status: "Ativo" },
+        { id: "5", nome: "Talhão Sul", area: "200.0", status: "Ativo" }
       ]
     }
   ]);
@@ -54,7 +54,7 @@ export const useFazendas = () => {
     id: "",
     nome: "",
     area: "",
-    status: "Preparando"
+    status: "Ativo"
   });
 
   return {

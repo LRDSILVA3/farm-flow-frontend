@@ -124,7 +124,7 @@ const FazendasPage = () => {
       id: "",
       nome: "",
       area: "",
-      status: "Preparando"
+      status: "Ativo"
     });
 
     toast({
@@ -145,6 +145,14 @@ const FazendasPage = () => {
         ...prev,
         talhoes: prev.talhoes.filter(t => t.id !== talhaoId)
       } : null);
+    }
+
+    // Atualizar formData se estiver editando a mesma fazenda
+    if (editingFazenda && editingFazenda.id === fazendaId) {
+      setFormData(prev => ({
+        ...prev,
+        talhoes: prev.talhoes.filter(t => t.id !== talhaoId)
+      }));
     }
 
     toast({
@@ -194,6 +202,7 @@ const FazendasPage = () => {
         onInputChange={handleInputChange}
         onSubmit={handleSubmit}
         onCancel={resetForm}
+        onDeleteTalhao={handleDeleteTalhao}
       />
 
       <TalhoesModal

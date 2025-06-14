@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Trash2 } from "lucide-react";
 import { Fazenda } from "../FazendasPage";
 
 interface FazendaFormProps {
@@ -14,6 +16,7 @@ interface FazendaFormProps {
   onInputChange: (field: keyof Fazenda, value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
+  onDeleteTalhao?: (fazendaId: string, talhaoId: string) => void;
 }
 
 export const FazendaForm = ({
@@ -23,11 +26,23 @@ export const FazendaForm = ({
   formData,
   onInputChange,
   onSubmit,
-  onCancel
+  onCancel,
+  onDeleteTalhao
 }: FazendaFormProps) => {
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Ativo":
+        return "bg-green-100 text-green-800";
+      case "Inativo":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {editingFazenda ? "Editar Fazenda" : "Nova Fazenda"}
@@ -101,8 +116,49 @@ export const FazendaForm = ({
               </Select>
             </div>
           </div>
+
+          {editingFazenda && formData.talhoes.length > 0 && (
+            <div className="mt-6">
+              <h4 className="text-lg font-medium mb-4">Talhões da Fazenda</h4>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Área (ha)</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {formData.talhoes.map((talhao) => (
+                    <TableRow key={talhao.id}>
+                      <TableCell className="font-medium">{talhao.nome}</TableCell>
+                      <TableCell>{talhao.area}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(talhao.status)}`}>
+                          {talhao.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {onDeleteTalhao && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onDeleteTalhao(formData.id, talhao.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
           
-          <div className="flex justify-end space-x-2">
+          <div className="flex justify-end space-x-2 pt-4">
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancelar
             </Button>

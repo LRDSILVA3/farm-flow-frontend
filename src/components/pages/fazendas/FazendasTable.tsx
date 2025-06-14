@@ -87,14 +87,16 @@ export const FazendasTable = ({
                     size="sm"
                     onClick={() => onEdit(fazenda)}
                   >
-                    <Edit className="h-4 w-4" />
+                    <Edit className="h-4 w-4 mr-1" />
+                    Editar
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => onViewTalhoes(fazenda)}
                   >
-                    <Eye className="h-4 w-4" />
+                    <Eye className="h-4 w-4 mr-1" />
+                    Ver Talhões
                   </Button>
                 </div>
               </TableCell>

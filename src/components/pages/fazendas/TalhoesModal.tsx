@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Edit } from "lucide-react";
 import { Fazenda, Talhao } from "../FazendasPage";
 import { useState } from "react";
 
@@ -29,17 +29,14 @@ export const TalhoesModal = ({
   onDeleteTalhao
 }: TalhoesModalProps) => {
   const [showTalhaoForm, setShowTalhaoForm] = useState(false);
+  const [editingTalhao, setEditingTalhao] = useState<Talhao | null>(null);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Plantado":
+      case "Ativo":
         return "bg-green-100 text-green-800";
-      case "Colheita":
-        return "bg-orange-100 text-orange-800";
-      case "Preparando":
-        return "bg-yellow-100 text-yellow-800";
-      case "Produção":
-        return "bg-blue-100 text-blue-800";
+      case "Inativo":
+        return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -53,10 +50,17 @@ export const TalhoesModal = ({
         id: "",
         nome: "",
         area: "",
-        status: "Preparando"
+        status: "Ativo"
       });
       setShowTalhaoForm(false);
+      setEditingTalhao(null);
     }
+  };
+
+  const handleEditTalhao = (talhao: Talhao) => {
+    setEditingTalhao(talhao);
+    setTalhaoForm(talhao);
+    setShowTalhaoForm(true);
   };
 
   const handleCancel = () => {
@@ -64,9 +68,10 @@ export const TalhoesModal = ({
       id: "",
       nome: "",
       area: "",
-      status: "Preparando"
+      status: "Ativo"
     });
     setShowTalhaoForm(false);
+    setEditingTalhao(null);
   };
 
   if (!fazenda) return null;
@@ -97,14 +102,16 @@ export const TalhoesModal = ({
 
           {showTalhaoForm && (
             <form onSubmit={handleAddTalhao} className="bg-gray-50 p-4 rounded-lg border">
-              <h5 className="font-medium mb-4">Adicionar Novo Talhão</h5>
+              <h5 className="font-medium mb-4">
+                {editingTalhao ? "Editar Talhão" : "Adicionar Novo Talhão"}
+              </h5>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="talhaoNome">Nome do Talhão</Label>
                   <Input
                     id="talhaoNome"
                     value={talhaoForm.nome}
-                    onChange={(e) => setTalhaoForm(prev => ({ ...prev, nome: e.target.value }))}
+                    onChange={(e) => setTalhaoForm({ ...talhaoForm, nome: e.target.value })}
                     required
                   />
                 </div>
@@ -115,22 +122,20 @@ export const TalhoesModal = ({
                     type="number"
                     step="0.1"
                     value={talhaoForm.area}
-                    onChange={(e) => setTalhaoForm(prev => ({ ...prev, area: e.target.value }))}
+                    onChange={(e) => setTalhaoForm({ ...talhaoForm, area: e.target.value })}
                     required
                   />
                 </div>
               </div>
               <div className="mt-4">
                 <Label htmlFor="talhaoStatus">Status</Label>
-                <Select value={talhaoForm.status} onValueChange={(value) => setTalhaoForm(prev => ({ ...prev, status: value }))}>
+                <Select value={talhaoForm.status} onValueChange={(value) => setTalhaoForm({ ...talhaoForm, status: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Preparando">Preparando</SelectItem>
-                    <SelectItem value="Plantado">Plantado</SelectItem>
-                    <SelectItem value="Produção">Produção</SelectItem>
-                    <SelectItem value="Colheita">Colheita</SelectItem>
+                    <SelectItem value="Ativo">Ativo</SelectItem>
+                    <SelectItem value="Inativo">Inativo</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -139,7 +144,7 @@ export const TalhoesModal = ({
                   Cancelar
                 </Button>
                 <Button type="submit" className="bg-green-600 hover:bg-green-700">
-                  Adicionar
+                  {editingTalhao ? "Atualizar" : "Adicionar"}
                 </Button>
               </div>
             </form>
@@ -170,13 +175,22 @@ export const TalhoesModal = ({
                       </span>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onDeleteTalhao(fazenda.id, talhao.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditTalhao(talhao)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onDeleteTalhao(fazenda.id, talhao.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
