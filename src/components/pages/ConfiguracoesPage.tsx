@@ -6,23 +6,106 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+interface Servico {
+  id: string;
+  nome: string;
+  valorAlqueire: string;
+  status: string;
+  produtos: string;
+}
+
+interface Produto {
+  id: string;
+  nome: string;
+  valorUn: string;
+  status: string;
+}
+
+interface Equipamento {
+  id: string;
+  nome: string;
+  status: string;
+}
 
 const ConfiguracoesPage = () => {
-  const [servicos] = useState([
+  const { toast } = useToast();
+
+  const [servicos, setServicos] = useState<Servico[]>([
     { id: "1", nome: "Pulverização", valorAlqueire: "200.00", status: "Ativo", produtos: "Defensivo A, Defensivo B" },
     { id: "2", nome: "Plantio", valorAlqueire: "150.00", status: "Ativo", produtos: "Sementes, Fertilizante" }
   ]);
 
-  const [produtos] = useState([
+  const [produtos] = useState<Produto[]>([
     { id: "1", nome: "Defensivo A", valorUn: "45.00", status: "Ativo" },
     { id: "2", nome: "Sementes Milho", valorUn: "120.00", status: "Ativo" }
   ]);
 
-  const [equipamentos] = useState([
+  const [equipamentos] = useState<Equipamento[]>([
     { id: "1", nome: "Caminhão 01", status: "Disponível" },
     { id: "2", nome: "Colheitadeira 01", status: "Em Manutenção" }
   ]);
+
+  // Estados para modal de serviços
+  const [showServicoForm, setShowServicoForm] = useState(false);
+  const [editingServico, setEditingServico] = useState<Servico | null>(null);
+  const [servicoFormData, setServicoFormData] = useState<Servico>({
+    id: "",
+    nome: "",
+    valorAlqueire: "",
+    status: "Ativo",
+    produtos: ""
+  });
+
+  const handleEditServico = (servico: Servico) => {
+    console.log("Editando serviço:", servico);
+    setEditingServico(servico);
+    setServicoFormData(servico);
+    setShowServicoForm(true);
+  };
+
+  const handleServicoSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (editingServico) {
+      // Atualizar serviço existente
+      setServicos(prev => prev.map(s => s.id === editingServico.id ? servicoFormData : s));
+      toast({
+        title: "Serviço atualizado",
+        description: "O serviço foi atualizado com sucesso.",
+      });
+    } else {
+      // Criar novo serviço
+      const newServico = { ...servicoFormData, id: Date.now().toString() };
+      setServicos(prev => [...prev, newServico]);
+      toast({
+        title: "Serviço criado",
+        description: "O serviço foi criado com sucesso.",
+      });
+    }
+    
+    resetServicoForm();
+  };
+
+  const resetServicoForm = () => {
+    setServicoFormData({
+      id: "",
+      nome: "",
+      valorAlqueire: "",
+      status: "Ativo",
+      produtos: ""
+    });
+    setEditingServico(null);
+    setShowServicoForm(false);
+  };
+
+  const handleServicoInputChange = (field: keyof Servico, value: string) => {
+    setServicoFormData(prev => ({ ...prev, [field]: value }));
+  };
 
   return (
     <div className="space-y-6">
@@ -42,7 +125,10 @@ const ConfiguracoesPage = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Serviços</CardTitle>
-              <Button className="bg-green-600 hover:bg-green-700">
+              <Button 
+                className="bg-green-600 hover:bg-green-700"
+                onClick={() => setShowServicoForm(true)}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Serviço
               </Button>
@@ -70,7 +156,11 @@ const ConfiguracoesPage = () => {
                       </TableCell>
                       <TableCell>{servico.produtos}</TableCell>
                       <TableCell>
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEditServico(servico)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                       </TableCell>
@@ -168,6 +258,75 @@ const ConfiguracoesPage = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Modal de Serviços */}
+      <Dialog open={showServicoForm} onOpenChange={setShowServicoForm}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingServico ? "Editar Serviço" : "Novo Serviço"}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleServicoSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="nome">Nome do Serviço</Label>
+                <Input
+                  id="nome"
+                  value={servicoFormData.nome}
+                  onChange={(e) => handleServicoInputChange("nome", e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="valorAlqueire">Valor por Alqueire</Label>
+                <Input
+                  id="valorAlqueire"
+                  type="number"
+                  step="0.01"
+                  value={servicoFormData.valorAlqueire}
+                  onChange={(e) => handleServicoInputChange("valorAlqueire", e.target.value)}
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select value={servicoFormData.status} onValueChange={(value) => handleServicoInputChange("status", value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Ativo">Ativo</SelectItem>
+                    <SelectItem value="Inativo">Inativo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="produtos">Produtos Utilizados</Label>
+                <Input
+                  id="produtos"
+                  value={servicoFormData.produtos}
+                  onChange={(e) => handleServicoInputChange("produtos", e.target.value)}
+                  placeholder="Ex: Defensivo A, Sementes"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-2">
+              <Button type="button" variant="outline" onClick={resetServicoForm}>
+                Cancelar
+              </Button>
+              <Button type="submit" className="bg-green-600 hover:bg-green-700">
+                {editingServico ? "Atualizar" : "Criar"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
