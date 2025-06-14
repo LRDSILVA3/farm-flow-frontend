@@ -15,7 +15,7 @@ interface TalhoesModalProps {
   setTalhaoForm: (talhao: Talhao) => void;
   onAddTalhao: (fazendaId: string) => void;
   onDeleteTalhao: (fazendaId: string, talhaoId: string) => void;
-  formOnly?: boolean; // Nova prop para controlar se deve mostrar apenas o formulário
+  formOnly?: boolean;
 }
 
 export const TalhoesModal = ({
@@ -35,11 +35,11 @@ export const TalhoesModal = ({
     handleAddTalhao,
     handleEditTalhao,
     handleCancel
-  } = useTalhoesModal(onAddTalhao, talhaoForm, setTalhaoForm, formOnly); // Passa formOnly para o hook
+  } = useTalhoesModal(onAddTalhao, talhaoForm, setTalhaoForm, formOnly);
 
   if (!fazenda) return null;
 
-  // Se é modo form-only, mostra apenas o formulário
+  // Se é modo form-only, mostra APENAS o formulário
   if (formOnly) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -55,7 +55,7 @@ export const TalhoesModal = ({
             setTalhaoForm={setTalhaoForm}
             editingTalhao={editingTalhao}
             onSubmit={(e) => handleAddTalhao(e, fazenda.id)}
-            onCancel={() => onOpenChange(false)} // Fecha o modal ao cancelar
+            onCancel={() => onOpenChange(false)}
           />
         </DialogContent>
       </Dialog>
