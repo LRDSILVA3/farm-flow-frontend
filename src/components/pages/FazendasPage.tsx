@@ -13,6 +13,9 @@ export interface Talhao {
   nome: string;
   area: string;
   status: string;
+  cidade: string;
+  estado: string;
+  matricula: string;
 }
 
 export interface Fazenda {

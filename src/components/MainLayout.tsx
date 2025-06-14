@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { Home, Users, MapPin, FileText, Calendar, DollarSign, Settings, LogOut } from "lucide-react";
@@ -44,7 +43,7 @@ const MainLayout = () => {
       case "clientes":
         return <ClientesPage onNavigateToFazendas={handleNavigateToFazendas} />;
       case "fazendas":
-        return <FazendasPage selectedClienteCpf={selectedClienteCpf || undefined} />;
+        return <FazendasPage />;
       case "pedidos":
         return <PedidosPage />;
       case "agenda":

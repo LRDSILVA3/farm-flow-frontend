@@ -42,7 +42,7 @@ export const FazendaForm = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {editingFazenda ? "Editar Fazenda" : "Nova Fazenda"}
@@ -125,6 +125,9 @@ export const FazendaForm = ({
                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>Área (ha)</TableHead>
+                    <TableHead>Cidade</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Matrícula</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Ações</TableHead>
                   </TableRow>
@@ -134,6 +137,9 @@ export const FazendaForm = ({
                     <TableRow key={talhao.id}>
                       <TableCell className="font-medium">{talhao.nome}</TableCell>
                       <TableCell>{talhao.area}</TableCell>
+                      <TableCell>{talhao.cidade}</TableCell>
+                      <TableCell>{talhao.estado}</TableCell>
+                      <TableCell>{talhao.matricula}</TableCell>
                       <TableCell>
                         <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(talhao.status)}`}>
                           {talhao.status}

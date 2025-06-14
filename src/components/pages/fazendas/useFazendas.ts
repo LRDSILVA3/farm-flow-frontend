@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Fazenda, Talhao } from "../FazendasPage";
 
@@ -13,9 +12,9 @@ export const useFazendas = () => {
       contato: "(11) 99999-9999",
       status: "Ativo",
       talhoes: [
-        { id: "1", nome: "Talhão A", area: "45.5", status: "Ativo" },
-        { id: "2", nome: "Talhão B", area: "35.0", status: "Inativo" },
-        { id: "3", nome: "Talhão C", area: "70.0", status: "Ativo" }
+        { id: "1", nome: "Talhão A", area: "45.5", status: "Ativo", cidade: "São Paulo", estado: "SP", matricula: "MAT001" },
+        { id: "2", nome: "Talhão B", area: "35.0", status: "Inativo", cidade: "São Paulo", estado: "SP", matricula: "MAT002" },
+        { id: "3", nome: "Talhão C", area: "70.0", status: "Ativo", cidade: "São Paulo", estado: "SP", matricula: "MAT003" }
       ]
     },
     {
@@ -27,8 +26,8 @@ export const useFazendas = () => {
       contato: "(31) 88888-8888",
       status: "Ativo",
       talhoes: [
-        { id: "4", nome: "Talhão Norte", area: "120.0", status: "Ativo" },
-        { id: "5", nome: "Talhão Sul", area: "200.0", status: "Ativo" }
+        { id: "4", nome: "Talhão Norte", area: "120.0", status: "Ativo", cidade: "Belo Horizonte", estado: "MG", matricula: "MAT004" },
+        { id: "5", nome: "Talhão Sul", area: "200.0", status: "Ativo", cidade: "Belo Horizonte", estado: "MG", matricula: "MAT005" }
       ]
     }
   ]);
@@ -54,7 +53,10 @@ export const useFazendas = () => {
     id: "",
     nome: "",
     area: "",
-    status: "Ativo"
+    status: "Ativo",
+    cidade: "",
+    estado: "",
+    matricula: ""
   });
 
   return {

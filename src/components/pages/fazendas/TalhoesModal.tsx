@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,7 +49,10 @@ export const TalhoesModal = ({
         id: "",
         nome: "",
         area: "",
-        status: "Ativo"
+        status: "Ativo",
+        cidade: "",
+        estado: "",
+        matricula: ""
       });
       setShowTalhaoForm(false);
       setEditingTalhao(null);
@@ -68,7 +70,10 @@ export const TalhoesModal = ({
       id: "",
       nome: "",
       area: "",
-      status: "Ativo"
+      status: "Ativo",
+      cidade: "",
+      estado: "",
+      matricula: ""
     });
     setShowTalhaoForm(false);
     setEditingTalhao(null);
@@ -78,7 +83,7 @@ export const TalhoesModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-6xl">
         <DialogHeader>
           <DialogTitle>
             Talhões de {fazenda.nome}
@@ -126,18 +131,45 @@ export const TalhoesModal = ({
                     required
                   />
                 </div>
-              </div>
-              <div className="mt-4">
-                <Label htmlFor="talhaoStatus">Status</Label>
-                <Select value={talhaoForm.status} onValueChange={(value) => setTalhaoForm({ ...talhaoForm, status: value })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Ativo">Ativo</SelectItem>
-                    <SelectItem value="Inativo">Inativo</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div>
+                  <Label htmlFor="talhaoCidade">Cidade</Label>
+                  <Input
+                    id="talhaoCidade"
+                    value={talhaoForm.cidade}
+                    onChange={(e) => setTalhaoForm({ ...talhaoForm, cidade: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="talhaoEstado">Estado</Label>
+                  <Input
+                    id="talhaoEstado"
+                    value={talhaoForm.estado}
+                    onChange={(e) => setTalhaoForm({ ...talhaoForm, estado: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="talhaoMatricula">Matrícula</Label>
+                  <Input
+                    id="talhaoMatricula"
+                    value={talhaoForm.matricula}
+                    onChange={(e) => setTalhaoForm({ ...talhaoForm, matricula: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="talhaoStatus">Status</Label>
+                  <Select value={talhaoForm.status} onValueChange={(value) => setTalhaoForm({ ...talhaoForm, status: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Ativo">Ativo</SelectItem>
+                      <SelectItem value="Inativo">Inativo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="flex justify-end space-x-2 mt-4">
                 <Button type="button" variant="outline" onClick={handleCancel}>
@@ -160,6 +192,9 @@ export const TalhoesModal = ({
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>Área (ha)</TableHead>
+                  <TableHead>Cidade</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Matrícula</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
@@ -169,6 +204,9 @@ export const TalhoesModal = ({
                   <TableRow key={talhao.id}>
                     <TableCell className="font-medium">{talhao.nome}</TableCell>
                     <TableCell>{talhao.area}</TableCell>
+                    <TableCell>{talhao.cidade}</TableCell>
+                    <TableCell>{talhao.estado}</TableCell>
+                    <TableCell>{talhao.matricula}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(talhao.status)}`}>
                         {talhao.status}
