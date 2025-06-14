@@ -117,6 +117,27 @@ export const FazendaForm = ({
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="matricula">Matrícula</Label>
+              <Input
+                id="matricula"
+                value={formData.matricula}
+                onChange={(e) => onInputChange("matricula", e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="lote">Lote</Label>
+              <Input
+                id="lote"
+                value={formData.lote}
+                onChange={(e) => onInputChange("lote", e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
           {editingFazenda && formData.talhoes.length > 0 && (
             <div className="mt-6">
               <h4 className="text-lg font-medium mb-4">Talhões da Fazenda</h4>
@@ -128,6 +149,7 @@ export const FazendaForm = ({
                     <TableHead>Cidade</TableHead>
                     <TableHead>Estado</TableHead>
                     <TableHead>Matrícula</TableHead>
+                    <TableHead>Lote</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Ações</TableHead>
                   </TableRow>
@@ -140,6 +162,7 @@ export const FazendaForm = ({
                       <TableCell>{talhao.cidade}</TableCell>
                       <TableCell>{talhao.estado}</TableCell>
                       <TableCell>{talhao.matricula}</TableCell>
+                      <TableCell>{talhao.lote}</TableCell>
                       <TableCell>
                         <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(talhao.status)}`}>
                           {talhao.status}

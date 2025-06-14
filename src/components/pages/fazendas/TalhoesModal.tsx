@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,7 +74,8 @@ export const TalhoesModal = ({
       status: "Ativo",
       cidade: "",
       estado: "",
-      matricula: ""
+      matricula: "",
+      lote: ""
     });
     setShowTalhaoForm(false);
     setEditingTalhao(null);
@@ -159,6 +161,15 @@ export const TalhoesModal = ({
                   />
                 </div>
                 <div>
+                  <Label htmlFor="talhaoLote">Lote</Label>
+                  <Input
+                    id="talhaoLote"
+                    value={talhaoForm.lote}
+                    onChange={(e) => setTalhaoForm({ ...talhaoForm, lote: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
                   <Label htmlFor="talhaoStatus">Status</Label>
                   <Select value={talhaoForm.status} onValueChange={(value) => setTalhaoForm({ ...talhaoForm, status: value })}>
                     <SelectTrigger>
@@ -195,6 +206,7 @@ export const TalhoesModal = ({
                   <TableHead>Cidade</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Matrícula</TableHead>
+                  <TableHead>Lote</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
@@ -207,6 +219,7 @@ export const TalhoesModal = ({
                     <TableCell>{talhao.cidade}</TableCell>
                     <TableCell>{talhao.estado}</TableCell>
                     <TableCell>{talhao.matricula}</TableCell>
+                    <TableCell>{talhao.lote}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(talhao.status)}`}>
                         {talhao.status}

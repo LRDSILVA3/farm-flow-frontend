@@ -15,6 +15,7 @@ export interface Talhao {
   cidade: string;
   estado: string;
   matricula: string;
+  lote: string;
 }
 
 export interface Fazenda {
@@ -25,6 +26,8 @@ export interface Fazenda {
   localizacao: string;
   contato: string;
   status: string;
+  matricula: string;
+  lote: string;
   talhoes: Talhao[];
 }
 
@@ -93,6 +96,8 @@ const FazendasPage = () => {
       localizacao: "",
       contato: "",
       status: "Ativo",
+      matricula: "",
+      lote: "",
       talhoes: []
     });
     setEditingFazenda(null);
@@ -129,7 +134,8 @@ const FazendasPage = () => {
       status: "Ativo",
       cidade: "",
       estado: "",
-      matricula: ""
+      matricula: "",
+      lote: ""
     });
 
     toast({

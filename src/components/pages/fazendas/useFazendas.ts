@@ -11,10 +11,12 @@ export const useFazendas = () => {
       localizacao: "São Paulo - SP",
       contato: "(11) 99999-9999",
       status: "Ativo",
+      matricula: "MAT-FAZ-001",
+      lote: "LOTE-001",
       talhoes: [
-        { id: "1", nome: "Talhão A", area: "45.5", status: "Ativo", cidade: "São Paulo", estado: "SP", matricula: "MAT001" },
-        { id: "2", nome: "Talhão B", area: "35.0", status: "Inativo", cidade: "São Paulo", estado: "SP", matricula: "MAT002" },
-        { id: "3", nome: "Talhão C", area: "70.0", status: "Ativo", cidade: "São Paulo", estado: "SP", matricula: "MAT003" }
+        { id: "1", nome: "Talhão A", area: "45.5", status: "Ativo", cidade: "São Paulo", estado: "SP", matricula: "MAT001", lote: "LOTE-A" },
+        { id: "2", nome: "Talhão B", area: "35.0", status: "Inativo", cidade: "São Paulo", estado: "SP", matricula: "MAT002", lote: "LOTE-B" },
+        { id: "3", nome: "Talhão C", area: "70.0", status: "Ativo", cidade: "São Paulo", estado: "SP", matricula: "MAT003", lote: "LOTE-C" }
       ]
     },
     {
@@ -25,9 +27,11 @@ export const useFazendas = () => {
       localizacao: "Minas Gerais - MG",
       contato: "(31) 88888-8888",
       status: "Ativo",
+      matricula: "MAT-FAZ-002",
+      lote: "LOTE-002",
       talhoes: [
-        { id: "4", nome: "Talhão Norte", area: "120.0", status: "Ativo", cidade: "Belo Horizonte", estado: "MG", matricula: "MAT004" },
-        { id: "5", nome: "Talhão Sul", area: "200.0", status: "Ativo", cidade: "Belo Horizonte", estado: "MG", matricula: "MAT005" }
+        { id: "4", nome: "Talhão Norte", area: "120.0", status: "Ativo", cidade: "Belo Horizonte", estado: "MG", matricula: "MAT004", lote: "LOTE-D" },
+        { id: "5", nome: "Talhão Sul", area: "200.0", status: "Ativo", cidade: "Belo Horizonte", estado: "MG", matricula: "MAT005", lote: "LOTE-E" }
       ]
     }
   ]);
@@ -46,6 +50,8 @@ export const useFazendas = () => {
     localizacao: "",
     contato: "",
     status: "Ativo",
+    matricula: "",
+    lote: "",
     talhoes: []
   });
 
@@ -56,7 +62,8 @@ export const useFazendas = () => {
     status: "Ativo",
     cidade: "",
     estado: "",
-    matricula: ""
+    matricula: "",
+    lote: ""
   });
 
   return {
