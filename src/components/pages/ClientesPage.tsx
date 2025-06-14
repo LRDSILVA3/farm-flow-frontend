@@ -1,0 +1,283 @@
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Plus, Edit, MapPin, Search } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+interface Cliente {
+  id: string;
+  cpf: string;
+  nome: string;
+  dataNascimento: string;
+  email: string;
+  telefone: string;
+  cep: string;
+  cidade: string;
+  estado: string;
+}
+
+interface ClientesPageProps {
+  onNavigateToFazendas: (cpf: string) => void;
+}
+
+const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
+  const [clientes, setClientes] = useState<Cliente[]>([
+    {
+      id: "1",
+      cpf: "123.456.789-00",
+      nome: "João Silva",
+      dataNascimento: "1980-05-15",
+      email: "joao@email.com",
+      telefone: "(11) 99999-9999",
+      cep: "01234-567",
+      cidade: "São Paulo",
+      estado: "SP"
+    }
+  ]);
+
+  const [showForm, setShowForm] = useState(false);
+  const [editingClient, setEditingClient] = useState<Cliente | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const { toast } = useToast();
+
+  const [formData, setFormData] = useState({
+    cpf: "",
+    nome: "",
+    dataNascimento: "",
+    email: "",
+    telefone: "",
+    cep: "",
+    cidade: "",
+    estado: ""
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (editingClient) {
+      setClientes(clientes.map(c => 
+        c.id === editingClient.id ? { ...formData, id: editingClient.id } : c
+      ));
+      toast({ title: "Cliente atualizado com sucesso!" });
+    } else {
+      const newClient: Cliente = {
+        ...formData,
+        id: Date.now().toString()
+      };
+      setClientes([...clientes, newClient]);
+      toast({ title: "Cliente cadastrado com sucesso!" });
+    }
+
+    resetForm();
+  };
+
+  const resetForm = () => {
+    setFormData({
+      cpf: "",
+      nome: "",
+      dataNascimento: "",
+      email: "",
+      telefone: "",
+      cep: "",
+      cidade: "",
+      estado: ""
+    });
+    setShowForm(false);
+    setEditingClient(null);
+  };
+
+  const handleEdit = (cliente: Cliente) => {
+    setFormData(cliente);
+    setEditingClient(cliente);
+    setShowForm(true);
+  };
+
+  const filteredClientes = clientes.filter(cliente =>
+    cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    cliente.cpf.includes(searchTerm) ||
+    cliente.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Clientes</h1>
+          <p className="text-gray-600">Gerencie os clientes da empresa</p>
+        </div>
+        <Button onClick={() => setShowForm(true)} className="bg-green-600 hover:bg-green-700">
+          <Plus className="h-4 w-4 mr-2" />
+          Novo Cliente
+        </Button>
+      </div>
+
+      {showForm && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{editingClient ? "Editar Cliente" : "Novo Cliente"}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="cpf">CPF</Label>
+                <Input
+                  id="cpf"
+                  value={formData.cpf}
+                  onChange={(e) => setFormData({...formData, cpf: e.target.value})}
+                  placeholder="123.456.789-00"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="nome">Nome</Label>
+                <Input
+                  id="nome"
+                  value={formData.nome}
+                  onChange={(e) => setFormData({...formData, nome: e.target.value})}
+                  placeholder="Nome completo"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="dataNascimento">Data de Nascimento</Label>
+                <Input
+                  id="dataNascimento"
+                  type="date"
+                  value={formData.dataNascimento}
+                  onChange={(e) => setFormData({...formData, dataNascimento: e.target.value})}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  placeholder="email@exemplo.com"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="telefone">Telefone</Label>
+                <Input
+                  id="telefone"
+                  value={formData.telefone}
+                  onChange={(e) => setFormData({...formData, telefone: e.target.value})}
+                  placeholder="(11) 99999-9999"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="cep">CEP</Label>
+                <Input
+                  id="cep"
+                  value={formData.cep}
+                  onChange={(e) => setFormData({...formData, cep: e.target.value})}
+                  placeholder="01234-567"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="cidade">Cidade</Label>
+                <Input
+                  id="cidade"
+                  value={formData.cidade}
+                  onChange={(e) => setFormData({...formData, cidade: e.target.value})}
+                  placeholder="Cidade"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="estado">Estado</Label>
+                <Input
+                  id="estado"
+                  value={formData.estado}
+                  onChange={(e) => setFormData({...formData, estado: e.target.value})}
+                  placeholder="SP"
+                  maxLength={2}
+                  required
+                />
+              </div>
+              <div className="md:col-span-2 flex gap-2">
+                <Button type="submit" className="bg-green-600 hover:bg-green-700">
+                  {editingClient ? "Atualizar" : "Cadastrar"}
+                </Button>
+                <Button type="button" variant="outline" onClick={resetForm}>
+                  Cancelar
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle>Lista de Clientes</CardTitle>
+            <div className="flex items-center space-x-2">
+              <Search className="h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Buscar cliente..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-64"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>CPF</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Telefone</TableHead>
+                <TableHead>Cidade/Estado</TableHead>
+                <TableHead>Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredClientes.map((cliente) => (
+                <TableRow key={cliente.id}>
+                  <TableCell className="font-medium">{cliente.nome}</TableCell>
+                  <TableCell>{cliente.cpf}</TableCell>
+                  <TableCell>{cliente.email}</TableCell>
+                  <TableCell>{cliente.telefone}</TableCell>
+                  <TableCell>{cliente.cidade}/{cliente.estado}</TableCell>
+                  <TableCell>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(cliente)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onNavigateToFazendas(cliente.cpf)}
+                      >
+                        <MapPin className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default ClientesPage;
