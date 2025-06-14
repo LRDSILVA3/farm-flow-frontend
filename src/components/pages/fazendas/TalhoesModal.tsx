@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Fazenda, Talhao } from "../FazendasPage";
 import { TalhaoForm } from "./TalhaoForm";
+import { TalhoesTable } from "./TalhoesTable";
 import { useTalhoesModal } from "./useTalhoesModal";
 
 interface TalhoesModalProps {
@@ -14,7 +15,6 @@ interface TalhoesModalProps {
   setTalhaoForm: (talhao: Talhao) => void;
   onAddTalhao: (fazendaId: string) => void;
   onDeleteTalhao: (fazendaId: string, talhaoId: string) => void;
-  formOnly?: boolean;
 }
 
 export const TalhoesModal = ({
@@ -24,8 +24,7 @@ export const TalhoesModal = ({
   talhaoForm,
   setTalhaoForm,
   onAddTalhao,
-  onDeleteTalhao,
-  formOnly = false
+  onDeleteTalhao
 }: TalhoesModalProps) => {
   const {
     showTalhaoForm,
@@ -34,34 +33,10 @@ export const TalhoesModal = ({
     handleAddTalhao,
     handleEditTalhao,
     handleCancel
-  } = useTalhoesModal(onAddTalhao, talhaoForm, setTalhaoForm, formOnly);
+  } = useTalhoesModal(onAddTalhao, talhaoForm, setTalhaoForm);
 
   if (!fazenda) return null;
 
-  // Se é modo form-only, mostra APENAS o formulário
-  if (formOnly) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>
-              Adicionar Talhão - {fazenda.nome}
-            </DialogTitle>
-          </DialogHeader>
-
-          <TalhaoForm
-            talhaoForm={talhaoForm}
-            setTalhaoForm={setTalhaoForm}
-            editingTalhao={editingTalhao}
-            onSubmit={(e) => handleAddTalhao(e, fazenda.id)}
-            onCancel={() => onOpenChange(false)}
-          />
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  // Modo normal - apenas formulário quando solicitado
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl">
@@ -95,6 +70,12 @@ export const TalhoesModal = ({
               onCancel={handleCancel}
             />
           )}
+
+          <TalhoesTable
+            talhoes={fazenda.talhoes}
+            onEditTalhao={handleEditTalhao}
+            onDeleteTalhao={(talhaoId) => onDeleteTalhao(fazenda.id, talhaoId)}
+          />
         </div>
       </DialogContent>
     </Dialog>
