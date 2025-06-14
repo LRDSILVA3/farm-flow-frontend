@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Trash2, Plus } from "lucide-react";
 import { Fazenda } from "../FazendasPage";
+import { useState, useEffect } from "react";
+
+interface Cliente {
+  id: string;
+  cpf: string;
+  nome: string;
+  email: string;
+}
 
 interface FazendaFormProps {
   open: boolean;
@@ -31,6 +38,33 @@ export const FazendaForm = ({
   onDeleteTalhao,
   onAddTalhao
 }: FazendaFormProps) => {
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+
+  // Simular busca de clientes - em um app real, isso viria de uma API
+  useEffect(() => {
+    const clientesMock: Cliente[] = [
+      {
+        id: "1",
+        cpf: "123.456.789-00",
+        nome: "João Silva",
+        email: "joao@email.com"
+      },
+      {
+        id: "2", 
+        cpf: "987.654.321-00",
+        nome: "Maria Santos",
+        email: "maria@email.com"
+      },
+      {
+        id: "3",
+        cpf: "456.789.123-00", 
+        nome: "Pedro Oliveira",
+        email: "pedro@email.com"
+      }
+    ];
+    setClientes(clientesMock);
+  }, []);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Ativo":
@@ -44,8 +78,6 @@ export const FazendaForm = ({
 
   const handleAddTalhaoClick = () => {
     if (onAddTalhao) {
-      // Se estamos editando, usa o ID da fazenda atual
-      // Se estamos criando, precisamos salvar primeiro ou usar um ID temporário
       const fazendaId = editingFazenda ? editingFazenda.id : formData.id || 'temp';
       onAddTalhao(fazendaId);
     }
@@ -72,12 +104,18 @@ export const FazendaForm = ({
             </div>
             <div>
               <Label htmlFor="proprietario">Proprietário</Label>
-              <Input
-                id="proprietario"
-                value={formData.proprietario}
-                onChange={(e) => onInputChange("proprietario", e.target.value)}
-                required
-              />
+              <Select value={formData.proprietario} onValueChange={(value) => onInputChange("proprietario", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um cliente" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientes.map((cliente) => (
+                    <SelectItem key={cliente.id} value={cliente.nome}>
+                      {cliente.nome} - {cliente.cpf}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           
