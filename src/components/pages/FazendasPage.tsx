@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -517,7 +516,7 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
-            <CardTitle>Lista de Fazendas</CardTitle>
+            <CardTitle>Lista de Talhões</CardTitle>
             <div className="flex items-center space-x-2">
               <Search className="h-4 w-4 text-gray-400" />
               <Input
