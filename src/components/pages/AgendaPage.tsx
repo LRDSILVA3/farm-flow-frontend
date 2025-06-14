@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -165,6 +164,58 @@ const AgendaPage = () => {
     setShowExecucaoParciaisModal(true);
   };
 
+  const handleAddExecucaoParciralToEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editingExecucao) return;
+
+    const newExecucaoParcial = {
+      ...execucaoParciralForm,
+      id: Date.now().toString()
+    };
+
+    const updatedExecucao = {
+      ...formData,
+      execucoesParciais: [...formData.execucoesParciais, newExecucaoParcial]
+    };
+
+    setFormData(updatedExecucao);
+    setExecucoes(prev => prev.map(ex => ex.id === editingExecucao.id ? updatedExecucao : ex));
+
+    // Reset form
+    setExecucaoParciralForm({
+      id: "",
+      data: "",
+      areaExecutada: "",
+      equipamento: "",
+      operador: "",
+      observacoes: "",
+      status: "Concluída"
+    });
+
+    toast({
+      title: "Execução parcial adicionada",
+      description: "A execução parcial foi adicionada com sucesso.",
+    });
+  };
+
+  const handleDeleteExecucaoParciralFromEdit = (execucaoParciralId: string) => {
+    if (!editingExecucao) return;
+
+    const updatedExecucao = {
+      ...formData,
+      execucoesParciais: formData.execucoesParciais.filter(ep => ep.id !== execucaoParciralId)
+    };
+
+    setFormData(updatedExecucao);
+    setExecucoes(prev => prev.map(ex => ex.id === editingExecucao.id ? updatedExecucao : ex));
+
+    toast({
+      title: "Execução parcial removida",
+      description: "A execução parcial foi removida com sucesso.",
+    });
+  };
+
   const handleAddExecucaoParcial = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -326,102 +377,229 @@ const AgendaPage = () => {
 
       {/* Modal de Edição de Execução */}
       <Dialog open={showExecucaoForm} onOpenChange={setShowExecucaoForm}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Execução</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="cliente">Cliente</Label>
-                <Input
-                  id="cliente"
-                  value={formData.cliente}
-                  onChange={(e) => handleInputChange("cliente", e.target.value)}
-                  readOnly
-                />
+          
+          <div className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="cliente">Cliente</Label>
+                  <Input
+                    id="cliente"
+                    value={formData.cliente}
+                    onChange={(e) => handleInputChange("cliente", e.target.value)}
+                    readOnly
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="fazenda">Fazenda</Label>
+                  <Input
+                    id="fazenda"
+                    value={formData.fazenda}
+                    onChange={(e) => handleInputChange("fazenda", e.target.value)}
+                    readOnly
+                  />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="fazenda">Fazenda</Label>
-                <Input
-                  id="fazenda"
-                  value={formData.fazenda}
-                  onChange={(e) => handleInputChange("fazenda", e.target.value)}
-                  readOnly
-                />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="servico">Serviço</Label>
+                  <Input
+                    id="servico"
+                    value={formData.servico}
+                    readOnly
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="area">Área (ha)</Label>
+                  <Input
+                    id="area"
+                    value={formData.area}
+                    readOnly
+                  />
+                </div>
               </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="servico">Serviço</Label>
-                <Input
-                  id="servico"
-                  value={formData.servico}
-                  readOnly
-                />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="dataAgendada">Data Agendada</Label>
+                  <Input
+                    id="dataAgendada"
+                    type="date"
+                    value={formData.dataAgendada}
+                    onChange={(e) => handleInputChange("dataAgendada", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="equipamento">Equipamento</Label>
+                  <Select value={formData.equipamento} onValueChange={(value) => handleInputChange("equipamento", value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um equipamento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {equipamentosDisponiveis.map((equipamento) => (
+                        <SelectItem key={equipamento} value={equipamento}>
+                          {equipamento}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+              
               <div>
-                <Label htmlFor="area">Área (ha)</Label>
-                <Input
-                  id="area"
-                  value={formData.area}
-                  readOnly
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="dataAgendada">Data Agendada</Label>
-                <Input
-                  id="dataAgendada"
-                  type="date"
-                  value={formData.dataAgendada}
-                  onChange={(e) => handleInputChange("dataAgendada", e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="equipamento">Equipamento</Label>
-                <Select value={formData.equipamento} onValueChange={(value) => handleInputChange("equipamento", value)}>
+                <Label htmlFor="status">Status</Label>
+                <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione um equipamento" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {equipamentosDisponiveis.map((equipamento) => (
-                      <SelectItem key={equipamento} value={equipamento}>
-                        {equipamento}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="Pendente">Pendente</SelectItem>
+                    <SelectItem value="Agendado">Agendado</SelectItem>
+                    <SelectItem value="Em Andamento">Em Andamento</SelectItem>
+                    <SelectItem value="Concluído">Concluído</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={resetForm}>
+                  Cancelar
+                </Button>
+                <Button type="submit" className="bg-green-600 hover:bg-green-700">
+                  Atualizar
+                </Button>
+              </div>
+            </form>
+
+            {/* Seção de Execuções Parciais */}
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-semibold mb-4">Execuções Parciais</h3>
+              
+              {/* Informações da Execução */}
+              <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div><strong>Área Total:</strong> {formData.area} ha</div>
+                  <div><strong>Área Executada:</strong> {calcularAreaTotal(formData.execucoesParciais)} ha</div>
+                  <div><strong>Área Restante:</strong> {parseFloat(formData.area || "0") - calcularAreaTotal(formData.execucoesParciais)} ha</div>
+                  <div><strong>Progresso:</strong> {formData.area ? Math.round((calcularAreaTotal(formData.execucoesParciais) / parseFloat(formData.area)) * 100) : 0}%</div>
+                </div>
+              </div>
+
+              {/* Formulário para Nova Execução Parcial */}
+              <form onSubmit={handleAddExecucaoParciralToEdit} className="border p-4 rounded-lg mb-4">
+                <h4 className="font-medium mb-4">Nova Execução Parcial</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="data">Data</Label>
+                    <Input
+                      id="data"
+                      type="date"
+                      value={execucaoParciralForm.data}
+                      onChange={(e) => setExecucaoParciralForm(prev => ({ ...prev, data: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="areaExecutada">Área Executada (ha)</Label>
+                    <Input
+                      id="areaExecutada"
+                      type="number"
+                      step="0.1"
+                      value={execucaoParciralForm.areaExecutada}
+                      onChange={(e) => setExecucaoParciralForm(prev => ({ ...prev, areaExecutada: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="equipamentoParcial">Equipamento</Label>
+                    <Select value={execucaoParciralForm.equipamento} onValueChange={(value) => setExecucaoParciralForm(prev => ({ ...prev, equipamento: value }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {equipamentosDisponiveis.map((equipamento) => (
+                          <SelectItem key={equipamento} value={equipamento}>
+                            {equipamento}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <Label htmlFor="operador">Operador</Label>
+                    <Input
+                      id="operador"
+                      value={execucaoParciralForm.operador}
+                      onChange={(e) => setExecucaoParciralForm(prev => ({ ...prev, operador: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="observacoes">Observações</Label>
+                    <Input
+                      id="observacoes"
+                      value={execucaoParciralForm.observacoes}
+                      onChange={(e) => setExecucaoParciralForm(prev => ({ ...prev, observacoes: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end mt-4">
+                  <Button type="submit" className="bg-green-600 hover:bg-green-700">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar Execução
+                  </Button>
+                </div>
+              </form>
+
+              {/* Lista de Execuções Parciais */}
+              <div>
+                <h4 className="font-medium mb-4">Execuções Registradas</h4>
+                {formData.execucoesParciais.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">Nenhuma execução parcial registrada</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Área (ha)</TableHead>
+                        <TableHead>Equipamento</TableHead>
+                        <TableHead>Operador</TableHead>
+                        <TableHead>Observações</TableHead>
+                        <TableHead>Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {formData.execucoesParciais.map((execucaoParcial) => (
+                        <TableRow key={execucaoParcial.id}>
+                          <TableCell>{execucaoParcial.data}</TableCell>
+                          <TableCell>{execucaoParcial.areaExecutada}</TableCell>
+                          <TableCell>{execucaoParcial.equipamento}</TableCell>
+                          <TableCell>{execucaoParcial.operador}</TableCell>
+                          <TableCell>{execucaoParcial.observacoes}</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteExecucaoParciralFromEdit(execucaoParcial.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
             </div>
-            
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Pendente">Pendente</SelectItem>
-                  <SelectItem value="Agendado">Agendado</SelectItem>
-                  <SelectItem value="Em Andamento">Em Andamento</SelectItem>
-                  <SelectItem value="Concluído">Concluído</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex justify-end space-x-2">
-              <Button type="button" variant="outline" onClick={resetForm}>
-                Cancelar
-              </Button>
-              <Button type="submit" className="bg-green-600 hover:bg-green-700">
-                Atualizar
-              </Button>
-            </div>
-          </form>
+          </div>
         </DialogContent>
       </Dialog>
 
