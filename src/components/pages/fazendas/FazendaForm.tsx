@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Trash2, Plus } from "lucide-react";
 import { Fazenda } from "../FazendasPage";
 import { useState, useEffect } from "react";
+import { ClienteSelect } from "./ClienteSelect";
 
 interface Cliente {
   id: string;
@@ -104,18 +105,11 @@ export const FazendaForm = ({
             </div>
             <div>
               <Label htmlFor="proprietario">Proprietário</Label>
-              <Select value={formData.proprietario} onValueChange={(value) => onInputChange("proprietario", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clientes.map((cliente) => (
-                    <SelectItem key={cliente.id} value={cliente.nome}>
-                      {cliente.nome} - {cliente.cpf}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ClienteSelect
+                value={formData.proprietario}
+                onValueChange={(value) => onInputChange("proprietario", value)}
+                clientes={clientes}
+              />
             </div>
           </div>
           
