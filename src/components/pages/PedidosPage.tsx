@@ -204,83 +204,92 @@ const PedidosPage = () => {
       </Card>
 
       <Dialog open={showPedidoForm} onOpenChange={setShowPedidoForm}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
               {editingPedido ? "Editar Pedido" : "Novo Pedido"}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="cliente">Cliente</Label>
-              <Input
-                id="cliente"
-                value={formData.cliente}
-                onChange={(e) => handleInputChange("cliente", e.target.value)}
-                required
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="cliente">Cliente</Label>
+                <Input
+                  id="cliente"
+                  value={formData.cliente}
+                  onChange={(e) => handleInputChange("cliente", e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="fazenda">Fazenda</Label>
+                <Input
+                  id="fazenda"
+                  value={formData.fazenda}
+                  onChange={(e) => handleInputChange("fazenda", e.target.value)}
+                  required
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="fazenda">Fazenda</Label>
-              <Input
-                id="fazenda"
-                value={formData.fazenda}
-                onChange={(e) => handleInputChange("fazenda", e.target.value)}
-                required
-              />
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="servico">Serviço</Label>
+                <Select value={formData.servico} onValueChange={(value) => handleInputChange("servico", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um serviço" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {servicosDisponiveis
+                      .filter(servico => servico.status === "Ativo")
+                      .map((servico) => (
+                        <SelectItem key={servico.id} value={servico.nome}>
+                          {servico.nome} - R$ {servico.valorAlqueire}/alqueire
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="area">Área (ha)</Label>
+                <Input
+                  id="area"
+                  type="number"
+                  step="0.1"
+                  value={formData.area}
+                  onChange={(e) => handleInputChange("area", e.target.value)}
+                  required
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="servico">Serviço</Label>
-              <Select value={formData.servico} onValueChange={(value) => handleInputChange("servico", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um serviço" />
-                </SelectTrigger>
-                <SelectContent>
-                  {servicosDisponiveis
-                    .filter(servico => servico.status === "Ativo")
-                    .map((servico) => (
-                      <SelectItem key={servico.id} value={servico.nome}>
-                        {servico.nome} - R$ {servico.valorAlqueire}/alqueire
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="valor">Valor</Label>
+                <Input
+                  id="valor"
+                  value={formData.valor}
+                  onChange={(e) => handleInputChange("valor", e.target.value)}
+                  placeholder="R$ 0,00"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pendente">Pendente</SelectItem>
+                    <SelectItem value="Em Andamento">Em Andamento</SelectItem>
+                    <SelectItem value="Concluído">Concluído</SelectItem>
+                    <SelectItem value="Cancelado">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div>
-              <Label htmlFor="area">Área (ha)</Label>
-              <Input
-                id="area"
-                type="number"
-                step="0.1"
-                value={formData.area}
-                onChange={(e) => handleInputChange("area", e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="valor">Valor</Label>
-              <Input
-                id="valor"
-                value={formData.valor}
-                onChange={(e) => handleInputChange("valor", e.target.value)}
-                placeholder="R$ 0,00"
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Pendente">Pendente</SelectItem>
-                  <SelectItem value="Em Andamento">Em Andamento</SelectItem>
-                  <SelectItem value="Concluído">Concluído</SelectItem>
-                  <SelectItem value="Cancelado">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            
             <div>
               <Label htmlFor="pagamento">Pagamento</Label>
               <Select value={formData.pagamento} onValueChange={(value) => handleInputChange("pagamento", value)}>
@@ -294,6 +303,7 @@ const PedidosPage = () => {
                 </SelectContent>
               </Select>
             </div>
+            
             <div className="flex justify-end space-x-2">
               <Button type="button" variant="outline" onClick={resetForm}>
                 Cancelar
