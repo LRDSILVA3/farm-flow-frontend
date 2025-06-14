@@ -5,13 +5,13 @@ import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FazendasTable } from "./fazendas/FazendasTable";
 import { FazendaForm } from "./fazendas/FazendaForm";
+import { TalhoesModal } from "./fazendas/TalhoesModal";
 import { useFazendas } from "./fazendas/useFazendas";
 
 export interface Talhao {
   id: string;
   nome: string;
   area: string;
-  cultura: string;
   status: string;
 }
 
@@ -35,8 +35,10 @@ const FazendasPage = () => {
     setShowFazendaForm,
     editingFazenda,
     setEditingFazenda,
-    expandedFazendas,
-    setExpandedFazendas,
+    showTalhoesModal,
+    setShowTalhoesModal,
+    selectedFazenda,
+    setSelectedFazenda,
     formData,
     setFormData,
     currentPage,
@@ -52,6 +54,11 @@ const FazendasPage = () => {
     setEditingFazenda(fazenda);
     setFormData(fazenda);
     setShowFazendaForm(true);
+  };
+
+  const handleViewTalhoes = (fazenda: Fazenda) => {
+    setSelectedFazenda(fazenda);
+    setShowTalhoesModal(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -94,18 +101,6 @@ const FazendasPage = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleToggleExpand = (fazendaId: string) => {
-    setExpandedFazendas(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(fazendaId)) {
-        newSet.delete(fazendaId);
-      } else {
-        newSet.add(fazendaId);
-      }
-      return newSet;
-    });
-  };
-
   const handleAddTalhao = (fazendaId: string) => {
     const newTalhao = {
       ...talhaoForm,
@@ -118,11 +113,17 @@ const FazendasPage = () => {
         : fazenda
     ));
 
+    if (selectedFazenda && selectedFazenda.id === fazendaId) {
+      setSelectedFazenda(prev => prev ? {
+        ...prev,
+        talhoes: [...prev.talhoes, newTalhao]
+      } : null);
+    }
+
     setTalhaoForm({
       id: "",
       nome: "",
       area: "",
-      cultura: "",
       status: "Preparando"
     });
 
@@ -138,6 +139,13 @@ const FazendasPage = () => {
         ? { ...fazenda, talhoes: fazenda.talhoes.filter(t => t.id !== talhaoId) }
         : fazenda
     ));
+
+    if (selectedFazenda && selectedFazenda.id === fazendaId) {
+      setSelectedFazenda(prev => prev ? {
+        ...prev,
+        talhoes: prev.talhoes.filter(t => t.id !== talhaoId)
+      } : null);
+    }
 
     toast({
       title: "Talhão removido",
@@ -170,13 +178,10 @@ const FazendasPage = () => {
             fazendas={fazendas}
             currentPage={currentPage}
             itemsPerPage={itemsPerPage}
-            expandedFazendas={expandedFazendas}
             onPageChange={setCurrentPage}
             onItemsPerPageChange={setItemsPerPage}
             onEdit={handleEdit}
-            onToggleExpand={handleToggleExpand}
-            onAddTalhao={handleAddTalhao}
-            onDeleteTalhao={handleDeleteTalhao}
+            onViewTalhoes={handleViewTalhoes}
           />
         </CardContent>
       </Card>
@@ -189,6 +194,16 @@ const FazendasPage = () => {
         onInputChange={handleInputChange}
         onSubmit={handleSubmit}
         onCancel={resetForm}
+      />
+
+      <TalhoesModal
+        open={showTalhoesModal}
+        onOpenChange={setShowTalhoesModal}
+        fazenda={selectedFazenda}
+        talhaoForm={talhaoForm}
+        setTalhaoForm={setTalhaoForm}
+        onAddTalhao={handleAddTalhao}
+        onDeleteTalhao={handleDeleteTalhao}
       />
     </div>
   );
