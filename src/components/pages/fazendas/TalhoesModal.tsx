@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -33,7 +32,7 @@ export const TalhoesModal = ({
     handleAddTalhao,
     handleEditTalhao,
     handleCancel
-  } = useTalhoesModal(onAddTalhao, talhaoForm, setTalhaoForm);
+  } = useTalhoesModal(onAddTalhao, talhaoForm, setTalhaoForm, true); // Sempre abre o formulário quando o modal é aberto
 
   if (!fazenda) return null;
 

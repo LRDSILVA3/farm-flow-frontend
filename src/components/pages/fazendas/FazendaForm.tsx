@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,6 +39,15 @@ export const FazendaForm = ({
         return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const handleAddTalhaoClick = () => {
+    if (onAddTalhao) {
+      // Se estamos editando, usa o ID da fazenda atual
+      // Se estamos criando, precisamos salvar primeiro ou usar um ID temporário
+      const fazendaId = editingFazenda ? editingFazenda.id : formData.id || 'temp';
+      onAddTalhao(fazendaId);
     }
   };
 
@@ -143,17 +153,15 @@ export const FazendaForm = ({
             <div className="mt-6">
               <div className="flex justify-between items-center mb-4">
                 <h4 className="text-lg font-medium">Talhões da Fazenda</h4>
-                {onAddTalhao && (
-                  <Button
-                    type="button"
-                    onClick={() => onAddTalhao(formData.id)}
-                    className="bg-green-600 hover:bg-green-700"
-                    size="sm"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Adicionar Talhão
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  onClick={handleAddTalhaoClick}
+                  className="bg-green-600 hover:bg-green-700"
+                  size="sm"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Talhão
+                </Button>
               </div>
               
               {formData.talhoes.length > 0 ? (

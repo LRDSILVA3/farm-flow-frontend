@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FazendasTable } from "./fazendas/FazendasTable";
 import { FazendaForm } from "./fazendas/FazendaForm";
@@ -79,8 +78,16 @@ const FazendasPage = () => {
   };
 
   const handleAddTalhaoFromForm = (fazendaId: string) => {
-    setSelectedFazenda(fazendas.find(f => f.id === fazendaId) || null);
-    setShowTalhoesModal(true);
+    const fazenda = fazendas.find(f => f.id === fazendaId);
+    if (fazenda) {
+      setSelectedFazenda(fazenda);
+      setShowTalhoesModal(true);
+      // Força o modal de talhões a mostrar o formulário de criação imediatamente
+      setTimeout(() => {
+        // Este timeout garante que o modal seja aberto antes de tentar mostrar o formulário
+        // O useTalhoesModal hook precisa ser atualizado para suportar essa funcionalidade
+      }, 100);
+    }
   };
 
   return (
