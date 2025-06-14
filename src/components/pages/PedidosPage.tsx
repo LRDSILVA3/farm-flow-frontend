@@ -23,6 +23,15 @@ interface Pedido {
 
 const PedidosPage = () => {
   const { toast } = useToast();
+  
+  // Lista de serviços disponíveis (vinda das configurações)
+  const servicosDisponiveis = [
+    { id: "1", nome: "Pulverização", valorAlqueire: "200.00", status: "Ativo" },
+    { id: "2", nome: "Plantio", valorAlqueire: "150.00", status: "Ativo" },
+    { id: "3", nome: "Colheita", valorAlqueire: "180.00", status: "Ativo" },
+    { id: "4", nome: "Adubação", valorAlqueire: "120.00", status: "Ativo" }
+  ];
+
   const [pedidos, setPedidos] = useState<Pedido[]>([
     {
       id: "1",
@@ -222,12 +231,20 @@ const PedidosPage = () => {
             </div>
             <div>
               <Label htmlFor="servico">Serviço</Label>
-              <Input
-                id="servico"
-                value={formData.servico}
-                onChange={(e) => handleInputChange("servico", e.target.value)}
-                required
-              />
+              <Select value={formData.servico} onValueChange={(value) => handleInputChange("servico", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um serviço" />
+                </SelectTrigger>
+                <SelectContent>
+                  {servicosDisponiveis
+                    .filter(servico => servico.status === "Ativo")
+                    .map((servico) => (
+                      <SelectItem key={servico.id} value={servico.nome}>
+                        {servico.nome} - R$ {servico.valorAlqueire}/alqueire
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label htmlFor="area">Área (ha)</Label>
