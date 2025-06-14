@@ -1,5 +1,4 @@
 
-import { useState } from "react";
 import { Fazenda, Talhao } from "../FazendasPage";
 import { useToast } from "@/hooks/use-toast";
 
@@ -7,9 +6,9 @@ export const useFazendaHandlers = (
   fazendas: Fazenda[],
   setFazendas: (fazendas: Fazenda[] | ((prev: Fazenda[]) => Fazenda[])) => void,
   setEditingFazenda: (fazenda: Fazenda | null) => void,
-  setFormData: (fazenda: Fazenda) => void,
+  setFormData: (fazenda: Fazenda | ((prev: Fazenda) => Fazenda)) => void,
   setShowFazendaForm: (show: boolean) => void,
-  setSelectedFazenda: (fazenda: Fazenda | null) => void,
+  setSelectedFazenda: (fazenda: Fazenda | null | ((prev: Fazenda | null) => Fazenda | null)) => void,
   setShowTalhoesModal: (show: boolean) => void,
   editingFazenda: Fazenda | null,
   formData: Fazenda,
