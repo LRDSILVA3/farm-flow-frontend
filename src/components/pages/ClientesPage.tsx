@@ -1,10 +1,11 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit, MapPin, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -42,6 +43,8 @@ const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState<Cliente | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -115,6 +118,22 @@ const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
     cliente.cpf.includes(searchTerm) ||
     cliente.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Pagination logic
+  const totalItems = filteredClientes.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentClientes = filteredClientes.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (value: string) => {
+    setItemsPerPage(Number(value));
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
 
   return (
     <div className="space-y-6">
@@ -247,48 +266,103 @@ const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>CPF</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead>Cidade/Estado</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredClientes.map((cliente) => (
-                <TableRow key={cliente.id}>
-                  <TableCell className="font-medium">{cliente.nome}</TableCell>
-                  <TableCell>{cliente.cpf}</TableCell>
-                  <TableCell>{cliente.email}</TableCell>
-                  <TableCell>{cliente.telefone}</TableCell>
-                  <TableCell>{cliente.cidade}/{cliente.estado}</TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(cliente)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleNavigateToFazendas(cliente.cpf)}
-                        title="Ver fazendas do cliente"
-                      >
-                        <MapPin className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          <div className="space-y-4">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>CPF</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Telefone</TableHead>
+                  <TableHead>Cidade/Estado</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {currentClientes.map((cliente) => (
+                  <TableRow key={cliente.id}>
+                    <TableCell className="font-medium">{cliente.nome}</TableCell>
+                    <TableCell>{cliente.cpf}</TableCell>
+                    <TableCell>{cliente.email}</TableCell>
+                    <TableCell>{cliente.telefone}</TableCell>
+                    <TableCell>{cliente.cidade}/{cliente.estado}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(cliente)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleNavigateToFazendas(cliente.cpf)}
+                          title="Ver fazendas do cliente"
+                        >
+                          <MapPin className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {/* Pagination Controls */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">
+                  Mostrando {startIndex + 1} a {Math.min(endIndex, totalItems)} de {totalItems} clientes
+                </span>
+                <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-sm text-gray-600">por página</span>
+              </div>
+              
+              {totalPages > 1 && (
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          onClick={() => handlePageChange(page)}
+                          isActive={currentPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

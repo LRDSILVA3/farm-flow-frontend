@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit } from "lucide-react";
@@ -48,6 +49,14 @@ const ConfiguracoesPage = () => {
     { id: "1", nome: "Caminhão 01", status: "Disponível" },
     { id: "2", nome: "Colheitadeira 01", status: "Em Manutenção" }
   ]);
+
+  // Pagination states
+  const [servicosPage, setServicosPage] = useState(1);
+  const [servicosPerPage, setServicosPerPage] = useState(10);
+  const [produtosPage, setProdutosPage] = useState(1);
+  const [produtosPerPage, setProdutosPerPage] = useState(10);
+  const [equipamentosPage, setEquipamentosPage] = useState(1);
+  const [equipamentosPerPage, setEquipamentosPerPage] = useState(10);
 
   // Estados para modal de serviços
   const [showServicoForm, setShowServicoForm] = useState(false);
@@ -214,6 +223,27 @@ const ConfiguracoesPage = () => {
     setEquipamentoFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Pagination logic for serviços
+  const totalServicos = servicos.length;
+  const totalServicosPages = Math.ceil(totalServicos / servicosPerPage);
+  const servicosStartIndex = (servicosPage - 1) * servicosPerPage;
+  const servicosEndIndex = servicosStartIndex + servicosPerPage;
+  const currentServicos = servicos.slice(servicosStartIndex, servicosEndIndex);
+
+  // Pagination logic for produtos
+  const totalProdutos = produtos.length;
+  const totalProdutosPages = Math.ceil(totalProdutos / produtosPerPage);
+  const produtosStartIndex = (produtosPage - 1) * produtosPerPage;
+  const produtosEndIndex = produtosStartIndex + produtosPerPage;
+  const currentProdutos = produtos.slice(produtosStartIndex, produtosEndIndex);
+
+  // Pagination logic for equipamentos
+  const totalEquipamentos = equipamentos.length;
+  const totalEquipamentosPages = Math.ceil(totalEquipamentos / equipamentosPerPage);
+  const equipamentosStartIndex = (equipamentosPage - 1) * equipamentosPerPage;
+  const equipamentosEndIndex = equipamentosStartIndex + equipamentosPerPage;
+  const currentEquipamentos = equipamentos.slice(equipamentosStartIndex, equipamentosEndIndex);
+
   return (
     <div className="space-y-6">
       <div>
@@ -241,40 +271,98 @@ const ConfiguracoesPage = () => {
               </Button>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Valor por Alqueire</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Produtos</TableHead>
-                    <TableHead>Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {servicos.map((servico) => (
-                    <TableRow key={servico.id}>
-                      <TableCell className="font-medium">{servico.nome}</TableCell>
-                      <TableCell>R$ {servico.valorAlqueire}</TableCell>
-                      <TableCell>
-                        <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                          {servico.status}
-                        </span>
-                      </TableCell>
-                      <TableCell>{servico.produtos}</TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleEditServico(servico)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
+              <div className="space-y-4">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Valor por Alqueire</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Produtos</TableHead>
+                      <TableHead>Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {currentServicos.map((servico) => (
+                      <TableRow key={servico.id}>
+                        <TableCell className="font-medium">{servico.nome}</TableCell>
+                        <TableCell>R$ {servico.valorAlqueire}</TableCell>
+                        <TableCell>
+                          <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                            {servico.status}
+                          </span>
+                        </TableCell>
+                        <TableCell>{servico.produtos}</TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditServico(servico)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+
+                {/* Pagination for Serviços */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600">
+                      Mostrando {servicosStartIndex + 1} a {Math.min(servicosEndIndex, totalServicos)} de {totalServicos} serviços
+                    </span>
+                    <Select value={servicosPerPage.toString()} onValueChange={(value) => {
+                      setServicosPerPage(Number(value));
+                      setServicosPage(1);
+                    }}>
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm text-gray-600">por página</span>
+                  </div>
+                  
+                  {totalServicosPages > 1 && (
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious 
+                            onClick={() => setServicosPage(Math.max(1, servicosPage - 1))}
+                            className={servicosPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          />
+                        </PaginationItem>
+                        
+                        {Array.from({ length: totalServicosPages }, (_, i) => i + 1).map((page) => (
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              onClick={() => setServicosPage(page)}
+                              isActive={servicosPage === page}
+                              className="cursor-pointer"
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        ))}
+                        
+                        <PaginationItem>
+                          <PaginationNext 
+                            onClick={() => setServicosPage(Math.min(totalServicosPages, servicosPage + 1))}
+                            className={servicosPage === totalServicosPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -292,38 +380,96 @@ const ConfiguracoesPage = () => {
               </Button>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Valor Unitário</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {produtos.map((produto) => (
-                    <TableRow key={produto.id}>
-                      <TableCell className="font-medium">{produto.nome}</TableCell>
-                      <TableCell>R$ {produto.valorUn}</TableCell>
-                      <TableCell>
-                        <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                          {produto.status}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleEditProduto(produto)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
+              <div className="space-y-4">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Valor Unitário</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {currentProdutos.map((produto) => (
+                      <TableRow key={produto.id}>
+                        <TableCell className="font-medium">{produto.nome}</TableCell>
+                        <TableCell>R$ {produto.valorUn}</TableCell>
+                        <TableCell>
+                          <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                            {produto.status}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditProduto(produto)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+
+                {/* Pagination for Produtos */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600">
+                      Mostrando {produtosStartIndex + 1} a {Math.min(produtosEndIndex, totalProdutos)} de {totalProdutos} produtos
+                    </span>
+                    <Select value={produtosPerPage.toString()} onValueChange={(value) => {
+                      setProdutosPerPage(Number(value));
+                      setProdutosPage(1);
+                    }}>
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm text-gray-600">por página</span>
+                  </div>
+                  
+                  {totalProdutosPages > 1 && (
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious 
+                            onClick={() => setProdutosPage(Math.max(1, produtosPage - 1))}
+                            className={produtosPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          />
+                        </PaginationItem>
+                        
+                        {Array.from({ length: totalProdutosPages }, (_, i) => i + 1).map((page) => (
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              onClick={() => setProdutosPage(page)}
+                              isActive={produtosPage === page}
+                              className="cursor-pointer"
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        ))}
+                        
+                        <PaginationItem>
+                          <PaginationNext 
+                            onClick={() => setProdutosPage(Math.min(totalProdutosPages, produtosPage + 1))}
+                            className={produtosPage === totalProdutosPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -341,40 +487,98 @@ const ConfiguracoesPage = () => {
               </Button>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {equipamentos.map((equipamento) => (
-                    <TableRow key={equipamento.id}>
-                      <TableCell className="font-medium">{equipamento.nome}</TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          equipamento.status === "Disponível" 
-                            ? "bg-green-100 text-green-800" 
-                            : "bg-orange-100 text-orange-800"
-                        }`}>
-                          {equipamento.status}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleEditEquipamento(equipamento)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
+              <div className="space-y-4">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {currentEquipamentos.map((equipamento) => (
+                      <TableRow key={equipamento.id}>
+                        <TableCell className="font-medium">{equipamento.nome}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            equipamento.status === "Disponível" 
+                              ? "bg-green-100 text-green-800" 
+                              : "bg-orange-100 text-orange-800"
+                          }`}>
+                            {equipamento.status}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditEquipamento(equipamento)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+
+                {/* Pagination for Equipamentos */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600">
+                      Mostrando {equipamentosStartIndex + 1} a {Math.min(equipamentosEndIndex, totalEquipamentos)} de {totalEquipamentos} equipamentos
+                    </span>
+                    <Select value={equipamentosPerPage.toString()} onValueChange={(value) => {
+                      setEquipamentosPerPage(Number(value));
+                      setEquipamentosPage(1);
+                    }}>
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm text-gray-600">por página</span>
+                  </div>
+                  
+                  {totalEquipamentosPages > 1 && (
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious 
+                            onClick={() => setEquipamentosPage(Math.max(1, equipamentosPage - 1))}
+                            className={equipamentosPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          />
+                        </PaginationItem>
+                        
+                        {Array.from({ length: totalEquipamentosPages }, (_, i) => i + 1).map((page) => (
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              onClick={() => setEquipamentosPage(page)}
+                              isActive={equipamentosPage === page}
+                              className="cursor-pointer"
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        ))}
+                        
+                        <PaginationItem>
+                          <PaginationNext 
+                            onClick={() => setEquipamentosPage(Math.min(totalEquipamentosPages, equipamentosPage + 1))}
+                            className={equipamentosPage === totalEquipamentosPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
