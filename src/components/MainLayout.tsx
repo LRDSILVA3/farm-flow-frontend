@@ -13,6 +13,7 @@ import DashboardHome from "./pages/DashboardHome";
 
 const MainLayout = () => {
   const [currentPage, setCurrentPage] = useState("dashboard");
+  const [selectedClienteCpf, setSelectedClienteCpf] = useState<string | null>(null);
 
   const menuItems = [
     { id: "dashboard", title: "Dashboard", icon: Home },
@@ -24,12 +25,26 @@ const MainLayout = () => {
     { id: "configuracoes", title: "Configurações", icon: Settings },
   ];
 
+  const handleNavigateToFazendas = (clienteCpf: string) => {
+    console.log("Navegando para fazendas com CPF:", clienteCpf);
+    setSelectedClienteCpf(clienteCpf);
+    setCurrentPage("fazendas");
+  };
+
+  const handleMenuClick = (pageId: string) => {
+    console.log("Navegando para página:", pageId);
+    setCurrentPage(pageId);
+    if (pageId !== "fazendas") {
+      setSelectedClienteCpf(null);
+    }
+  };
+
   const renderPage = () => {
     switch (currentPage) {
       case "clientes":
-        return <ClientesPage onNavigateToFazendas={(cpf) => setCurrentPage("fazendas")} />;
+        return <ClientesPage onNavigateToFazendas={handleNavigateToFazendas} />;
       case "fazendas":
-        return <FazendasPage />;
+        return <FazendasPage selectedClienteCpf={selectedClienteCpf || undefined} />;
       case "pedidos":
         return <PedidosPage />;
       case "agenda":
@@ -56,7 +71,7 @@ const MainLayout = () => {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton
-                    onClick={() => setCurrentPage(item.id)}
+                    onClick={() => handleMenuClick(item.id)}
                     isActive={currentPage === item.id}
                   >
                     <item.icon className="h-4 w-4" />

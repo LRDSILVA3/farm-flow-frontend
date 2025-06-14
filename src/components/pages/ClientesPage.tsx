@@ -21,7 +21,7 @@ interface Cliente {
 }
 
 interface ClientesPageProps {
-  onNavigateToFazendas: (cpf: string) => void;
+  onNavigateToFazendas: (clienteCpf: string) => void;
 }
 
 const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
@@ -91,9 +91,23 @@ const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
   };
 
   const handleEdit = (cliente: Cliente) => {
-    setFormData(cliente);
+    setFormData({
+      cpf: cliente.cpf,
+      nome: cliente.nome,
+      dataNascimento: cliente.dataNascimento,
+      email: cliente.email,
+      telefone: cliente.telefone,
+      cep: cliente.cep,
+      cidade: cliente.cidade,
+      estado: cliente.estado
+    });
     setEditingClient(cliente);
     setShowForm(true);
+  };
+
+  const handleNavigateToFazendas = (cpf: string) => {
+    console.log("Navegando para fazendas do cliente:", cpf);
+    onNavigateToFazendas(cpf);
   };
 
   const filteredClientes = clientes.filter(cliente =>
@@ -264,7 +278,8 @@ const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => onNavigateToFazendas(cliente.cpf)}
+                        onClick={() => handleNavigateToFazendas(cliente.cpf)}
+                        title="Ver fazendas do cliente"
                       >
                         <MapPin className="h-4 w-4" />
                       </Button>

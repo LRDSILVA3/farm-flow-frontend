@@ -1,11 +1,11 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Edit, MapPin, Search } from "lucide-react";
+import { Plus, Edit, MapPin, Search, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Talhao {
@@ -26,10 +26,15 @@ interface Fazenda {
   estado: string;
   alqueires: number;
   hectares: number;
+  clienteCpf: string;
   talhoes: Talhao[];
 }
 
-const FazendasPage = () => {
+interface FazendasPageProps {
+  selectedClienteCpf?: string;
+}
+
+const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
   const [fazendas, setFazendas] = useState<Fazenda[]>([
     {
       id: "1",
@@ -39,6 +44,7 @@ const FazendasPage = () => {
       estado: "SP",
       alqueires: 100,
       hectares: 242,
+      clienteCpf: "123.456.789-00",
       talhoes: []
     }
   ]);
@@ -47,7 +53,9 @@ const FazendasPage = () => {
   const [showTalhaoForm, setShowTalhaoForm] = useState(false);
   const [selectedFazenda, setSelectedFazenda] = useState<string | null>(null);
   const [editingFazenda, setEditingFazenda] = useState<Fazenda | null>(null);
+  const [editingTalhao, setEditingTalhao] = useState<Talhao | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [expandedFazenda, setExpandedFazenda] = useState<string | null>(null);
   const { toast } = useToast();
 
   const [fazendaForm, setFazendaForm] = useState({
@@ -56,7 +64,8 @@ const FazendasPage = () => {
     cidade: "",
     estado: "",
     alqueires: "",
-    hectares: ""
+    hectares: "",
+    clienteCpf: selectedClienteCpf || ""
   });
 
   const [talhaoForm, setTalhaoForm] = useState({
@@ -68,9 +77,26 @@ const FazendasPage = () => {
     hectares: ""
   });
 
+  useEffect(() => {
+    if (selectedClienteCpf) {
+      setFazendaForm(prev => ({ ...prev, clienteCpf: selectedClienteCpf }));
+    }
+  }, [selectedClienteCpf]);
+
   // Conversão: 1 alqueire = 2.42 hectares
   const convertAlqueiresToHectares = (alqueires: number) => alqueires * 2.42;
   const convertHectaresToAlqueires = (hectares: number) => hectares / 2.42;
+
+  const updateTotaisFazenda = (fazendaId: string, talhoes: Talhao[]) => {
+    const totalAlqueires = talhoes.reduce((sum, t) => sum + t.alqueires, 0);
+    const totalHectares = talhoes.reduce((sum, t) => sum + t.hectares, 0);
+    
+    setFazendas(prev => prev.map(f => 
+      f.id === fazendaId 
+        ? { ...f, alqueires: totalAlqueires, hectares: totalHectares }
+        : f
+    ));
+  };
 
   const handleFazendaAlqueiresChange = (value: string) => {
     const alqueires = parseFloat(value) || 0;
@@ -147,31 +173,52 @@ const FazendasPage = () => {
     const alqueires = parseFloat(talhaoForm.alqueires) || 0;
     const hectares = parseFloat(talhaoForm.hectares) || 0;
 
-    const newTalhao: Talhao = {
-      id: Date.now().toString(),
-      ...talhaoForm,
-      alqueires,
-      hectares
-    };
+    if (editingTalhao) {
+      setFazendas(prev => prev.map(f => {
+        if (f.id === selectedFazenda) {
+          const updatedTalhoes = f.talhoes.map(t => 
+            t.id === editingTalhao.id 
+              ? { ...talhaoForm, id: editingTalhao.id, alqueires, hectares }
+              : t
+          );
+          updateTotaisFazenda(f.id, updatedTalhoes);
+          return { ...f, talhoes: updatedTalhoes };
+        }
+        return f;
+      }));
+      toast({ title: "Talhão atualizado com sucesso!" });
+    } else {
+      const newTalhao: Talhao = {
+        id: Date.now().toString(),
+        ...talhaoForm,
+        alqueires,
+        hectares
+      };
 
-    setFazendas(fazendas.map(f => {
-      if (f.id === selectedFazenda) {
-        const updatedTalhoes = [...f.talhoes, newTalhao];
-        const totalAlqueires = updatedTalhoes.reduce((sum, t) => sum + t.alqueires, 0);
-        const totalHectares = updatedTalhoes.reduce((sum, t) => sum + t.hectares, 0);
-        
-        return {
-          ...f,
-          talhoes: updatedTalhoes,
-          alqueires: totalAlqueires,
-          hectares: totalHectares
-        };
+      setFazendas(prev => prev.map(f => {
+        if (f.id === selectedFazenda) {
+          const updatedTalhoes = [...f.talhoes, newTalhao];
+          updateTotaisFazenda(f.id, updatedTalhoes);
+          return { ...f, talhoes: updatedTalhoes };
+        }
+        return f;
+      }));
+      toast({ title: "Talhão cadastrado com sucesso!" });
+    }
+
+    resetTalhaoForm();
+  };
+
+  const handleDeleteTalhao = (fazendaId: string, talhaoId: string) => {
+    setFazendas(prev => prev.map(f => {
+      if (f.id === fazendaId) {
+        const updatedTalhoes = f.talhoes.filter(t => t.id !== talhaoId);
+        updateTotaisFazenda(f.id, updatedTalhoes);
+        return { ...f, talhoes: updatedTalhoes };
       }
       return f;
     }));
-
-    toast({ title: "Talhão cadastrado com sucesso!" });
-    resetTalhaoForm();
+    toast({ title: "Talhão removido com sucesso!" });
   };
 
   const resetFazendaForm = () => {
@@ -181,7 +228,8 @@ const FazendasPage = () => {
       cidade: "",
       estado: "",
       alqueires: "",
-      hectares: ""
+      hectares: "",
+      clienteCpf: selectedClienteCpf || ""
     });
     setShowFazendaForm(false);
     setEditingFazenda(null);
@@ -198,6 +246,7 @@ const FazendasPage = () => {
     });
     setShowTalhaoForm(false);
     setSelectedFazenda(null);
+    setEditingTalhao(null);
   };
 
   const handleEditFazenda = (fazenda: Fazenda) => {
@@ -207,24 +256,46 @@ const FazendasPage = () => {
       cidade: fazenda.cidade,
       estado: fazenda.estado,
       alqueires: fazenda.alqueires.toString(),
-      hectares: fazenda.hectares.toString()
+      hectares: fazenda.hectares.toString(),
+      clienteCpf: fazenda.clienteCpf
     });
     setEditingFazenda(fazenda);
     setShowFazendaForm(true);
   };
 
-  const filteredFazendas = fazendas.filter(fazenda =>
-    fazenda.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    fazenda.matricula.includes(searchTerm) ||
-    fazenda.cidade.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleEditTalhao = (fazendaId: string, talhao: Talhao) => {
+    setTalhaoForm({
+      nome: talhao.nome,
+      matricula: talhao.matricula,
+      cidade: talhao.cidade,
+      estado: talhao.estado,
+      alqueires: talhao.alqueires.toString(),
+      hectares: talhao.hectares.toString()
+    });
+    setSelectedFazenda(fazendaId);
+    setEditingTalhao(talhao);
+    setShowTalhaoForm(true);
+  };
+
+  const filteredFazendas = fazendas.filter(fazenda => {
+    const matchesSearch = fazenda.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      fazenda.matricula.includes(searchTerm) ||
+      fazenda.cidade.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesClient = selectedClienteCpf ? fazenda.clienteCpf === selectedClienteCpf : true;
+    
+    return matchesSearch && matchesClient;
+  });
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Fazendas</h1>
-          <p className="text-gray-600">Gerencie as fazendas e talhões</p>
+          <p className="text-gray-600">
+            Gerencie as fazendas e talhões
+            {selectedClienteCpf && ` - Cliente: ${selectedClienteCpf}`}
+          </p>
         </div>
         <Button onClick={() => setShowFazendaForm(true)} className="bg-green-600 hover:bg-green-700">
           <Plus className="h-4 w-4 mr-2" />
@@ -239,6 +310,17 @@ const FazendasPage = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleFazendaSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="clienteCpf">CPF do Cliente</Label>
+                <Input
+                  id="clienteCpf"
+                  value={fazendaForm.clienteCpf}
+                  onChange={(e) => setFazendaForm({...fazendaForm, clienteCpf: e.target.value})}
+                  placeholder="123.456.789-00"
+                  required
+                  disabled={!!selectedClienteCpf}
+                />
+              </div>
               <div>
                 <Label htmlFor="nome">Nome</Label>
                 <Input
@@ -318,7 +400,7 @@ const FazendasPage = () => {
       {showTalhaoForm && (
         <Card>
           <CardHeader>
-            <CardTitle>Novo Talhão</CardTitle>
+            <CardTitle>{editingTalhao ? "Editar Talhão" : "Novo Talhão"}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleTalhaoSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -387,7 +469,7 @@ const FazendasPage = () => {
               </div>
               <div className="md:col-span-2 flex gap-2">
                 <Button type="submit" className="bg-green-600 hover:bg-green-700">
-                  Cadastrar Talhão
+                  {editingTalhao ? "Atualizar" : "Cadastrar"} Talhão
                 </Button>
                 <Button type="button" variant="outline" onClick={resetTalhaoForm}>
                   Cancelar
@@ -414,53 +496,114 @@ const FazendasPage = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Matrícula</TableHead>
-                <TableHead>Cidade/Estado</TableHead>
-                <TableHead>Alqueires</TableHead>
-                <TableHead>Hectares</TableHead>
-                <TableHead>Talhões</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredFazendas.map((fazenda) => (
-                <TableRow key={fazenda.id}>
-                  <TableCell className="font-medium">{fazenda.nome}</TableCell>
-                  <TableCell>{fazenda.matricula}</TableCell>
-                  <TableCell>{fazenda.cidade}/{fazenda.estado}</TableCell>
-                  <TableCell>{fazenda.alqueires.toFixed(2)}</TableCell>
-                  <TableCell>{fazenda.hectares.toFixed(2)}</TableCell>
-                  <TableCell>{fazenda.talhoes.length}</TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditFazenda(fazenda)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedFazenda(fazenda.id);
-                          setShowTalhaoForm(true);
-                        }}
-                      >
-                        <Plus className="h-4 w-4" />
-                        Talhão
-                      </Button>
+          <div className="space-y-4">
+            {filteredFazendas.map((fazenda) => (
+              <div key={fazenda.id} className="border rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <div className="grid grid-cols-1 md:grid-cols-6 gap-4 flex-1">
+                    <div>
+                      <div className="font-medium">{fazenda.nome}</div>
+                      <div className="text-sm text-gray-500">Mat: {fazenda.matricula}</div>
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                    <div>
+                      <div className="text-sm text-gray-500">CPF Cliente</div>
+                      <div className="font-medium">{fazenda.clienteCpf}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-500">Localização</div>
+                      <div>{fazenda.cidade}/{fazenda.estado}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-500">Alqueires</div>
+                      <div>{fazenda.alqueires.toFixed(2)}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-500">Hectares</div>
+                      <div>{fazenda.hectares.toFixed(2)}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-500">Talhões</div>
+                      <div>{fazenda.talhoes.length}</div>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditFazenda(fazenda)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedFazenda(fazenda.id);
+                        setShowTalhaoForm(true);
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Talhão
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setExpandedFazenda(expandedFazenda === fazenda.id ? null : fazenda.id)}
+                    >
+                      <MapPin className="h-4 w-4" />
+                      Ver Talhões
+                    </Button>
+                  </div>
+                </div>
+
+                {expandedFazenda === fazenda.id && fazenda.talhoes.length > 0 && (
+                  <div className="mt-4 border-t pt-4">
+                    <h4 className="font-medium mb-2">Talhões</h4>
+                    <div className="space-y-2">
+                      {fazenda.talhoes.map((talhao) => (
+                        <div key={talhao.id} className="bg-gray-50 p-3 rounded flex justify-between items-center">
+                          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 flex-1">
+                            <div>
+                              <div className="font-medium">{talhao.nome}</div>
+                              <div className="text-sm text-gray-500">Mat: {talhao.matricula}</div>
+                            </div>
+                            <div>
+                              <div className="text-sm text-gray-500">Localização</div>
+                              <div>{talhao.cidade}/{talhao.estado}</div>
+                            </div>
+                            <div>
+                              <div className="text-sm text-gray-500">Alqueires</div>
+                              <div>{talhao.alqueires.toFixed(2)}</div>
+                            </div>
+                            <div>
+                              <div className="text-sm text-gray-500">Hectares</div>
+                              <div>{talhao.hectares.toFixed(2)}</div>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditTalhao(fazenda.id, talhao)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteTalhao(fazenda.id, talhao.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
     </div>
