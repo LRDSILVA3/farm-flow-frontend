@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit, MapPin, Search, Trash2 } from "lucide-react";
+import { Plus, Edit, MapPin, Search, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Talhao {
@@ -314,6 +314,12 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
     setShowTalhaoForm(true);
   };
 
+  // Função para alternar a expansão dos talhões
+  const toggleExpandFazenda = (fazendaId: string) => {
+    console.log("Alternando expansão da fazenda:", fazendaId);
+    setExpandedFazenda(expandedFazenda === fazendaId ? null : fazendaId);
+  };
+
   const filteredFazendas = fazendas.filter(fazenda => {
     const matchesSearch = fazenda.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
       fazenda.matricula.includes(searchTerm) ||
@@ -370,6 +376,7 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
         </Button>
       </div>
 
+      {/* Formulário de Fazenda */}
       {showFazendaForm && (
         <Card>
           <CardHeader>
@@ -464,6 +471,7 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
         </Card>
       )}
 
+      {/* Formulário de Talhão */}
       {showTalhaoForm && (
         <Card>
           <CardHeader>
@@ -547,6 +555,7 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
         </Card>
       )}
 
+      {/* Lista de Talhões para Fazenda em Edição */}
       {shouldShowTalhoesList && (
         <Card>
           <CardHeader>
@@ -629,6 +638,7 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
         </Card>
       )}
 
+      {/* Lista Principal de Fazendas */}
       {!shouldShowTalhoesList && (
         <Card>
           <CardHeader>
@@ -699,63 +709,75 @@ const FazendasPage = ({ selectedClienteCpf }: FazendasPageProps) => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setExpandedFazenda(expandedFazenda === fazenda.id ? null : fazenda.id)}
+                        onClick={() => toggleExpandFazenda(fazenda.id)}
+                        className="flex items-center"
                       >
-                        <MapPin className="h-4 w-4" />
+                        {expandedFazenda === fazenda.id ? (
+                          <ChevronDown className="h-4 w-4 mr-1" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 mr-1" />
+                        )}
                         Ver Talhões
                       </Button>
                     </div>
                   </div>
 
-                  {expandedFazenda === fazenda.id && fazenda.talhoes.length > 0 && (
+                  {/* Seção expandida dos talhões */}
+                  {expandedFazenda === fazenda.id && (
                     <div className="mt-4 border-t pt-4">
-                      <h4 className="font-medium mb-2">Talhões</h4>
-                      <div className="space-y-2">
-                        {fazenda.talhoes.map((talhao) => (
-                          <div key={talhao.id} className="bg-gray-50 p-3 rounded flex justify-between items-center">
-                            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 flex-1">
-                              <div>
-                                <div className="font-medium">{talhao.nome}</div>
-                                <div className="text-sm text-gray-500">Mat: {talhao.matricula}</div>
+                      <h4 className="font-medium mb-2">Talhões ({fazenda.talhoes.length})</h4>
+                      {fazenda.talhoes.length === 0 ? (
+                        <p className="text-gray-500 text-center py-4">
+                          Nenhum talhão cadastrado para esta fazenda.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {fazenda.talhoes.map((talhao) => (
+                            <div key={talhao.id} className="bg-gray-50 p-3 rounded flex justify-between items-center">
+                              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 flex-1">
+                                <div>
+                                  <div className="font-medium">{talhao.nome}</div>
+                                  <div className="text-sm text-gray-500">Mat: {talhao.matricula}</div>
+                                </div>
+                                <div>
+                                  <div className="text-sm text-gray-500">Localização</div>
+                                  <div>{talhao.cidade}/{talhao.estado}</div>
+                                </div>
+                                <div>
+                                  <div className="text-sm text-gray-500">Alqueires</div>
+                                  <div>{talhao.alqueires.toFixed(2)}</div>
+                                </div>
+                                <div>
+                                  <div className="text-sm text-gray-500">Hectares</div>
+                                  <div>{talhao.hectares.toFixed(2)}</div>
+                                </div>
                               </div>
-                              <div>
-                                <div className="text-sm text-gray-500">Localização</div>
-                                <div>{talhao.cidade}/{talhao.estado}</div>
-                              </div>
-                              <div>
-                                <div className="text-sm text-gray-500">Alqueires</div>
-                                <div>{talhao.alqueires.toFixed(2)}</div>
-                              </div>
-                              <div>
-                                <div className="text-sm text-gray-500">Hectares</div>
-                                <div>{talhao.hectares.toFixed(2)}</div>
+                              <div className="flex space-x-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleEditTalhao(fazenda.id, talhao)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDeleteTalhao(fazenda.id, talhao.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </div>
                             </div>
-                            <div className="flex space-x-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditTalhao(fazenda.id, talhao)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDeleteTalhao(fazenda.id, talhao.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
               ))}
 
-              {/* Pagination Controls for Fazendas */}
+              {/* Paginação */}
               {totalItems > 0 && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
