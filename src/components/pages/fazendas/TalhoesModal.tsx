@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Fazenda, Talhao } from "../FazendasPage";
 import { TalhaoForm } from "./TalhaoForm";
-import { TalhoesTable } from "./TalhoesTable";
 import { useTalhoesModal } from "./useTalhoesModal";
 
 interface TalhoesModalProps {
@@ -62,7 +61,7 @@ export const TalhoesModal = ({
     );
   }
 
-  // Modo normal - mostra listagem e formulário opcional
+  // Modo normal - apenas formulário quando solicitado
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl">
@@ -96,12 +95,6 @@ export const TalhoesModal = ({
               onCancel={handleCancel}
             />
           )}
-
-          <TalhoesTable
-            talhoes={fazenda.talhoes}
-            onEditTalhao={handleEditTalhao}
-            onDeleteTalhao={(talhaoId) => onDeleteTalhao(fazenda.id, talhaoId)}
-          />
         </div>
       </DialogContent>
     </Dialog>
