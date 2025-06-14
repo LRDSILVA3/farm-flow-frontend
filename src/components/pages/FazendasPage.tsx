@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FazendasTable } from "./fazendas/FazendasTable";
 import { FazendaForm } from "./fazendas/FazendaForm";
@@ -52,6 +53,9 @@ const FazendasPage = () => {
     setTalhaoForm
   } = useFazendas();
 
+  // Novo estado para controlar se o modal de talhões deve mostrar apenas o formulário
+  const [talhoesFormOnly, setTalhoesFormOnly] = useState(false);
+
   const {
     handleEdit,
     handleViewTalhoes,
@@ -81,12 +85,20 @@ const FazendasPage = () => {
     const fazenda = fazendas.find(f => f.id === fazendaId);
     if (fazenda) {
       setSelectedFazenda(fazenda);
+      setTalhoesFormOnly(true); // Define que deve mostrar apenas o formulário
       setShowTalhoesModal(true);
-      // Força o modal de talhões a mostrar o formulário de criação imediatamente
-      setTimeout(() => {
-        // Este timeout garante que o modal seja aberto antes de tentar mostrar o formulário
-        // O useTalhoesModal hook precisa ser atualizado para suportar essa funcionalidade
-      }, 100);
+    }
+  };
+
+  const handleViewTalhoesWrapper = (fazenda: Fazenda) => {
+    setTalhoesFormOnly(false); // Define que deve mostrar a listagem normal
+    handleViewTalhoes(fazenda);
+  };
+
+  const handleTalhoesModalClose = (open: boolean) => {
+    setShowTalhoesModal(open);
+    if (!open) {
+      setTalhoesFormOnly(false); // Reset do modo quando fechar
     }
   };
 
@@ -106,7 +118,7 @@ const FazendasPage = () => {
             onPageChange={setCurrentPage}
             onItemsPerPageChange={setItemsPerPage}
             onEdit={handleEdit}
-            onViewTalhoes={handleViewTalhoes}
+            onViewTalhoes={handleViewTalhoesWrapper}
           />
         </CardContent>
       </Card>
@@ -125,12 +137,13 @@ const FazendasPage = () => {
 
       <TalhoesModal
         open={showTalhoesModal}
-        onOpenChange={setShowTalhoesModal}
+        onOpenChange={handleTalhoesModalClose}
         fazenda={selectedFazenda}
         talhaoForm={talhaoForm}
         setTalhaoForm={setTalhaoForm}
         onAddTalhao={handleAddTalhaoWrapper}
         onDeleteTalhao={handleDeleteTalhao}
+        formOnly={talhoesFormOnly}
       />
     </div>
   );

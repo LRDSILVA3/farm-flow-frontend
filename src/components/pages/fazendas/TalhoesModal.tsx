@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -14,6 +15,7 @@ interface TalhoesModalProps {
   setTalhaoForm: (talhao: Talhao) => void;
   onAddTalhao: (fazendaId: string) => void;
   onDeleteTalhao: (fazendaId: string, talhaoId: string) => void;
+  formOnly?: boolean; // Nova prop para controlar se deve mostrar apenas o formulário
 }
 
 export const TalhoesModal = ({
@@ -23,7 +25,8 @@ export const TalhoesModal = ({
   talhaoForm,
   setTalhaoForm,
   onAddTalhao,
-  onDeleteTalhao
+  onDeleteTalhao,
+  formOnly = false
 }: TalhoesModalProps) => {
   const {
     showTalhaoForm,
@@ -32,10 +35,34 @@ export const TalhoesModal = ({
     handleAddTalhao,
     handleEditTalhao,
     handleCancel
-  } = useTalhoesModal(onAddTalhao, talhaoForm, setTalhaoForm, true); // Sempre abre o formulário quando o modal é aberto
+  } = useTalhoesModal(onAddTalhao, talhaoForm, setTalhaoForm, formOnly); // Passa formOnly para o hook
 
   if (!fazenda) return null;
 
+  // Se é modo form-only, mostra apenas o formulário
+  if (formOnly) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>
+              Adicionar Talhão - {fazenda.nome}
+            </DialogTitle>
+          </DialogHeader>
+
+          <TalhaoForm
+            talhaoForm={talhaoForm}
+            setTalhaoForm={setTalhaoForm}
+            editingTalhao={editingTalhao}
+            onSubmit={(e) => handleAddTalhao(e, fazenda.id)}
+            onCancel={() => onOpenChange(false)} // Fecha o modal ao cancelar
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Modo normal - mostra listagem e formulário opcional
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl">
