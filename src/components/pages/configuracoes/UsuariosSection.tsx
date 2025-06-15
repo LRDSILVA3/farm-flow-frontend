@@ -19,9 +19,16 @@ export const UsuariosSection = () => {
     usuariosPage,
     setUsuariosPage,
     totalUsuariosPages,
-    setShowUsuarioForm,
     handleEditUsuario,
-    ...usuarioModalProps
+    // Include all modal props including setShowUsuarioForm
+    showUsuarioForm,
+    setShowUsuarioForm,
+    editingUsuario,
+    usuarioFormData,
+    handleUsuarioSubmit,
+    resetUsuarioForm,
+    handleUsuarioInputChange,
+    handlePermissaoChange
   } = useUsuarios();
 
   return (
@@ -151,7 +158,16 @@ export const UsuariosSection = () => {
         </CardContent>
       </Card>
 
-      <UsuarioModal {...usuarioModalProps} />
+      <UsuarioModal 
+        showUsuarioForm={showUsuarioForm}
+        setShowUsuarioForm={setShowUsuarioForm}
+        editingUsuario={editingUsuario}
+        usuarioFormData={usuarioFormData}
+        handleUsuarioSubmit={handleUsuarioSubmit}
+        resetUsuarioForm={resetUsuarioForm}
+        handleUsuarioInputChange={handleUsuarioInputChange}
+        handlePermissaoChange={handlePermissaoChange}
+      />
     </>
   );
 };
