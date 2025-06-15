@@ -1,10 +1,11 @@
 
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Settings, Users } from "lucide-react";
+import { Settings, Users, Smartphone } from "lucide-react";
 import { OperacionaisSection } from "./configuracoes/OperacionaisSection";
 import { SistemaSection } from "./configuracoes/SistemaSection";
 import { UsuariosSection } from "./configuracoes/UsuariosSection";
+import { AppSection } from "./configuracoes/AppSection";
 
 const ConfiguracoesPage = () => {
   const [activeSection, setActiveSection] = useState("operacionais");
@@ -27,6 +28,12 @@ const ConfiguracoesPage = () => {
       title: "Usuários e Permissões",
       icon: Users,
       description: "Gerenciar usuários e acessos"
+    },
+    {
+      id: "app",
+      title: "Configurações do App",
+      icon: Smartphone,
+      description: "Banners e planos do aplicativo"
     }
   ];
 
@@ -38,6 +45,8 @@ const ConfiguracoesPage = () => {
         return <SistemaSection />;
       case "usuarios":
         return <UsuariosSection />;
+      case "app":
+        return <AppSection />;
       default:
         return <OperacionaisSection />;
     }
