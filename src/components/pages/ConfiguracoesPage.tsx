@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit } from "lucide-react";
+import { Plus, Edit, Settings, Package, Wrench, Truck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Servico {
@@ -34,6 +34,7 @@ interface Equipamento {
 
 const ConfiguracoesPage = () => {
   const { toast } = useToast();
+  const [activeSection, setActiveSection] = useState("operacionais");
 
   const [servicos, setServicos] = useState<Servico[]>([
     { id: "1", nome: "Pulverização", valorAlqueire: "200.00", status: "Ativo", produtos: "Defensivo A, Defensivo B" },
@@ -87,6 +88,28 @@ const ConfiguracoesPage = () => {
     nome: "",
     status: "Disponível"
   });
+
+  // Menu items for configuration sections
+  const menuSections = [
+    {
+      id: "operacionais",
+      title: "Configurações Operacionais",
+      icon: Settings,
+      description: "Serviços, produtos e equipamentos"
+    },
+    {
+      id: "sistema",
+      title: "Configurações do Sistema",
+      icon: Settings,
+      description: "Configurações gerais do sistema"
+    },
+    {
+      id: "usuarios",
+      title: "Usuários e Permissões",
+      icon: Settings,
+      description: "Gerenciar usuários e acessos"
+    }
+  ];
 
   const handleEditServico = (servico: Servico) => {
     console.log("Editando serviço:", servico);
@@ -244,345 +267,435 @@ const ConfiguracoesPage = () => {
   const equipamentosEndIndex = equipamentosStartIndex + equipamentosPerPage;
   const currentEquipamentos = equipamentos.slice(equipamentosStartIndex, equipamentosEndIndex);
 
+  const renderOperacionaisSection = () => (
+    <Tabs defaultValue="servicos" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="servicos">
+          <Settings className="h-4 w-4 mr-2" />
+          Serviços
+        </TabsTrigger>
+        <TabsTrigger value="produtos">
+          <Package className="h-4 w-4 mr-2" />
+          Produtos
+        </TabsTrigger>
+        <TabsTrigger value="equipamentos">
+          <Truck className="h-4 w-4 mr-2" />
+          Equipamentos
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="servicos">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Serviços</CardTitle>
+            <Button 
+              className="bg-green-600 hover:bg-green-700"
+              onClick={() => setShowServicoForm(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Serviço
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Valor por Alqueire</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Produtos</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {currentServicos.map((servico) => (
+                    <TableRow key={servico.id}>
+                      <TableCell className="font-medium">{servico.nome}</TableCell>
+                      <TableCell>R$ {servico.valorAlqueire}</TableCell>
+                      <TableCell>
+                        <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                          {servico.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>{servico.produtos}</TableCell>
+                      <TableCell>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEditServico(servico)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {/* Pagination for Serviços */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">
+                    Mostrando {servicosStartIndex + 1} a {Math.min(servicosEndIndex, totalServicos)} de {totalServicos} serviços
+                  </span>
+                  <Select value={servicosPerPage.toString()} onValueChange={(value) => {
+                    setServicosPerPage(Number(value));
+                    setServicosPage(1);
+                  }}>
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-gray-600">por página</span>
+                </div>
+                
+                {totalServicosPages > 1 && (
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={() => setServicosPage(Math.max(1, servicosPage - 1))}
+                          className={servicosPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                      
+                      {Array.from({ length: totalServicosPages }, (_, i) => i + 1).map((page) => (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => setServicosPage(page)}
+                            isActive={servicosPage === page}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      
+                      <PaginationItem>
+                        <PaginationNext 
+                          onClick={() => setServicosPage(Math.min(totalServicosPages, servicosPage + 1))}
+                          className={servicosPage === totalServicosPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="produtos">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Produtos</CardTitle>
+            <Button 
+              className="bg-green-600 hover:bg-green-700"
+              onClick={() => setShowProdutoForm(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Produto
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Valor Unitário</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {currentProdutos.map((produto) => (
+                    <TableRow key={produto.id}>
+                      <TableCell className="font-medium">{produto.nome}</TableCell>
+                      <TableCell>R$ {produto.valorUn}</TableCell>
+                      <TableCell>
+                        <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                          {produto.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEditProduto(produto)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {/* Pagination for Produtos */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">
+                    Mostrando {produtosStartIndex + 1} a {Math.min(produtosEndIndex, totalProdutos)} de {totalProdutos} produtos
+                  </span>
+                  <Select value={produtosPerPage.toString()} onValueChange={(value) => {
+                    setProdutosPerPage(Number(value));
+                    setProdutosPage(1);
+                  }}>
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-gray-600">por página</span>
+                </div>
+                
+                {totalProdutosPages > 1 && (
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={() => setProdutosPage(Math.max(1, produtosPage - 1))}
+                          className={produtosPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                      
+                      {Array.from({ length: totalProdutosPages }, (_, i) => i + 1).map((page) => (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => setProdutosPage(page)}
+                            isActive={produtosPage === page}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      
+                      <PaginationItem>
+                        <PaginationNext 
+                          onClick={() => setProdutosPage(Math.min(totalProdutosPages, produtosPage + 1))}
+                          className={produtosPage === totalProdutosPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="equipamentos">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Equipamentos</CardTitle>
+            <Button 
+              className="bg-green-600 hover:bg-green-700"
+              onClick={() => setShowEquipamentoForm(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Equipamento
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {currentEquipamentos.map((equipamento) => (
+                    <TableRow key={equipamento.id}>
+                      <TableCell className="font-medium">{equipamento.nome}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          equipamento.status === "Disponível" 
+                            ? "bg-green-100 text-green-800" 
+                            : "bg-orange-100 text-orange-800"
+                        }`}>
+                          {equipamento.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleEditEquipamento(equipamento)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {/* Pagination for Equipamentos */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">
+                    Mostrando {equipamentosStartIndex + 1} a {Math.min(equipamentosEndIndex, totalEquipamentos)} de {totalEquipamentos} equipamentos
+                  </span>
+                  <Select value={equipamentosPerPage.toString()} onValueChange={(value) => {
+                    setEquipamentosPerPage(Number(value));
+                    setEquipamentosPage(1);
+                  }}>
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-gray-600">por página</span>
+                </div>
+                
+                {totalEquipamentosPages > 1 && (
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          onClick={() => setEquipamentosPage(Math.max(1, equipamentosPage - 1))}
+                          className={equipamentosPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                      
+                      {Array.from({ length: totalEquipamentosPages }, (_, i) => i + 1).map((page) => (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => setEquipamentosPage(page)}
+                            isActive={equipamentosPage === page}
+                            className="cursor-pointer"
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      
+                      <PaginationItem>
+                        <PaginationNext 
+                          onClick={() => setEquipamentosPage(Math.min(totalEquipamentosPages, equipamentosPage + 1))}
+                          className={equipamentosPage === totalEquipamentosPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+    </Tabs>
+  );
+
+  const renderSystemSection = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Configurações do Sistema</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-center py-8 text-gray-500">
+          <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p>Seção em desenvolvimento</p>
+          <p className="text-sm mt-2">Aqui você poderá configurar parâmetros gerais do sistema</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderUsersSection = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Usuários e Permissões</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-center py-8 text-gray-500">
+          <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p>Seção em desenvolvimento</p>
+          <p className="text-sm mt-2">Aqui você poderá gerenciar usuários e suas permissões</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderActiveSection = () => {
+    switch (activeSection) {
+      case "operacionais":
+        return renderOperacionaisSection();
+      case "sistema":
+        return renderSystemSection();
+      case "usuarios":
+        return renderUsersSection();
+      default:
+        return renderOperacionaisSection();
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Configurações</h1>
-        <p className="text-gray-600">Gerencie serviços, produtos e equipamentos</p>
+    <div className="flex gap-6">
+      {/* Sidebar Menu */}
+      <div className="w-64 space-y-2">
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>
+          <p className="text-gray-600 text-sm">Gerencie as configurações do sistema</p>
+        </div>
+        
+        {menuSections.map((section) => (
+          <Card 
+            key={section.id}
+            className={`cursor-pointer transition-colors hover:bg-gray-50 ${
+              activeSection === section.id ? "border-green-500 bg-green-50" : ""
+            }`}
+            onClick={() => setActiveSection(section.id)}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-start space-x-3">
+                <section.icon className={`h-5 w-5 mt-0.5 ${
+                  activeSection === section.id ? "text-green-600" : "text-gray-500"
+                }`} />
+                <div>
+                  <h3 className={`font-medium text-sm ${
+                    activeSection === section.id ? "text-green-800" : "text-gray-900"
+                  }`}>
+                    {section.title}
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {section.description}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      <Tabs defaultValue="servicos" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="servicos">Serviços</TabsTrigger>
-          <TabsTrigger value="produtos">Produtos</TabsTrigger>
-          <TabsTrigger value="equipamentos">Equipamentos</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="servicos">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Serviços</CardTitle>
-              <Button 
-                className="bg-green-600 hover:bg-green-700"
-                onClick={() => setShowServicoForm(true)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Serviço
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Valor por Alqueire</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Produtos</TableHead>
-                      <TableHead>Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {currentServicos.map((servico) => (
-                      <TableRow key={servico.id}>
-                        <TableCell className="font-medium">{servico.nome}</TableCell>
-                        <TableCell>R$ {servico.valorAlqueire}</TableCell>
-                        <TableCell>
-                          <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                            {servico.status}
-                          </span>
-                        </TableCell>
-                        <TableCell>{servico.produtos}</TableCell>
-                        <TableCell>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleEditServico(servico)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-
-                {/* Pagination for Serviços */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-600">
-                      Mostrando {servicosStartIndex + 1} a {Math.min(servicosEndIndex, totalServicos)} de {totalServicos} serviços
-                    </span>
-                    <Select value={servicosPerPage.toString()} onValueChange={(value) => {
-                      setServicosPerPage(Number(value));
-                      setServicosPage(1);
-                    }}>
-                      <SelectTrigger className="w-20">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="25">25</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                        <SelectItem value="100">100</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <span className="text-sm text-gray-600">por página</span>
-                  </div>
-                  
-                  {totalServicosPages > 1 && (
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious 
-                            onClick={() => setServicosPage(Math.max(1, servicosPage - 1))}
-                            className={servicosPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                          />
-                        </PaginationItem>
-                        
-                        {Array.from({ length: totalServicosPages }, (_, i) => i + 1).map((page) => (
-                          <PaginationItem key={page}>
-                            <PaginationLink
-                              onClick={() => setServicosPage(page)}
-                              isActive={servicosPage === page}
-                              className="cursor-pointer"
-                            >
-                              {page}
-                            </PaginationLink>
-                          </PaginationItem>
-                        ))}
-                        
-                        <PaginationItem>
-                          <PaginationNext 
-                            onClick={() => setServicosPage(Math.min(totalServicosPages, servicosPage + 1))}
-                            className={servicosPage === totalServicosPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="produtos">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Produtos</CardTitle>
-              <Button 
-                className="bg-green-600 hover:bg-green-700"
-                onClick={() => setShowProdutoForm(true)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Produto
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Valor Unitário</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {currentProdutos.map((produto) => (
-                      <TableRow key={produto.id}>
-                        <TableCell className="font-medium">{produto.nome}</TableCell>
-                        <TableCell>R$ {produto.valorUn}</TableCell>
-                        <TableCell>
-                          <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                            {produto.status}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleEditProduto(produto)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-
-                {/* Pagination for Produtos */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-600">
-                      Mostrando {produtosStartIndex + 1} a {Math.min(produtosEndIndex, totalProdutos)} de {totalProdutos} produtos
-                    </span>
-                    <Select value={produtosPerPage.toString()} onValueChange={(value) => {
-                      setProdutosPerPage(Number(value));
-                      setProdutosPage(1);
-                    }}>
-                      <SelectTrigger className="w-20">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="25">25</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                        <SelectItem value="100">100</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <span className="text-sm text-gray-600">por página</span>
-                  </div>
-                  
-                  {totalProdutosPages > 1 && (
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious 
-                            onClick={() => setProdutosPage(Math.max(1, produtosPage - 1))}
-                            className={produtosPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                          />
-                        </PaginationItem>
-                        
-                        {Array.from({ length: totalProdutosPages }, (_, i) => i + 1).map((page) => (
-                          <PaginationItem key={page}>
-                            <PaginationLink
-                              onClick={() => setProdutosPage(page)}
-                              isActive={produtosPage === page}
-                              className="cursor-pointer"
-                            >
-                              {page}
-                            </PaginationLink>
-                          </PaginationItem>
-                        ))}
-                        
-                        <PaginationItem>
-                          <PaginationNext 
-                            onClick={() => setProdutosPage(Math.min(totalProdutosPages, produtosPage + 1))}
-                            className={produtosPage === totalProdutosPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="equipamentos">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Equipamentos</CardTitle>
-              <Button 
-                className="bg-green-600 hover:bg-green-700"
-                onClick={() => setShowEquipamentoForm(true)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Equipamento
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {currentEquipamentos.map((equipamento) => (
-                      <TableRow key={equipamento.id}>
-                        <TableCell className="font-medium">{equipamento.nome}</TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            equipamento.status === "Disponível" 
-                              ? "bg-green-100 text-green-800" 
-                              : "bg-orange-100 text-orange-800"
-                          }`}>
-                            {equipamento.status}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleEditEquipamento(equipamento)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-
-                {/* Pagination for Equipamentos */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-600">
-                      Mostrando {equipamentosStartIndex + 1} a {Math.min(equipamentosEndIndex, totalEquipamentos)} de {totalEquipamentos} equipamentos
-                    </span>
-                    <Select value={equipamentosPerPage.toString()} onValueChange={(value) => {
-                      setEquipamentosPerPage(Number(value));
-                      setEquipamentosPage(1);
-                    }}>
-                      <SelectTrigger className="w-20">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="25">25</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                        <SelectItem value="100">100</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <span className="text-sm text-gray-600">por página</span>
-                  </div>
-                  
-                  {totalEquipamentosPages > 1 && (
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious 
-                            onClick={() => setEquipamentosPage(Math.max(1, equipamentosPage - 1))}
-                            className={equipamentosPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                          />
-                        </PaginationItem>
-                        
-                        {Array.from({ length: totalEquipamentosPages }, (_, i) => i + 1).map((page) => (
-                          <PaginationItem key={page}>
-                            <PaginationLink
-                              onClick={() => setEquipamentosPage(page)}
-                              isActive={equipamentosPage === page}
-                              className="cursor-pointer"
-                            >
-                              {page}
-                            </PaginationLink>
-                          </PaginationItem>
-                        ))}
-                        
-                        <PaginationItem>
-                          <PaginationNext 
-                            onClick={() => setEquipamentosPage(Math.min(totalEquipamentosPages, equipamentosPage + 1))}
-                            className={equipamentosPage === totalEquipamentosPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {/* Main Content */}
+      <div className="flex-1">
+        {renderActiveSection()}
+      </div>
 
       {/* Modal de Serviços */}
       <Dialog open={showServicoForm} onOpenChange={setShowServicoForm}>
