@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit, Settings, Package, Wrench, Truck } from "lucide-react";
+import { Plus, Edit, Settings, Package, Wrench, Truck, User, Users, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Servico {
@@ -32,6 +32,17 @@ interface Equipamento {
   status: string;
 }
 
+interface Usuario {
+  id: string;
+  nome: string;
+  email: string;
+  telefone: string;
+  cargo: string;
+  status: string;
+  permissoes: string[];
+  dataCriacao: string;
+}
+
 const ConfiguracoesPage = () => {
   const { toast } = useToast();
   const [activeSection, setActiveSection] = useState("operacionais");
@@ -51,6 +62,30 @@ const ConfiguracoesPage = () => {
     { id: "2", nome: "Colheitadeira 01", status: "Em Manutenção" }
   ]);
 
+  // Estados para usuários
+  const [usuarios, setUsuarios] = useState<Usuario[]>([
+    { 
+      id: "1", 
+      nome: "João Silva", 
+      email: "joao@email.com", 
+      telefone: "(11) 99999-9999",
+      cargo: "Administrador", 
+      status: "Ativo", 
+      permissoes: ["dashboard", "fazendas", "pedidos", "financeiro", "configuracoes"],
+      dataCriacao: "2024-01-15"
+    },
+    { 
+      id: "2", 
+      nome: "Maria Santos", 
+      email: "maria@email.com", 
+      telefone: "(11) 88888-8888",
+      cargo: "Operador", 
+      status: "Ativo", 
+      permissoes: ["dashboard", "fazendas", "pedidos"],
+      dataCriacao: "2024-02-20"
+    }
+  ]);
+
   // Pagination states
   const [servicosPage, setServicosPage] = useState(1);
   const [servicosPerPage, setServicosPerPage] = useState(10);
@@ -58,6 +93,8 @@ const ConfiguracoesPage = () => {
   const [produtosPerPage, setProdutosPerPage] = useState(10);
   const [equipamentosPage, setEquipamentosPage] = useState(1);
   const [equipamentosPerPage, setEquipamentosPerPage] = useState(10);
+  const [usuariosPage, setUsuariosPage] = useState(1);
+  const [usuariosPerPage, setUsuariosPerPage] = useState(10);
 
   // Estados para modal de serviços
   const [showServicoForm, setShowServicoForm] = useState(false);
@@ -89,6 +126,20 @@ const ConfiguracoesPage = () => {
     status: "Disponível"
   });
 
+  // Estados para modal de usuários
+  const [showUsuarioForm, setShowUsuarioForm] = useState(false);
+  const [editingUsuario, setEditingUsuario] = useState<Usuario | null>(null);
+  const [usuarioFormData, setUsuarioFormData] = useState<Usuario>({
+    id: "",
+    nome: "",
+    email: "",
+    telefone: "",
+    cargo: "Operador",
+    status: "Ativo",
+    permissoes: [],
+    dataCriacao: ""
+  });
+
   // Menu items for configuration sections
   const menuSections = [
     {
@@ -106,7 +157,7 @@ const ConfiguracoesPage = () => {
     {
       id: "usuarios",
       title: "Usuários e Permissões",
-      icon: Settings,
+      icon: Users,
       description: "Gerenciar usuários e acessos"
     }
   ];
@@ -246,6 +297,72 @@ const ConfiguracoesPage = () => {
     setEquipamentoFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Handlers para usuários
+  const handleEditUsuario = (usuario: Usuario) => {
+    console.log("Editando usuário:", usuario);
+    setEditingUsuario(usuario);
+    setUsuarioFormData(usuario);
+    setShowUsuarioForm(true);
+  };
+
+  const handleUsuarioSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (editingUsuario) {
+      setUsuarios(prev => prev.map(u => u.id === editingUsuario.id ? usuarioFormData : u));
+      toast({
+        title: "Usuário atualizado",
+        description: "O usuário foi atualizado com sucesso.",
+      });
+    } else {
+      const newUsuario = { 
+        ...usuarioFormData, 
+        id: Date.now().toString(),
+        dataCriacao: new Date().toISOString().split('T')[0]
+      };
+      setUsuarios(prev => [...prev, newUsuario]);
+      toast({
+        title: "Usuário criado",
+        description: "O usuário foi criado com sucesso.",
+      });
+    }
+    
+    resetUsuarioForm();
+  };
+
+  const resetUsuarioForm = () => {
+    setUsuarioFormData({
+      id: "",
+      nome: "",
+      email: "",
+      telefone: "",
+      cargo: "Operador",
+      status: "Ativo",
+      permissoes: [],
+      dataCriacao: ""
+    });
+    setEditingUsuario(null);
+    setShowUsuarioForm(false);
+  };
+
+  const handleUsuarioInputChange = (field: keyof Usuario, value: string | string[]) => {
+    setUsuarioFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handlePermissaoChange = (permissao: string, checked: boolean) => {
+    if (checked) {
+      setUsuarioFormData(prev => ({ 
+        ...prev, 
+        permissoes: [...prev.permissoes, permissao] 
+      }));
+    } else {
+      setUsuarioFormData(prev => ({ 
+        ...prev, 
+        permissoes: prev.permissoes.filter(p => p !== permissao) 
+      }));
+    }
+  };
+
   // Pagination logic for serviços
   const totalServicos = servicos.length;
   const totalServicosPages = Math.ceil(totalServicos / servicosPerPage);
@@ -266,6 +383,13 @@ const ConfiguracoesPage = () => {
   const equipamentosStartIndex = (equipamentosPage - 1) * equipamentosPerPage;
   const equipamentosEndIndex = equipamentosStartIndex + equipamentosPerPage;
   const currentEquipamentos = equipamentos.slice(equipamentosStartIndex, equipamentosEndIndex);
+
+  // Pagination logic for usuarios
+  const totalUsuarios = usuarios.length;
+  const totalUsuariosPages = Math.ceil(totalUsuarios / usuariosPerPage);
+  const usuariosStartIndex = (usuariosPage - 1) * usuariosPerPage;
+  const usuariosEndIndex = usuariosStartIndex + usuariosPerPage;
+  const currentUsuarios = usuarios.slice(usuariosStartIndex, usuariosEndIndex);
 
   const renderOperacionaisSection = () => (
     <Tabs defaultValue="servicos" className="space-y-4">
@@ -628,14 +752,126 @@ const ConfiguracoesPage = () => {
 
   const renderUsersSection = () => (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Usuários e Permissões</CardTitle>
+        <Button 
+          className="bg-green-600 hover:bg-green-700"
+          onClick={() => setShowUsuarioForm(true)}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Novo Usuário
+        </Button>
       </CardHeader>
       <CardContent>
-        <div className="text-center py-8 text-gray-500">
-          <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>Seção em desenvolvimento</p>
-          <p className="text-sm mt-2">Aqui você poderá gerenciar usuários e suas permissões</p>
+        <div className="space-y-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Cargo</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Permissões</TableHead>
+                <TableHead>Data Criação</TableHead>
+                <TableHead>Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {currentUsuarios.map((usuario) => (
+                <TableRow key={usuario.id}>
+                  <TableCell className="font-medium">{usuario.nome}</TableCell>
+                  <TableCell>{usuario.email}</TableCell>
+                  <TableCell>{usuario.cargo}</TableCell>
+                  <TableCell>
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      usuario.status === "Ativo" 
+                        ? "bg-green-100 text-green-800" 
+                        : "bg-red-100 text-red-800"
+                    }`}>
+                      {usuario.status}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {usuario.permissoes.slice(0, 3).map((permissao) => (
+                        <span key={permissao} className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
+                          {permissao}
+                        </span>
+                      ))}
+                      {usuario.permissoes.length > 3 && (
+                        <span className="text-xs text-gray-500">+{usuario.permissoes.length - 3}</span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>{usuario.dataCriacao}</TableCell>
+                  <TableCell>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleEditUsuario(usuario)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">
+                Mostrando {usuariosStartIndex + 1} a {Math.min(usuariosEndIndex, totalUsuarios)} de {totalUsuarios} usuários
+              </span>
+              <Select value={usuariosPerPage.toString()} onValueChange={(value) => {
+                setUsuariosPerPage(Number(value));
+                setUsuariosPage(1);
+              }}>
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-gray-600">por página</span>
+            </div>
+            
+            {totalUsuariosPages > 1 && (
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setUsuariosPage(Math.max(1, usuariosPage - 1))}
+                      className={usuariosPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  
+                  {Array.from({ length: totalUsuariosPages }, (_, i) => i + 1).map((page) => (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        onClick={() => setUsuariosPage(page)}
+                        isActive={usuariosPage === page}
+                        className="cursor-pointer"
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setUsuariosPage(Math.min(totalUsuariosPages, usuariosPage + 1))}
+                      className={usuariosPage === totalUsuariosPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -653,6 +889,16 @@ const ConfiguracoesPage = () => {
         return renderOperacionaisSection();
     }
   };
+
+  const permissoesDisponiveis = [
+    { id: "dashboard", nome: "Dashboard" },
+    { id: "fazendas", nome: "Fazendas" },
+    { id: "pedidos", nome: "Pedidos" },
+    { id: "agenda", nome: "Agenda" },
+    { id: "financeiro", nome: "Financeiro" },
+    { id: "clientes", nome: "Clientes" },
+    { id: "configuracoes", nome: "Configurações" }
+  ];
 
   return (
     <div className="flex gap-6">
@@ -864,6 +1110,108 @@ const ConfiguracoesPage = () => {
               </Button>
               <Button type="submit" className="bg-green-600 hover:bg-green-700">
                 {editingEquipamento ? "Atualizar" : "Criar"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Usuários */}
+      <Dialog open={showUsuarioForm} onOpenChange={setShowUsuarioForm}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingUsuario ? "Editar Usuário" : "Novo Usuário"}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleUsuarioSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="usuarioNome">Nome Completo</Label>
+                <Input
+                  id="usuarioNome"
+                  value={usuarioFormData.nome}
+                  onChange={(e) => handleUsuarioInputChange("nome", e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="usuarioEmail">Email</Label>
+                <Input
+                  id="usuarioEmail"
+                  type="email"
+                  value={usuarioFormData.email}
+                  onChange={(e) => handleUsuarioInputChange("email", e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="usuarioTelefone">Telefone</Label>
+                <Input
+                  id="usuarioTelefone"
+                  value={usuarioFormData.telefone}
+                  onChange={(e) => handleUsuarioInputChange("telefone", e.target.value)}
+                  placeholder="(11) 99999-9999"
+                />
+              </div>
+              <div>
+                <Label htmlFor="usuarioCargo">Cargo</Label>
+                <Select value={usuarioFormData.cargo} onValueChange={(value) => handleUsuarioInputChange("cargo", value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Administrador">Administrador</SelectItem>
+                    <SelectItem value="Gerente">Gerente</SelectItem>
+                    <SelectItem value="Operador">Operador</SelectItem>
+                    <SelectItem value="Analista">Analista</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="usuarioStatus">Status</Label>
+              <Select value={usuarioFormData.status} onValueChange={(value) => handleUsuarioInputChange("status", value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Ativo">Ativo</SelectItem>
+                  <SelectItem value="Inativo">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Permissões</Label>
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                {permissoesDisponiveis.map((permissao) => (
+                  <div key={permissao.id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`permissao-${permissao.id}`}
+                      checked={usuarioFormData.permissoes.includes(permissao.id)}
+                      onChange={(e) => handlePermissaoChange(permissao.id, e.target.checked)}
+                      className="rounded border-gray-300"
+                    />
+                    <Label htmlFor={`permissao-${permissao.id}`} className="text-sm font-normal">
+                      {permissao.nome}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-2">
+              <Button type="button" variant="outline" onClick={resetUsuarioForm}>
+                Cancelar
+              </Button>
+              <Button type="submit" className="bg-green-600 hover:bg-green-700">
+                {editingUsuario ? "Atualizar" : "Criar"}
               </Button>
             </div>
           </form>
