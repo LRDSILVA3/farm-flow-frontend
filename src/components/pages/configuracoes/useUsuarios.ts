@@ -24,7 +24,7 @@ export const useUsuarios = () => {
       telefone: "(11) 99999-9999",
       cargo: "Administrador", 
       status: "Ativo", 
-      permissões: ["dashboard", "fazendas", "pedidos", "financeiro", "configuracoes"],
+      permissoes: ["dashboard", "fazendas", "pedidos", "financeiro", "configuracoes"],
       dataCriacao: "2024-01-15"
     },
     { 
@@ -34,7 +34,7 @@ export const useUsuarios = () => {
       telefone: "(11) 88888-8888",
       cargo: "Operador", 
       status: "Ativo", 
-      permissões: ["dashboard", "fazendas", "pedidos"],
+      permissoes: ["dashboard", "fazendas", "pedidos"],
       dataCriacao: "2024-02-20"
     }
   ]);
