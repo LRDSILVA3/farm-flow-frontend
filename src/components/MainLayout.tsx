@@ -1,5 +1,6 @@
+
 import { useState } from "react";
-import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, SidebarInset, useSidebar } from "@/components/ui/sidebar";
 import { Home, Users, MapPin, FileText, Calendar, DollarSign, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ClientesPage from "./pages/ClientesPage";
@@ -10,9 +11,10 @@ import FinanceiroPage from "./pages/FinanceiroPage";
 import ConfiguracoesPage from "./pages/ConfiguracoesPage";
 import DashboardHome from "./pages/DashboardHome";
 
-const MainLayout = () => {
+const MainLayoutContent = () => {
   const [currentPage, setCurrentPage] = useState("dashboard");
   const [selectedClienteCpf, setSelectedClienteCpf] = useState<string | null>(null);
+  const { setOpen } = useSidebar();
 
   const menuItems = [
     { id: "dashboard", title: "Dashboard", icon: Home },
@@ -36,6 +38,11 @@ const MainLayout = () => {
     if (pageId !== "fazendas") {
       setSelectedClienteCpf(null);
     }
+    
+    // Fechar o sidebar quando clicar em configurações
+    if (pageId === "configuracoes") {
+      setOpen(false);
+    }
   };
 
   const renderPage = () => {
@@ -58,47 +65,53 @@ const MainLayout = () => {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <Sidebar>
-          <SidebarHeader className="p-4">
-            <h2 className="text-xl font-bold text-green-700">Preciza</h2>
-            <p className="text-sm text-gray-600">Sistema Agrícola</p>
-          </SidebarHeader>
-          <SidebarContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton
-                    onClick={() => handleMenuClick(item.id)}
-                    isActive={currentPage === item.id}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={() => window.location.reload()}>
-                  <LogOut className="h-4 w-4" />
-                  <span>Sair</span>
+    <div className="min-h-screen flex w-full">
+      <Sidebar>
+        <SidebarHeader className="p-4">
+          <h2 className="text-xl font-bold text-green-700">Preciza</h2>
+          <p className="text-sm text-gray-600">Sistema Agrícola</p>
+        </SidebarHeader>
+        <SidebarContent>
+          <SidebarMenu>
+            {menuItems.map((item) => (
+              <SidebarMenuItem key={item.id}>
+                <SidebarMenuButton
+                  onClick={() => handleMenuClick(item.id)}
+                  isActive={currentPage === item.id}
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span>{item.title}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarContent>
-        </Sidebar>
-        <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger className="-ml-1" />
-            <div className="ml-auto">
-              <p className="text-sm text-gray-600">Bem-vindo ao sistema Preciza</p>
-            </div>
-          </header>
-          <div className="flex flex-1 flex-col gap-4 p-4">
-            {renderPage()}
+            ))}
+            <SidebarMenuItem>
+              <SidebarMenuButton onClick={() => window.location.reload()}>
+                <LogOut className="h-4 w-4" />
+                <span>Sair</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarContent>
+      </Sidebar>
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <div className="ml-auto">
+            <p className="text-sm text-gray-600">Bem-vindo ao sistema Preciza</p>
           </div>
-        </SidebarInset>
-      </div>
+        </header>
+        <div className="flex flex-1 flex-col gap-4 p-4">
+          {renderPage()}
+        </div>
+      </SidebarInset>
+    </div>
+  );
+};
+
+const MainLayout = () => {
+  return (
+    <SidebarProvider>
+      <MainLayoutContent />
     </SidebarProvider>
   );
 };
