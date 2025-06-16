@@ -14,13 +14,13 @@ export const useColaboradores = () => {
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([
     {
       id: "1",
-      nome: "João Silva",
+      nome: "Laboratorio 1",
       endereco: "Rua das Flores, 123 - São Paulo/SP",
       status: "Ativo"
     },
     {
       id: "2", 
-      nome: "Maria Santos",
+      nome: "Laboratorio 2",
       endereco: "Av. Principal, 456 - Campinas/SP",
       status: "Ativo"
     }

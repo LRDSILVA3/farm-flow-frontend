@@ -17,7 +17,7 @@ interface AnaliseModalProps {
 }
 
 const tiposAnalise = ["Macro", "Macro+S", "Macro+S+P_rem", "Foliar", "Compactação"];
-const colaboradoresDisponiveis = ["João Silva", "Maria Santos"];
+const colaboradoresDisponiveis = ["Laboratorio 1", "Laboratorio 2"];
 
 export const AnaliseModal = ({
   showAnaliseForm,

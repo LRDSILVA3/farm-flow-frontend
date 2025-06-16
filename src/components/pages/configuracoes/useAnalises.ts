@@ -19,7 +19,7 @@ export const useAnalises = () => {
       id: "1",
       nome: "Macro",
       tipo: "Solo",
-      colaborador: "João Silva",
+      colaborador: "Laboratorio 1",
       prazo: 7,
       valor: "150.00",
       status: "Ativo"
@@ -28,7 +28,7 @@ export const useAnalises = () => {
       id: "2",
       nome: "Foliar",
       tipo: "Folha", 
-      colaborador: "Maria Santos",
+      colaborador: "Laboratorio 2",
       prazo: 5,
       valor: "120.00",
       status: "Ativo"
