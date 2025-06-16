@@ -22,6 +22,7 @@ const permissoesDisponiveis = [
   { id: "fazendas", nome: "Fazendas" },
   { id: "pedidos", nome: "Pedidos" },
   { id: "agenda", nome: "Agenda" },
+  { id: "analises", nome: "Análises" },
   { id: "financeiro", nome: "Financeiro" },
   { id: "clientes", nome: "Clientes" },
   { id: "configuracoes", nome: "Configurações" }
