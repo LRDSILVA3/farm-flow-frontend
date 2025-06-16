@@ -1,20 +1,28 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Package, Truck } from "lucide-react";
+import { Settings, Package, Truck, Users, FlaskConical } from "lucide-react";
 import { ServicosTab } from "./ServicosTab";
 import { ProdutosTab } from "./ProdutosTab";
 import { EquipamentosTab } from "./EquipamentosTab";
+import { ColaboradoresTab } from "./ColaboradoresTab";
+import { AnalisesTab } from "./AnalisesTab";
 import { ServicoModal } from "./ServicoModal";
 import { ProdutoModal } from "./ProdutoModal";
 import { EquipamentoModal } from "./EquipamentoModal";
+import { ColaboradorModal } from "./ColaboradorModal";
+import { AnaliseModal } from "./AnaliseModal";
 import { useServicos } from "./useServicos";
 import { useProdutos } from "./useProdutos";
 import { useEquipamentos } from "./useEquipamentos";
+import { useColaboradores } from "./useColaboradores";
+import { useAnalises } from "./useAnalises";
 
 export const OperacionaisSection = () => {
   const servicosData = useServicos();
   const produtosData = useProdutos();
   const equipamentosData = useEquipamentos();
+  const colaboradoresData = useColaboradores();
+  const analisesData = useAnalises();
 
   return (
     <>
@@ -32,6 +40,14 @@ export const OperacionaisSection = () => {
             <Truck className="h-4 w-4 mr-2" />
             Equipamentos
           </TabsTrigger>
+          <TabsTrigger value="colaboradores">
+            <Users className="h-4 w-4 mr-2" />
+            Colaboradores
+          </TabsTrigger>
+          <TabsTrigger value="analises">
+            <FlaskConical className="h-4 w-4 mr-2" />
+            Análises
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="servicos">
@@ -45,11 +61,21 @@ export const OperacionaisSection = () => {
         <TabsContent value="equipamentos">
           <EquipamentosTab {...equipamentosData} />
         </TabsContent>
+
+        <TabsContent value="colaboradores">
+          <ColaboradoresTab {...colaboradoresData} />
+        </TabsContent>
+
+        <TabsContent value="analises">
+          <AnalisesTab {...analisesData} />
+        </TabsContent>
       </Tabs>
 
       <ServicoModal {...servicosData} />
       <ProdutoModal {...produtosData} />
       <EquipamentoModal {...equipamentosData} />
+      <ColaboradorModal {...colaboradoresData} />
+      <AnaliseModal {...analisesData} />
     </>
   );
 };

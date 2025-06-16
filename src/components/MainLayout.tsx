@@ -1,7 +1,6 @@
-
 import { useState } from "react";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, SidebarInset, useSidebar } from "@/components/ui/sidebar";
-import { Home, Users, MapPin, FileText, Calendar, DollarSign, Settings, LogOut } from "lucide-react";
+import { Home, Users, MapPin, FileText, Calendar, DollarSign, Settings, LogOut, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ClientesPage from "./pages/ClientesPage";
 import FazendasPage from "./pages/FazendasPage";
@@ -10,6 +9,7 @@ import AgendaPage from "./pages/AgendaPage";
 import FinanceiroPage from "./pages/FinanceiroPage";
 import ConfiguracoesPage from "./pages/ConfiguracoesPage";
 import DashboardHome from "./pages/DashboardHome";
+import AnalisesPrincipalPage from "./pages/AnalisesPrincipalPage";
 
 const MainLayoutContent = () => {
   const [currentPage, setCurrentPage] = useState("dashboard");
@@ -59,6 +59,8 @@ const MainLayoutContent = () => {
         return <FinanceiroPage />;
       case "configuracoes":
         return <ConfiguracoesPage />;
+      case "analises":
+        return <AnalisesPrincipalPage />;
       default:
         return <DashboardHome />;
     }
