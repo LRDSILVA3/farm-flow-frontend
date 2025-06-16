@@ -26,6 +26,8 @@ export const useColaboradores = () => {
     }
   ]);
 
+  const [colaboradoresPage, setColaboradoresPage] = useState(1);
+  const [colaboradoresPerPage, setColaboradoresPerPage] = useState(10);
   const [showColaboradorForm, setShowColaboradorForm] = useState(false);
   const [editingColaborador, setEditingColaborador] = useState<Colaborador | null>(null);
   const [colaboradorFormData, setColaboradorFormData] = useState<Colaborador>({
@@ -71,8 +73,19 @@ export const useColaboradores = () => {
     setColaboradorFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Pagination logic
+  const totalColaboradores = colaboradores.length;
+  const totalColaboradoresPages = Math.ceil(totalColaboradores / colaboradoresPerPage);
+  const colaboradoresStartIndex = (colaboradoresPage - 1) * colaboradoresPerPage;
+  const colaboradoresEndIndex = colaboradoresStartIndex + colaboradoresPerPage;
+  const currentColaboradores = colaboradores.slice(colaboradoresStartIndex, colaboradoresEndIndex);
+
   return {
     colaboradores,
+    colaboradoresPage,
+    setColaboradoresPage,
+    colaboradoresPerPage,
+    setColaboradoresPerPage,
     showColaboradorForm,
     setShowColaboradorForm,
     editingColaborador,
@@ -81,6 +94,11 @@ export const useColaboradores = () => {
     setColaboradorFormData,
     handleColaboradorSubmit,
     resetColaboradorForm,
-    handleColaboradorInputChange
+    handleColaboradorInputChange,
+    totalColaboradores,
+    totalColaboradoresPages,
+    colaboradoresStartIndex,
+    colaboradoresEndIndex,
+    currentColaboradores
   };
 };

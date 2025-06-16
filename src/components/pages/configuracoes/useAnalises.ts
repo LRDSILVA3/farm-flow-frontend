@@ -35,6 +35,8 @@ export const useAnalises = () => {
     }
   ]);
 
+  const [analisesPage, setAnalisesPage] = useState(1);
+  const [analisesPerPage, setAnalisesPerPage] = useState(10);
   const [showAnaliseForm, setShowAnaliseForm] = useState(false);
   const [editingAnalise, setEditingAnalise] = useState<AnaliseConfig | null>(null);
   const [analiseFormData, setAnaliseFormData] = useState<AnaliseConfig>({
@@ -86,8 +88,19 @@ export const useAnalises = () => {
     setAnaliseFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Pagination logic
+  const totalAnalises = analises.length;
+  const totalAnalisesPages = Math.ceil(totalAnalises / analisesPerPage);
+  const analisesStartIndex = (analisesPage - 1) * analisesPerPage;
+  const analisesEndIndex = analisesStartIndex + analisesPerPage;
+  const currentAnalises = analises.slice(analisesStartIndex, analisesEndIndex);
+
   return {
     analises,
+    analisesPage,
+    setAnalisesPage,
+    analisesPerPage,
+    setAnalisesPerPage,
     showAnaliseForm,
     setShowAnaliseForm,
     editingAnalise,
@@ -96,6 +109,11 @@ export const useAnalises = () => {
     setAnaliseFormData,
     handleAnaliseSubmit,
     resetAnaliseForm,
-    handleAnaliseInputChange
+    handleAnaliseInputChange,
+    totalAnalises,
+    totalAnalisesPages,
+    analisesStartIndex,
+    analisesEndIndex,
+    currentAnalises
   };
 };

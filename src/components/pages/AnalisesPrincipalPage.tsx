@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -54,9 +55,31 @@ const AnalisesPrincipalPage = () => {
       dataEnvio: "",
       dataRecebimento: "",
       dataFinalizacao: ""
+    },
+    {
+      id: "4",
+      nomeAnalise: "Macro+S",
+      colaborador: "Maria Santos",
+      quantidade: 4,
+      status: "Enviado",
+      dataEnvio: "2024-01-20",
+      dataRecebimento: "",
+      dataFinalizacao: ""
+    },
+    {
+      id: "5",
+      nomeAnalise: "Macro+S+P_rem",
+      colaborador: "João Silva",
+      quantidade: 1,
+      status: "Recebido",
+      dataEnvio: "2024-01-18",
+      dataRecebimento: "2024-01-22",
+      dataFinalizacao: ""
     }
   ]);
 
+  const [analisesPage, setAnalisesPage] = useState(1);
+  const [analisesPerPage, setAnalisesPerPage] = useState(10);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingAnalise, setEditingAnalise] = useState<AnaliseExecucao | null>(null);
   const [formData, setFormData] = useState<AnaliseExecucao>({
@@ -69,6 +92,13 @@ const AnalisesPrincipalPage = () => {
     dataRecebimento: "",
     dataFinalizacao: ""
   });
+
+  // Pagination logic
+  const totalAnalises = analises.length;
+  const totalAnalisesPages = Math.ceil(totalAnalises / analisesPerPage);
+  const analisesStartIndex = (analisesPage - 1) * analisesPerPage;
+  const analisesEndIndex = analisesStartIndex + analisesPerPage;
+  const currentAnalises = analises.slice(analisesStartIndex, analisesEndIndex);
 
   const handleEdit = (analise: AnaliseExecucao) => {
     setEditingAnalise(analise);
@@ -130,46 +160,103 @@ const AnalisesPrincipalPage = () => {
           <CardTitle>Lista de Análises</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome da Análise</TableHead>
-                <TableHead>Colaborador</TableHead>
-                <TableHead>Quantidade</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Data de Envio</TableHead>
-                <TableHead>Data de Recebimento</TableHead>
-                <TableHead>Data de Finalização</TableHead>
-                <TableHead className="w-20">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {analises.map((analise) => (
-                <TableRow key={analise.id}>
-                  <TableCell className="font-medium">{analise.nomeAnalise}</TableCell>
-                  <TableCell>{analise.colaborador}</TableCell>
-                  <TableCell>{analise.quantidade}</TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusColor(analise.status)}>
-                      {analise.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{analise.dataEnvio || "-"}</TableCell>
-                  <TableCell>{analise.dataRecebimento || "-"}</TableCell>
-                  <TableCell>{analise.dataFinalizacao || "-"}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(analise)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+          <div className="space-y-4">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome da Análise</TableHead>
+                  <TableHead>Colaborador</TableHead>
+                  <TableHead>Quantidade</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Data de Envio</TableHead>
+                  <TableHead>Data de Recebimento</TableHead>
+                  <TableHead>Data de Finalização</TableHead>
+                  <TableHead className="w-20">Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {currentAnalises.map((analise) => (
+                  <TableRow key={analise.id}>
+                    <TableCell className="font-medium">{analise.nomeAnalise}</TableCell>
+                    <TableCell>{analise.colaborador}</TableCell>
+                    <TableCell>{analise.quantidade}</TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusColor(analise.status)}>
+                        {analise.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{analise.dataEnvio || "-"}</TableCell>
+                    <TableCell>{analise.dataRecebimento || "-"}</TableCell>
+                    <TableCell>{analise.dataFinalizacao || "-"}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(analise)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">
+                  Mostrando {analisesStartIndex + 1} a {Math.min(analisesEndIndex, totalAnalises)} de {totalAnalises} análises
+                </span>
+                <Select value={analisesPerPage.toString()} onValueChange={(value) => {
+                  setAnalisesPerPage(Number(value));
+                  setAnalisesPage(1);
+                }}>
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-sm text-gray-600">por página</span>
+              </div>
+              
+              {totalAnalisesPages > 1 && (
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => setAnalisesPage(Math.max(1, analisesPage - 1))}
+                        className={analisesPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    
+                    {Array.from({ length: totalAnalisesPages }, (_, i) => i + 1).map((page) => (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          onClick={() => setAnalisesPage(page)}
+                          isActive={analisesPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => setAnalisesPage(Math.min(totalAnalisesPages, analisesPage + 1))}
+                        className={analisesPage === totalAnalisesPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
