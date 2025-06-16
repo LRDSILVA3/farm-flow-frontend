@@ -22,6 +22,7 @@ const MainLayoutContent = () => {
     { id: "fazendas", title: "Fazendas", icon: MapPin },
     { id: "pedidos", title: "Pedidos", icon: FileText },
     { id: "agenda", title: "Agenda", icon: Calendar },
+    { id: "analises", title: "Análises", icon: FlaskConical },
     { id: "financeiro", title: "Financeiro", icon: DollarSign },
     { id: "configuracoes", title: "Configurações", icon: Settings },
   ];
