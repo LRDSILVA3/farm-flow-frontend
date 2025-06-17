@@ -1,6 +1,27 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, MapPin, FileText, Calendar, DollarSign, TrendingUp } from "lucide-react";
+import { useCounterAnimation } from "@/hooks/useCounterAnimation";
+
+const AnimatedValue = ({ value, prefix = "", suffix = "" }: { value: string; prefix?: string; suffix?: string }) => {
+  // Extrair apenas números da string
+  const numericValue = parseInt(value.replace(/[^\d]/g, '')) || 0;
+  const animatedCount = useCounterAnimation(numericValue, 2000);
+  
+  // Se o valor original contém pontos ou vírgulas, formatar o número animado
+  const formatNumber = (num: number) => {
+    if (value.includes('.') || value.includes(',')) {
+      return num.toLocaleString('pt-BR');
+    }
+    return num.toString();
+  };
+
+  return (
+    <span>
+      {prefix}{formatNumber(animatedCount)}{suffix}
+    </span>
+  );
+};
 
 const DashboardHome = () => {
   const stats = [
@@ -34,17 +55,20 @@ const DashboardHome = () => {
     },
     {
       title: "Faturamento Mensal",
-      value: "R$ 245.890",
+      value: "245890",
       description: "+18% vs mês anterior",
       icon: DollarSign,
-      color: "text-emerald-600"
+      color: "text-emerald-600",
+      prefix: "R$ ",
+      suffix: ""
     },
     {
       title: "Hectares Trabalhados",
-      value: "1.245",
+      value: "1245",
       description: "Este mês",
       icon: TrendingUp,
-      color: "text-cyan-600"
+      color: "text-cyan-600",
+      suffix: ""
     }
   ];
 
@@ -65,7 +89,13 @@ const DashboardHome = () => {
               <stat.icon className={`h-4 w-4 ${stat.color}`} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {stat.title === "Faturamento Mensal" ? (
+                  <AnimatedValue value={stat.value} prefix="R$ " />
+                ) : (
+                  <AnimatedValue value={stat.value} />
+                )}
+              </div>
               <p className="text-xs text-gray-600 mt-1">{stat.description}</p>
             </CardContent>
           </Card>
