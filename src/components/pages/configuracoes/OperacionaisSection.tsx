@@ -1,11 +1,12 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Package, Truck, Users, FlaskConical } from "lucide-react";
+import { Settings, Package, Truck, Users, FlaskConical, Layers } from "lucide-react";
 import { ServicosTab } from "./ServicosTab";
 import { ProdutosTab } from "./ProdutosTab";
 import { EquipamentosTab } from "./EquipamentosTab";
 import { ColaboradoresTab } from "./ColaboradoresTab";
 import { AnalisesTab } from "./AnalisesTab";
+import { GruposServicosTab } from "./GruposServicosTab";
 import { ServicoModal } from "./ServicoModal";
 import { ProdutoModal } from "./ProdutoModal";
 import { EquipamentoModal } from "./EquipamentoModal";
@@ -32,6 +33,10 @@ export const OperacionaisSection = () => {
             <Settings className="h-4 w-4 mr-2" />
             Serviços
           </TabsTrigger>
+          <TabsTrigger value="grupos-servicos">
+            <Layers className="h-4 w-4 mr-2" />
+            Grupos de Serviços
+          </TabsTrigger>
           <TabsTrigger value="produtos">
             <Package className="h-4 w-4 mr-2" />
             Produtos
@@ -52,6 +57,10 @@ export const OperacionaisSection = () => {
 
         <TabsContent value="servicos">
           <ServicosTab {...servicosData} />
+        </TabsContent>
+
+        <TabsContent value="grupos-servicos">
+          <GruposServicosTab />
         </TabsContent>
 
         <TabsContent value="produtos">
