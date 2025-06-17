@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Pedido } from "../PedidosPage";
 
@@ -8,7 +7,10 @@ export const usePedidos = () => {
       id: "1",
       cliente: "João Silva",
       fazenda: "Fazenda São João",
+      tipo: "Serviço",
       servico: "Pulverização",
+      produtos: [],
+      grupoServico: "",
       area: "45.5",
       valor: "R$ 9.100,00",
       status: "Pendente",
@@ -24,7 +26,10 @@ export const usePedidos = () => {
     id: "",
     cliente: "",
     fazenda: "",
+    tipo: "Serviço",
     servico: "",
+    produtos: [],
+    grupoServico: "",
     area: "",
     valor: "",
     status: "Pendente",

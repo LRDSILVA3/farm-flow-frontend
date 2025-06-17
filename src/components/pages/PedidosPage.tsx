@@ -12,7 +12,10 @@ export interface Pedido {
   id: string;
   cliente: string;
   fazenda: string;
+  tipo: string;
   servico: string;
+  produtos: { id: string; nome: string; quantidade: number }[];
+  grupoServico: string;
   area: string;
   valor: string;
   status: string;
@@ -71,7 +74,10 @@ const PedidosPage = () => {
       id: "",
       cliente: "",
       fazenda: "",
+      tipo: "Serviço",
       servico: "",
+      produtos: [],
+      grupoServico: "",
       area: "",
       valor: "",
       status: "Pendente",
