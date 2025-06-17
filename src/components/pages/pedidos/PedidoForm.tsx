@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Plus, Minus } from "lucide-react";
 import { Pedido } from "../PedidosPage";
+import { ClienteSelect } from "../fazendas/ClienteSelect";
+import { FazendaSelect } from "./FazendaSelect";
 
 interface PedidoFormProps {
   open: boolean;
@@ -26,6 +27,20 @@ export const PedidoForm = ({
   onSubmit,
   onCancel
 }: PedidoFormProps) => {
+  // Lista de clientes (mock - em produção viria de uma API)
+  const clientesDisponiveis = [
+    { id: "1", cpf: "123.456.789-00", nome: "João Silva", email: "joao@email.com" },
+    { id: "2", cpf: "987.654.321-00", nome: "Maria Santos", email: "maria@email.com" },
+    { id: "3", cpf: "456.789.123-00", nome: "Pedro Oliveira", email: "pedro@email.com" }
+  ];
+
+  // Lista de fazendas (mock - em produção viria de uma API)
+  const fazendasDisponiveis = [
+    { id: "1", nome: "Fazenda São João", proprietario: "João Silva", area: "100", localizacao: "Interior SP" },
+    { id: "2", nome: "Fazenda Santa Maria", proprietario: "Maria Santos", area: "200", localizacao: "Interior MG" },
+    { id: "3", nome: "Fazenda Boa Vista", proprietario: "Pedro Oliveira", area: "150", localizacao: "Interior GO" }
+  ];
+
   // Lista de serviços disponíveis
   const servicosDisponiveis = [
     { id: "1", nome: "Pulverização", valorAlqueire: "200.00", status: "Ativo" },
@@ -180,20 +195,18 @@ export const PedidoForm = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="cliente">Cliente</Label>
-              <Input
-                id="cliente"
+              <ClienteSelect
                 value={formData.cliente}
-                onChange={(e) => onInputChange("cliente", e.target.value)}
-                required
+                onValueChange={(value) => onInputChange("cliente", value)}
+                clientes={clientesDisponiveis}
               />
             </div>
             <div>
               <Label htmlFor="fazenda">Fazenda</Label>
-              <Input
-                id="fazenda"
+              <FazendaSelect
                 value={formData.fazenda}
-                onChange={(e) => onInputChange("fazenda", e.target.value)}
-                required
+                onValueChange={(value) => onInputChange("fazenda", value)}
+                fazendas={fazendasDisponiveis}
               />
             </div>
           </div>
