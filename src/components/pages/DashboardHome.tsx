@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, MapPin, FileText, Calendar, DollarSign, TrendingUp } from "lucide-react";
 import { useCounterAnimation } from "@/hooks/useCounterAnimation";
@@ -8,12 +7,9 @@ const AnimatedValue = ({ value, prefix = "", suffix = "" }: { value: string; pre
   const numericValue = parseInt(value.replace(/[^\d]/g, '')) || 0;
   const animatedCount = useCounterAnimation(numericValue, 2000);
   
-  // Se o valor original contém pontos ou vírgulas, formatar o número animado
+  // Formatar o número animado com separadores
   const formatNumber = (num: number) => {
-    if (value.includes('.') || value.includes(',')) {
-      return num.toLocaleString('pt-BR');
-    }
-    return num.toString();
+    return num.toLocaleString('pt-BR');
   };
 
   return (
@@ -90,11 +86,11 @@ const DashboardHome = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-gray-900">
-                {stat.title === "Faturamento Mensal" ? (
-                  <AnimatedValue value={stat.value} prefix="R$ " />
-                ) : (
-                  <AnimatedValue value={stat.value} />
-                )}
+                <AnimatedValue 
+                  value={stat.value} 
+                  prefix={stat.prefix || ""} 
+                  suffix={stat.suffix || ""} 
+                />
               </div>
               <p className="text-xs text-gray-600 mt-1">{stat.description}</p>
             </CardContent>
