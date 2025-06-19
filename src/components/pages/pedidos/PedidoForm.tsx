@@ -35,11 +35,18 @@ export const PedidoForm = ({
   ];
 
   // Lista de fazendas (mock - em produção viria de uma API)
-  const fazendasDisponiveis = [
+  const todasFazendas = [
     { id: "1", nome: "Fazenda São João", proprietario: "João Silva", area: "100", localizacao: "Interior SP" },
     { id: "2", nome: "Fazenda Santa Maria", proprietario: "Maria Santos", area: "200", localizacao: "Interior MG" },
-    { id: "3", nome: "Fazenda Boa Vista", proprietario: "Pedro Oliveira", area: "150", localizacao: "Interior GO" }
+    { id: "3", nome: "Fazenda Boa Vista", proprietario: "Pedro Oliveira", area: "150", localizacao: "Interior GO" },
+    { id: "4", nome: "Fazenda Esperança", proprietario: "João Silva", area: "80", localizacao: "Interior SP" },
+    { id: "5", nome: "Fazenda Progresso", proprietario: "Maria Santos", area: "120", localizacao: "Interior MG" }
   ];
+
+  // Filtrar fazendas baseado no cliente selecionado
+  const fazendasDisponiveis = formData.cliente 
+    ? todasFazendas.filter(fazenda => fazenda.proprietario === formData.cliente)
+    : todasFazendas;
 
   // Lista de serviços disponíveis
   const servicosDisponiveis = [
@@ -77,6 +84,14 @@ export const PedidoForm = ({
     const novosProdutos = [...formData.produtos];
     novosProdutos[index] = { ...novosProdutos[index], [campo]: valor };
     onInputChange("produtos", novosProdutos);
+  };
+
+  const handleClienteChange = (value: string) => {
+    onInputChange("cliente", value);
+    // Limpar fazenda selecionada quando cliente mudar
+    if (formData.fazenda) {
+      onInputChange("fazenda", "");
+    }
   };
 
   const renderCamposPorTipo = () => {
@@ -197,7 +212,7 @@ export const PedidoForm = ({
               <Label htmlFor="cliente">Cliente</Label>
               <ClienteSelect
                 value={formData.cliente}
-                onValueChange={(value) => onInputChange("cliente", value)}
+                onValueChange={handleClienteChange}
                 clientes={clientesDisponiveis}
               />
             </div>
