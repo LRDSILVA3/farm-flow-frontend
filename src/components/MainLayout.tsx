@@ -40,10 +40,8 @@ const MainLayoutContent = () => {
       setSelectedClienteCpf(null);
     }
     
-    // Fechar o sidebar quando clicar em configurações
-    if (pageId === "configuracoes") {
-      setOpen(false);
-    }
+    // Fechar o sidebar sempre que qualquer opção do menu for clicada
+    setOpen(false);
   };
 
   const renderPage = () => {
