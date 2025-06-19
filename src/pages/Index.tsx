@@ -41,7 +41,7 @@ const Index = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold text-green-700">Preciza</CardTitle>
-          <CardDescription>Sistema de Gestão Agrícola</CardDescription>
+          <CardDescription>Sistema de Agricultura de Precisão.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
