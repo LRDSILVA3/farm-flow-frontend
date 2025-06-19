@@ -135,7 +135,7 @@ const FazendasPage = () => {
                   <SelectValue placeholder="Cidade/Estado" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as localizações</SelectItem>
+                  <SelectItem value="all">Todas as localizações</SelectItem>
                   {localizacoes.map((localizacao) => (
                     <SelectItem key={localizacao} value={localizacao}>
                       {localizacao}
