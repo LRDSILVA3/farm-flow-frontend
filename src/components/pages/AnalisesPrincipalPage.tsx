@@ -154,7 +154,7 @@ const AnalisesPrincipalPage = () => {
       analise.talhao.toLowerCase().includes(searchTerm.toLowerCase()) ||
       analise.nomeAnalise.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesColaborador = !colaboradorFilter || analise.colaborador === colaboradorFilter;
+    const matchesColaborador = !colaboradorFilter || colaboradorFilter === "all" || analise.colaborador === colaboradorFilter;
     
     return matchesSearch && matchesColaborador;
   });
@@ -243,7 +243,7 @@ const AnalisesPrincipalPage = () => {
                   <SelectValue placeholder="Colaborador" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os colaboradores</SelectItem>
+                  <SelectItem value="all">Todos os colaboradores</SelectItem>
                   {colaboradoresConfig.map((colaborador) => (
                     <SelectItem key={colaborador.id} value={colaborador.nome}>
                       {colaborador.nome}

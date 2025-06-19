@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -107,8 +106,8 @@ const PedidosPage = () => {
     const matchesSearch = pedido.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
       pedido.fazenda.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesServico = !servicoFilter || pedido.servico === servicoFilter || pedido.grupoServico === servicoFilter;
-    const matchesCidadeEstado = !cidadeEstadoFilter; // Seria implementado com dados reais das fazendas
+    const matchesServico = !servicoFilter || servicoFilter === "all" || pedido.servico === servicoFilter || pedido.grupoServico === servicoFilter;
+    const matchesCidadeEstado = !cidadeEstadoFilter || cidadeEstadoFilter === "all"; // Seria implementado com dados reais das fazendas
     
     return matchesSearch && matchesServico && matchesCidadeEstado;
   });
@@ -148,7 +147,7 @@ const PedidosPage = () => {
                   <SelectValue placeholder="Serviço" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os serviços</SelectItem>
+                  <SelectItem value="all">Todos os serviços</SelectItem>
                   {servicosDisponiveis.map((servico) => (
                     <SelectItem key={servico} value={servico}>
                       {servico}
@@ -161,7 +160,7 @@ const PedidosPage = () => {
                   <SelectValue placeholder="Cidade/Estado" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as cidades</SelectItem>
+                  <SelectItem value="all">Todas as cidades</SelectItem>
                   {cidadesEstados.map((cidadeEstado) => (
                     <SelectItem key={cidadeEstado} value={cidadeEstado}>
                       {cidadeEstado}

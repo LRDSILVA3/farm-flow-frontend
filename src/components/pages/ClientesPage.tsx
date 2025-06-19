@@ -277,7 +277,7 @@ const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
                   <SelectValue placeholder="Cidade/Estado" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas as cidades</SelectItem>
+                  <SelectItem value="all">Todas as cidades</SelectItem>
                   {cidadesEstados.map((cidadeEstado) => (
                     <SelectItem key={cidadeEstado} value={cidadeEstado}>
                       {cidadeEstado}
