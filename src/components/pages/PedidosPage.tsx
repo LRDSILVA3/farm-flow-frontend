@@ -105,8 +105,7 @@ const PedidosPage = () => {
   // Filtrar pedidos baseado nos critérios de busca
   const filteredPedidos = pedidos.filter(pedido => {
     const matchesSearch = pedido.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      pedido.fazenda.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (pedido.cliente && pedido.cliente.toLowerCase().includes(searchTerm.toLowerCase()));
+      pedido.fazenda.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesServico = !servicoFilter || pedido.servico === servicoFilter || pedido.grupoServico === servicoFilter;
     const matchesCidadeEstado = !cidadeEstadoFilter; // Seria implementado com dados reais das fazendas
