@@ -1,5 +1,9 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search } from "lucide-react";
 import { FazendasTable } from "./fazendas/FazendasTable";
 import { FazendaForm } from "./fazendas/FazendaForm";
 import { TalhoesModal } from "./fazendas/TalhoesModal";
@@ -54,6 +58,10 @@ const FazendasPage = () => {
     setTalhaoForm
   } = useFazendas();
 
+  // Estados para filtros
+  const [searchTerm, setSearchTerm] = useState("");
+  const [cidadeEstadoFilter, setCidadeEstadoFilter] = useState("");
+
   // Estado para controlar o modal de adicionar talhão
   const [showAddTalhaoModal, setShowAddTalhaoModal] = useState(false);
 
@@ -90,17 +98,57 @@ const FazendasPage = () => {
     }
   };
 
+  // Obter lista única de localizações para o filtro
+  const localizacoes = Array.from(new Set(fazendas.map(f => f.localizacao))).sort();
+
+  // Filtrar fazendas baseado nos critérios de busca
+  const filteredFazendas = fazendas.filter(fazenda => {
+    const matchesSearch = fazenda.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      fazenda.proprietario.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      fazenda.localizacao.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCidadeEstado = !cidadeEstadoFilter || fazenda.localizacao === cidadeEstadoFilter;
+    
+    return matchesSearch && matchesCidadeEstado;
+  });
+
   return (
     <div className="space-y-6">
       <FazendasPageHeader onNewFazenda={() => setShowFazendaForm(true)} />
 
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Fazendas</CardTitle>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <CardTitle>Lista de Fazendas</CardTitle>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+              <div className="flex items-center space-x-2">
+                <Search className="h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Buscar fazenda..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-64"
+                />
+              </div>
+              <Select value={cidadeEstadoFilter} onValueChange={setCidadeEstadoFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Cidade/Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todas as localizações</SelectItem>
+                  {localizacoes.map((localizacao) => (
+                    <SelectItem key={localizacao} value={localizacao}>
+                      {localizacao}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <FazendasTable
-            fazendas={fazendas}
+            fazendas={filteredFazendas}
             currentPage={currentPage}
             itemsPerPage={itemsPerPage}
             onPageChange={setCurrentPage}

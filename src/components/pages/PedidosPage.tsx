@@ -2,7 +2,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PedidosTable } from "./pedidos/PedidosTable";
 import { PedidoForm } from "./pedidos/PedidoForm";
@@ -38,6 +40,11 @@ const PedidosPage = () => {
     itemsPerPage,
     setItemsPerPage
   } = usePedidos();
+
+  // Estados para filtros
+  const [searchTerm, setSearchTerm] = useState("");
+  const [servicoFilter, setServicoFilter] = useState("");
+  const [cidadeEstadoFilter, setCidadeEstadoFilter] = useState("");
 
   const handleEdit = (pedido: Pedido) => {
     console.log("Editando pedido:", pedido);
@@ -91,6 +98,22 @@ const PedidosPage = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Listas para filtros
+  const servicosDisponiveis = ["Pulverização", "Plantio", "Colheita", "Adubação"];
+  const cidadesEstados = ["Interior SP", "Interior MG", "Interior GO"]; // Mock data
+
+  // Filtrar pedidos baseado nos critérios de busca
+  const filteredPedidos = pedidos.filter(pedido => {
+    const matchesSearch = pedido.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      pedido.fazenda.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (pedido.cliente && pedido.cliente.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesServico = !servicoFilter || pedido.servico === servicoFilter || pedido.grupoServico === servicoFilter;
+    const matchesCidadeEstado = !cidadeEstadoFilter; // Seria implementado com dados reais das fazendas
+    
+    return matchesSearch && matchesServico && matchesCidadeEstado;
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -109,11 +132,50 @@ const PedidosPage = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Pedidos</CardTitle>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <CardTitle>Lista de Pedidos</CardTitle>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+              <div className="flex items-center space-x-2">
+                <Search className="h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Buscar pedido..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-64"
+                />
+              </div>
+              <Select value={servicoFilter} onValueChange={setServicoFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Serviço" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos os serviços</SelectItem>
+                  {servicosDisponiveis.map((servico) => (
+                    <SelectItem key={servico} value={servico}>
+                      {servico}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={cidadeEstadoFilter} onValueChange={setCidadeEstadoFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Cidade/Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todas as cidades</SelectItem>
+                  {cidadesEstados.map((cidadeEstado) => (
+                    <SelectItem key={cidadeEstado} value={cidadeEstado}>
+                      {cidadeEstado}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <PedidosTable
-            pedidos={pedidos}
+            pedidos={filteredPedidos}
             currentPage={currentPage}
             itemsPerPage={itemsPerPage}
             onPageChange={setCurrentPage}

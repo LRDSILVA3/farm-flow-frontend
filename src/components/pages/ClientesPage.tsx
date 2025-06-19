@@ -43,6 +43,7 @@ const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState<Cliente | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [cidadeEstadoFilter, setCidadeEstadoFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const { toast } = useToast();
@@ -113,11 +114,18 @@ const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
     onNavigateToFazendas(cpf);
   };
 
-  const filteredClientes = clientes.filter(cliente =>
-    cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cliente.cpf.includes(searchTerm) ||
-    cliente.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Obter lista única de cidades/estados para o filtro
+  const cidadesEstados = Array.from(new Set(clientes.map(c => `${c.cidade}/${c.estado}`))).sort();
+
+  const filteredClientes = clientes.filter(cliente => {
+    const matchesSearch = cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cliente.cpf.includes(searchTerm) ||
+      cliente.email.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCidadeEstado = !cidadeEstadoFilter || `${cliente.cidade}/${cliente.estado}` === cidadeEstadoFilter;
+    
+    return matchesSearch && matchesCidadeEstado;
+  });
 
   // Pagination logic
   const totalItems = filteredClientes.length;
@@ -132,7 +140,7 @@ const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
 
   const handleItemsPerPageChange = (value: string) => {
     setItemsPerPage(Number(value));
-    setCurrentPage(1); // Reset to first page when changing items per page
+    setCurrentPage(1);
   };
 
   return (
@@ -252,16 +260,31 @@ const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
 
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <CardTitle>Lista de Clientes</CardTitle>
-            <div className="flex items-center space-x-2">
-              <Search className="h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Buscar cliente..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-64"
-              />
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+              <div className="flex items-center space-x-2">
+                <Search className="h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Buscar cliente..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-64"
+                />
+              </div>
+              <Select value={cidadeEstadoFilter} onValueChange={setCidadeEstadoFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Cidade/Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todas as cidades</SelectItem>
+                  {cidadesEstados.map((cidadeEstado) => (
+                    <SelectItem key={cidadeEstado} value={cidadeEstado}>
+                      {cidadeEstado}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardHeader>

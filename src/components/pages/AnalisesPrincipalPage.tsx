@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Edit } from "lucide-react";
+import { Edit, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface AnaliseExecucao {
@@ -124,6 +124,10 @@ const AnalisesPrincipalPage = () => {
     }
   ]);
 
+  // Estados para filtros
+  const [searchTerm, setSearchTerm] = useState("");
+  const [colaboradorFilter, setColaboradorFilter] = useState("");
+
   const [analisesPage, setAnalisesPage] = useState(1);
   const [analisesPerPage, setAnalisesPerPage] = useState(10);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -142,12 +146,25 @@ const AnalisesPrincipalPage = () => {
     dataFinalizacao: ""
   });
 
+  // Filtrar análises baseado nos critérios de busca
+  const filteredAnalises = analises.filter(analise => {
+    const matchesSearch = analise.colaborador.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      analise.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      analise.fazenda.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      analise.talhao.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      analise.nomeAnalise.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesColaborador = !colaboradorFilter || analise.colaborador === colaboradorFilter;
+    
+    return matchesSearch && matchesColaborador;
+  });
+
   // Pagination logic
-  const totalAnalises = analises.length;
+  const totalAnalises = filteredAnalises.length;
   const totalAnalisesPages = Math.ceil(totalAnalises / analisesPerPage);
   const analisesStartIndex = (analisesPage - 1) * analisesPerPage;
   const analisesEndIndex = analisesStartIndex + analisesPerPage;
-  const currentAnalises = analises.slice(analisesStartIndex, analisesEndIndex);
+  const currentAnalises = filteredAnalises.slice(analisesStartIndex, analisesEndIndex);
 
   const handleEdit = (analise: AnaliseExecucao) => {
     setEditingAnalise(analise);
@@ -209,7 +226,33 @@ const AnalisesPrincipalPage = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Análises</CardTitle>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <CardTitle>Lista de Análises</CardTitle>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+              <div className="flex items-center space-x-2">
+                <Search className="h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Buscar análise..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-64"
+                />
+              </div>
+              <Select value={colaboradorFilter} onValueChange={setColaboradorFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Colaborador" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos os colaboradores</SelectItem>
+                  {colaboradoresConfig.map((colaborador) => (
+                    <SelectItem key={colaborador.id} value={colaborador.nome}>
+                      {colaborador.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
