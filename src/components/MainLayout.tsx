@@ -70,7 +70,7 @@ const MainLayoutContent = () => {
       <Sidebar>
         <SidebarHeader className="p-4">
           <h2 className="text-xl font-bold text-green-700">Preciza</h2>
-          <p className="text-sm text-gray-600">Sistema Agrícola</p>
+          <p className="text-sm text-gray-600">Sistema de Agricultura de Precisão.</p>
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
