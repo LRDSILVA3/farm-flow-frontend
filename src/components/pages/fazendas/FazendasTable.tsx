@@ -68,7 +68,7 @@ export const FazendasTable = ({
               <TableCell className="font-medium">{fazenda.nome}</TableCell>
               <TableCell>{fazenda.proprietario}</TableCell>
               <TableCell>{fazenda.area}</TableCell>
-              <TableCell>{fazenda.localizacao}</TableCell>
+              <TableCell>{fazenda.cidade} - {fazenda.estado}</TableCell>
               <TableCell>{fazenda.contato}</TableCell>
               <TableCell>
                 <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(fazenda.status)}`}>
