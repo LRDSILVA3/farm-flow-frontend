@@ -9,60 +9,87 @@ interface CidadeEstadoSelectProps {
   onEstadoChange: (estado: string) => void;
 }
 
-const cidades = [
-  "São Paulo",
-  "Rio de Janeiro", 
-  "Belo Horizonte",
-  "Brasília",
-  "Salvador",
-  "Curitiba",
-  "Porto Alegre",
-  "Goiânia",
-  "Campo Grande",
-  "Cuiabá"
-];
-
-const estados = [
-  { value: "SP", label: "São Paulo" },
-  { value: "RJ", label: "Rio de Janeiro" },
-  { value: "MG", label: "Minas Gerais" },
-  { value: "DF", label: "Distrito Federal" },
-  { value: "BA", label: "Bahia" },
-  { value: "PR", label: "Paraná" },
-  { value: "RS", label: "Rio Grande do Sul" },
-  { value: "GO", label: "Goiás" },
-  { value: "MS", label: "Mato Grosso do Sul" },
-  { value: "MT", label: "Mato Grosso" }
-];
+const estadosComCidades = {
+  "SP": {
+    label: "São Paulo",
+    cidades: ["São Paulo", "Campinas", "Santos", "Ribeirão Preto", "Sorocaba"]
+  },
+  "RJ": {
+    label: "Rio de Janeiro", 
+    cidades: ["Rio de Janeiro", "Niterói", "Petrópolis", "Nova Iguaçu", "Duque de Caxias"]
+  },
+  "MG": {
+    label: "Minas Gerais",
+    cidades: ["Belo Horizonte", "Uberlândia", "Contagem", "Juiz de Fora", "Betim"]
+  },
+  "DF": {
+    label: "Distrito Federal",
+    cidades: ["Brasília", "Taguatinga", "Ceilândia", "Samambaia", "Planaltina"]
+  },
+  "BA": {
+    label: "Bahia",
+    cidades: ["Salvador", "Feira de Santana", "Vitória da Conquista", "Camaçari", "Juazeiro"]
+  },
+  "PR": {
+    label: "Paraná",
+    cidades: ["Curitiba", "Londrina", "Maringá", "Ponta Grossa", "Cascavel"]
+  },
+  "RS": {
+    label: "Rio Grande do Sul",
+    cidades: ["Porto Alegre", "Caxias do Sul", "Pelotas", "Canoas", "Santa Maria"]
+  },
+  "GO": {
+    label: "Goiás",
+    cidades: ["Goiânia", "Aparecida de Goiânia", "Anápolis", "Rio Verde", "Luziânia"]
+  },
+  "MS": {
+    label: "Mato Grosso do Sul",
+    cidades: ["Campo Grande", "Dourados", "Três Lagoas", "Corumbá", "Ponta Porã"]
+  },
+  "MT": {
+    label: "Mato Grosso",
+    cidades: ["Cuiabá", "Várzea Grande", "Rondonópolis", "Sinop", "Tangará da Serra"]
+  }
+};
 
 export const CidadeEstadoSelect = ({ cidade, estado, onCidadeChange, onEstadoChange }: CidadeEstadoSelectProps) => {
+  const handleEstadoChange = (novoEstado: string) => {
+    onEstadoChange(novoEstado);
+    // Limpar cidade quando estado mudar
+    onCidadeChange("");
+  };
+
+  const cidadesDisponiveis = estado && estadosComCidades[estado as keyof typeof estadosComCidades] 
+    ? estadosComCidades[estado as keyof typeof estadosComCidades].cidades 
+    : [];
+
   return (
     <>
       <div>
-        <Label htmlFor="cidade">Cidade</Label>
-        <Select value={cidade} onValueChange={onCidadeChange}>
+        <Label htmlFor="estado">Estado</Label>
+        <Select value={estado} onValueChange={handleEstadoChange}>
           <SelectTrigger>
-            <SelectValue placeholder="Selecione a cidade" />
+            <SelectValue placeholder="Selecione o estado" />
           </SelectTrigger>
           <SelectContent>
-            {cidades.map((cidadeOption) => (
-              <SelectItem key={cidadeOption} value={cidadeOption}>
-                {cidadeOption}
+            {Object.entries(estadosComCidades).map(([value, { label }]) => (
+              <SelectItem key={value} value={value}>
+                {label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
       <div>
-        <Label htmlFor="estado">Estado</Label>
-        <Select value={estado} onValueChange={onEstadoChange}>
+        <Label htmlFor="cidade">Cidade</Label>
+        <Select value={cidade} onValueChange={onCidadeChange} disabled={!estado}>
           <SelectTrigger>
-            <SelectValue placeholder="Selecione o estado" />
+            <SelectValue placeholder={estado ? "Selecione a cidade" : "Primeiro selecione o estado"} />
           </SelectTrigger>
           <SelectContent>
-            {estados.map((estadoOption) => (
-              <SelectItem key={estadoOption.value} value={estadoOption.value}>
-                {estadoOption.label}
+            {cidadesDisponiveis.map((cidadeOption) => (
+              <SelectItem key={cidadeOption} value={cidadeOption}>
+                {cidadeOption}
               </SelectItem>
             ))}
           </SelectContent>

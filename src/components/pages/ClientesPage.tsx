@@ -25,6 +25,49 @@ interface ClientesPageProps {
   onNavigateToFazendas: (clienteCpf: string) => void;
 }
 
+const estadosComCidades = {
+  "SP": {
+    label: "São Paulo",
+    cidades: ["São Paulo", "Campinas", "Santos", "Ribeirão Preto", "Sorocaba"]
+  },
+  "RJ": {
+    label: "Rio de Janeiro", 
+    cidades: ["Rio de Janeiro", "Niterói", "Petrópolis", "Nova Iguaçu", "Duque de Caxias"]
+  },
+  "MG": {
+    label: "Minas Gerais",
+    cidades: ["Belo Horizonte", "Uberlândia", "Contagem", "Juiz de Fora", "Betim"]
+  },
+  "DF": {
+    label: "Distrito Federal",
+    cidades: ["Brasília", "Taguatinga", "Ceilândia", "Samambaia", "Planaltina"]
+  },
+  "BA": {
+    label: "Bahia",
+    cidades: ["Salvador", "Feira de Santana", "Vitória da Conquista", "Camaçari", "Juazeiro"]
+  },
+  "PR": {
+    label: "Paraná",
+    cidades: ["Curitiba", "Londrina", "Maringá", "Ponta Grossa", "Cascavel"]
+  },
+  "RS": {
+    label: "Rio Grande do Sul",
+    cidades: ["Porto Alegre", "Caxias do Sul", "Pelotas", "Canoas", "Santa Maria"]
+  },
+  "GO": {
+    label: "Goiás",
+    cidades: ["Goiânia", "Aparecida de Goiânia", "Anápolis", "Rio Verde", "Luziânia"]
+  },
+  "MS": {
+    label: "Mato Grosso do Sul",
+    cidades: ["Campo Grande", "Dourados", "Três Lagoas", "Corumbá", "Ponta Porã"]
+  },
+  "MT": {
+    label: "Mato Grosso",
+    cidades: ["Cuiabá", "Várzea Grande", "Rondonópolis", "Sinop", "Tangará da Serra"]
+  }
+};
+
 const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
   const [clientes, setClientes] = useState<Cliente[]>([
     {
@@ -58,6 +101,14 @@ const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
     cidade: "",
     estado: ""
   });
+
+  const handleEstadoChange = (estado: string) => {
+    setFormData(prev => ({ ...prev, estado, cidade: "" }));
+  };
+
+  const cidadesDisponiveis = formData.estado && estadosComCidades[formData.estado as keyof typeof estadosComCidades] 
+    ? estadosComCidades[formData.estado as keyof typeof estadosComCidades].cidades 
+    : [];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -225,25 +276,38 @@ const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
                 />
               </div>
               <div>
-                <Label htmlFor="cidade">Cidade</Label>
-                <Input
-                  id="cidade"
-                  value={formData.cidade}
-                  onChange={(e) => setFormData({...formData, cidade: e.target.value})}
-                  placeholder="Cidade"
-                  required
-                />
+                <Label htmlFor="estado">Estado</Label>
+                <Select value={formData.estado} onValueChange={handleEstadoChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(estadosComCidades).map(([value, { label }]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
-                <Label htmlFor="estado">Estado</Label>
-                <Input
-                  id="estado"
-                  value={formData.estado}
-                  onChange={(e) => setFormData({...formData, estado: e.target.value})}
-                  placeholder="SP"
-                  maxLength={2}
-                  required
-                />
+                <Label htmlFor="cidade">Cidade</Label>
+                <Select 
+                  value={formData.cidade} 
+                  onValueChange={(value) => setFormData({...formData, cidade: value})}
+                  disabled={!formData.estado}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={formData.estado ? "Selecione a cidade" : "Primeiro selecione o estado"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cidadesDisponiveis.map((cidade) => (
+                      <SelectItem key={cidade} value={cidade}>
+                        {cidade}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="md:col-span-2 flex gap-2">
                 <Button type="submit" className="bg-green-600 hover:bg-green-700">
