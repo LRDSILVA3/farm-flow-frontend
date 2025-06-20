@@ -1,3 +1,4 @@
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +9,7 @@ import { Trash2, Plus } from "lucide-react";
 import { Fazenda } from "../FazendasPage";
 import { useState, useEffect } from "react";
 import { ClienteSelect } from "./ClienteSelect";
+import { CidadeEstadoSelect } from "./CidadeEstadoSelect";
 
 interface Cliente {
   id: string;
@@ -126,18 +128,6 @@ export const FazendaForm = ({
               />
             </div>
             <div>
-              <Label htmlFor="localizacao">Localização</Label>
-              <Input
-                id="localizacao"
-                value={formData.localizacao}
-                onChange={(e) => onInputChange("localizacao", e.target.value)}
-                required
-              />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
               <Label htmlFor="contato">Contato</Label>
               <Input
                 id="contato"
@@ -146,6 +136,18 @@ export const FazendaForm = ({
                 required
               />
             </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <CidadeEstadoSelect
+              cidade={formData.cidade}
+              estado={formData.estado}
+              onCidadeChange={(value) => onInputChange("cidade", value)}
+              onEstadoChange={(value) => onInputChange("estado", value)}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="status">Status</Label>
               <Select value={formData.status} onValueChange={(value) => onInputChange("status", value)}>
@@ -158,18 +160,6 @@ export const FazendaForm = ({
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="matricula">Matrícula</Label>
-              <Input
-                id="matricula"
-                value={formData.matricula}
-                onChange={(e) => onInputChange("matricula", e.target.value)}
-                required
-              />
-            </div>
             <div>
               <Label htmlFor="lote">Lote</Label>
               <Input
@@ -179,6 +169,16 @@ export const FazendaForm = ({
                 required
               />
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="matricula">Matrícula</Label>
+            <Input
+              id="matricula"
+              value={formData.matricula}
+              onChange={(e) => onInputChange("matricula", e.target.value)}
+              required
+            />
           </div>
 
           {editingFazenda && (

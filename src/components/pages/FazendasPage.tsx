@@ -28,7 +28,8 @@ export interface Fazenda {
   nome: string;
   proprietario: string;
   area: string;
-  localizacao: string;
+  cidade: string;
+  estado: string;
   contato: string;
   status: string;
   matricula: string;
@@ -98,16 +99,18 @@ const FazendasPage = () => {
     }
   };
 
-  // Obter lista única de localizações para o filtro
-  const localizacoes = Array.from(new Set(fazendas.map(f => f.localizacao))).sort();
+  // Obter lista única de localizações para o filtro (cidade/estado combinados)
+  const localizacoes = Array.from(new Set(fazendas.map(f => `${f.cidade} - ${f.estado}`))).sort();
 
   // Filtrar fazendas baseado nos critérios de busca
   const filteredFazendas = fazendas.filter(fazenda => {
     const matchesSearch = fazenda.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
       fazenda.proprietario.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      fazenda.localizacao.toLowerCase().includes(searchTerm.toLowerCase());
+      fazenda.cidade.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      fazenda.estado.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCidadeEstado = !cidadeEstadoFilter || fazenda.localizacao === cidadeEstadoFilter;
+    const fazendaLocation = `${fazenda.cidade} - ${fazenda.estado}`;
+    const matchesCidadeEstado = !cidadeEstadoFilter || cidadeEstadoFilter === "all" || fazendaLocation === cidadeEstadoFilter;
     
     return matchesSearch && matchesCidadeEstado;
   });

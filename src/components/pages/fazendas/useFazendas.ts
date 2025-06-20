@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Fazenda, Talhao } from "../FazendasPage";
 
@@ -8,7 +9,8 @@ export const useFazendas = () => {
       nome: "Fazenda São João",
       proprietario: "João Silva",
       area: "150.5",
-      localizacao: "São Paulo - SP",
+      cidade: "São Paulo",
+      estado: "SP",
       contato: "(11) 99999-9999",
       status: "Ativo",
       matricula: "MAT-FAZ-001",
@@ -24,7 +26,8 @@ export const useFazendas = () => {
       nome: "Fazenda Santa Maria",
       proprietario: "Maria Santos",
       area: "320.0",
-      localizacao: "Minas Gerais - MG",
+      cidade: "Belo Horizonte",
+      estado: "MG",
       contato: "(31) 88888-8888",
       status: "Ativo",
       matricula: "MAT-FAZ-002",
@@ -47,7 +50,8 @@ export const useFazendas = () => {
     nome: "",
     proprietario: "",
     area: "",
-    localizacao: "",
+    cidade: "",
+    estado: "",
     contato: "",
     status: "Ativo",
     matricula: "",
