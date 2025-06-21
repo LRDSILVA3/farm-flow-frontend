@@ -11,6 +11,7 @@ export interface Cliente {
   cep: string;
   cidade: string;
   estado: string;
+  cadPro?: string; // Campo opcional CAD/PRO
 }
 
 export const useClientes = () => {

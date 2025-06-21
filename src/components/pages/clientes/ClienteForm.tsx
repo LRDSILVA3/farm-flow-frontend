@@ -26,7 +26,8 @@ export const ClienteForm = ({ editingClient, onSave, onUpdate, onCancel }: Clien
     telefone: editingClient?.telefone || "",
     cep: editingClient?.cep || "",
     cidade: editingClient?.cidade || "",
-    estado: editingClient?.estado || ""
+    estado: editingClient?.estado || "",
+    cadPro: editingClient?.cadPro || ""
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -52,7 +53,8 @@ export const ClienteForm = ({ editingClient, onSave, onUpdate, onCancel }: Clien
       telefone: "",
       cep: "",
       cidade: "",
-      estado: ""
+      estado: "",
+      cadPro: ""
     });
     onCancel();
   };
@@ -131,6 +133,15 @@ export const ClienteForm = ({ editingClient, onSave, onUpdate, onCancel }: Clien
               onChange={(e) => setFormData({...formData, cep: e.target.value})}
               placeholder="01234-567"
               required
+            />
+          </div>
+          <div>
+            <Label htmlFor="cadPro">CAD/PRO (Opcional)</Label>
+            <Input
+              id="cadPro"
+              value={formData.cadPro}
+              onChange={(e) => setFormData({...formData, cadPro: e.target.value})}
+              placeholder="Número do CAD/PRO"
             />
           </div>
           <CidadeEstadoSelect
