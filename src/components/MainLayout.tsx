@@ -1,7 +1,7 @@
+
 import { useState } from "react";
-import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, SidebarInset, useSidebar } from "@/components/ui/sidebar";
+import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { Home, Users, MapPin, FileText, Calendar, DollarSign, Settings, LogOut, FlaskConical } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import ClientesPage from "./pages/ClientesPage";
 import FazendasPage from "./pages/FazendasPage";
 import PedidosPage from "./pages/PedidosPage";
@@ -13,8 +13,6 @@ import AnalisesPrincipalPage from "./pages/AnalisesPrincipalPage";
 
 const MainLayoutContent = () => {
   const [currentPage, setCurrentPage] = useState("dashboard");
-  const [selectedClienteCpf, setSelectedClienteCpf] = useState<string | null>(null);
-  const { setOpen } = useSidebar();
 
   const menuItems = [
     { id: "dashboard", title: "Dashboard", icon: Home },
@@ -29,19 +27,12 @@ const MainLayoutContent = () => {
 
   const handleNavigateToFazendas = (clienteCpf: string) => {
     console.log("Navegando para fazendas com CPF:", clienteCpf);
-    setSelectedClienteCpf(clienteCpf);
     setCurrentPage("fazendas");
   };
 
   const handleMenuClick = (pageId: string) => {
     console.log("Navegando para página:", pageId);
     setCurrentPage(pageId);
-    if (pageId !== "fazendas") {
-      setSelectedClienteCpf(null);
-    }
-    
-    // Fechar o sidebar sempre que qualquer opção do menu for clicada
-    setOpen(false);
   };
 
   const renderPage = () => {
