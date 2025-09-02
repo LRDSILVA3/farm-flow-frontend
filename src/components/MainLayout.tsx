@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { Home, Users, MapPin, FileText, Calendar, DollarSign, Settings, LogOut, FlaskConical } from "lucide-react";
 import ClientesPage from "./pages/ClientesPage";
@@ -25,34 +25,34 @@ const MainLayoutContent = () => {
     { id: "configuracoes", title: "Configurações", icon: Settings },
   ];
 
-  const handleNavigateToFazendas = (clienteCpf: string) => {
-    console.log("Navegando para fazendas com CPF:", clienteCpf);
+  const handleNavigateToFazendas = useCallback((clienteCpf: string) => {
     setCurrentPage("fazendas");
-  };
+  }, []);
 
-  const handleMenuClick = (pageId: string) => {
-    console.log("Navegando para página:", pageId);
-    console.log("Página atual antes da mudança:", currentPage);
+  const handleMenuClick = useCallback((pageId: string) => {
     setCurrentPage(pageId);
-    console.log("Página definida para:", pageId);
-  };
+  }, []);
 
-  const renderPage = () => {
-    console.log("Renderizando página:", currentPage);
-    
-    const pageComponents = {
-      clientes: <ClientesPage key="clientes" onNavigateToFazendas={handleNavigateToFazendas} />,
-      fazendas: <FazendasPage key="fazendas" />,
-      pedidos: <PedidosPage key="pedidos" />,
-      agenda: <AgendaPage key="agenda" />,
-      financeiro: <FinanceiroPage key="financeiro" />,
-      configuracoes: <ConfiguracoesPage key="configuracoes" />,
-      analises: <AnalisesPrincipalPage key="analises" />,
-      dashboard: <DashboardHome key="dashboard" />
-    };
-    
-    return pageComponents[currentPage as keyof typeof pageComponents] || pageComponents.dashboard;
-  };
+  const currentPageComponent = useMemo(() => {
+    switch (currentPage) {
+      case "clientes":
+        return <ClientesPage onNavigateToFazendas={handleNavigateToFazendas} />;
+      case "fazendas":
+        return <FazendasPage />;
+      case "pedidos":
+        return <PedidosPage />;
+      case "agenda":
+        return <AgendaPage />;
+      case "financeiro":
+        return <FinanceiroPage />;
+      case "configuracoes":
+        return <ConfiguracoesPage />;
+      case "analises":
+        return <AnalisesPrincipalPage />;
+      default:
+        return <DashboardHome />;
+    }
+  }, [currentPage, handleNavigateToFazendas]);
 
   return (
     <div className="min-h-screen flex w-full">
@@ -91,7 +91,9 @@ const MainLayoutContent = () => {
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4">
-          {renderPage()}
+          <div key={currentPage}>
+            {currentPageComponent}
+          </div>
         </div>
       </SidebarInset>
     </div>

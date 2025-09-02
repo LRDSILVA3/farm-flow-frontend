@@ -13,8 +13,6 @@ interface ClientesPageProps {
 }
 
 const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
-  console.log("ClientesPage montado");
-  
   const {
     clientes,
     editingClient,
@@ -32,9 +30,7 @@ const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
 
   // Cleanup para prevenir erros de DOM ao navegar
   useEffect(() => {
-    console.log("ClientesPage useEffect montado");
     return () => {
-      console.log("ClientesPage cleanup executado");
       setShowForm(false);
       stopEditing();
     };
