@@ -36,24 +36,18 @@ const MainLayoutContent = () => {
   };
 
   const renderPage = () => {
-    switch (currentPage) {
-      case "clientes":
-        return <ClientesPage onNavigateToFazendas={handleNavigateToFazendas} />;
-      case "fazendas":
-        return <FazendasPage />;
-      case "pedidos":
-        return <PedidosPage />;
-      case "agenda":
-        return <AgendaPage />;
-      case "financeiro":
-        return <FinanceiroPage />;
-      case "configuracoes":
-        return <ConfiguracoesPage />;
-      case "analises":
-        return <AnalisesPrincipalPage />;
-      default:
-        return <DashboardHome />;
-    }
+    const pageComponents = {
+      clientes: <ClientesPage key="clientes" onNavigateToFazendas={handleNavigateToFazendas} />,
+      fazendas: <FazendasPage key="fazendas" />,
+      pedidos: <PedidosPage key="pedidos" />,
+      agenda: <AgendaPage key="agenda" />,
+      financeiro: <FinanceiroPage key="financeiro" />,
+      configuracoes: <ConfiguracoesPage key="configuracoes" />,
+      analises: <AnalisesPrincipalPage key="analises" />,
+      dashboard: <DashboardHome key="dashboard" />
+    };
+    
+    return pageComponents[currentPage as keyof typeof pageComponents] || pageComponents.dashboard;
   };
 
   return (
