@@ -38,6 +38,8 @@ export interface Fazenda {
 }
 
 const FazendasPage = () => {
+  console.log("FazendasPage montado");
+  
   const {
     fazendas,
     setFazendas,
@@ -61,7 +63,9 @@ const FazendasPage = () => {
 
   // Cleanup para prevenir erros de DOM ao navegar
   useEffect(() => {
+    console.log("FazendasPage useEffect montado");
     return () => {
+      console.log("FazendasPage cleanup executado");
       // Limpa qualquer estado pendente ao desmontar
       setShowFazendaForm(false);
       setShowTalhoesModal(false);

@@ -32,10 +32,14 @@ const MainLayoutContent = () => {
 
   const handleMenuClick = (pageId: string) => {
     console.log("Navegando para página:", pageId);
+    console.log("Página atual antes da mudança:", currentPage);
     setCurrentPage(pageId);
+    console.log("Página definida para:", pageId);
   };
 
   const renderPage = () => {
+    console.log("Renderizando página:", currentPage);
+    
     const pageComponents = {
       clientes: <ClientesPage key="clientes" onNavigateToFazendas={handleNavigateToFazendas} />,
       fazendas: <FazendasPage key="fazendas" />,
