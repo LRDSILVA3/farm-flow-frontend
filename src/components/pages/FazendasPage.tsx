@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -58,6 +58,17 @@ const FazendasPage = () => {
     talhaoForm,
     setTalhaoForm
   } = useFazendas();
+
+  // Cleanup para prevenir erros de DOM ao navegar
+  useEffect(() => {
+    return () => {
+      // Limpa qualquer estado pendente ao desmontar
+      setShowFazendaForm(false);
+      setShowTalhoesModal(false);
+      setEditingFazenda(null);
+      setSelectedFazenda(null);
+    };
+  }, []);
 
   // Estados para filtros
   const [searchTerm, setSearchTerm] = useState("");

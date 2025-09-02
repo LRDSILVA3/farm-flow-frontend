@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus } from "lucide-react";
@@ -27,6 +27,14 @@ const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
   const [cidadeEstadoFilter, setCidadeEstadoFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Cleanup para prevenir erros de DOM ao navegar
+  useEffect(() => {
+    return () => {
+      setShowForm(false);
+      stopEditing();
+    };
+  }, []);
 
   const handleEdit = (cliente: any) => {
     startEditing(cliente);

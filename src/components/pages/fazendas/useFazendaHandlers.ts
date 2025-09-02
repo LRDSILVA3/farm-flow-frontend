@@ -1,4 +1,5 @@
 
+import { useRef, useEffect } from "react";
 import { Fazenda, Talhao } from "../FazendasPage";
 import { useToast } from "@/hooks/use-toast";
 
@@ -15,6 +16,19 @@ export const useFazendaHandlers = (
   setTalhaoForm: (talhao: Talhao) => void
 ) => {
   const { toast } = useToast();
+  const isMountedRef = useRef(true);
+  
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const safeToast = (toastData: any) => {
+    if (isMountedRef.current) {
+      toast(toastData);
+    }
+  };
 
   const handleEdit = (fazenda: Fazenda) => {
     console.log("Editando fazenda:", fazenda);
@@ -33,14 +47,14 @@ export const useFazendaHandlers = (
     
     if (editingFazenda) {
       setFazendas(prev => prev.map(f => f.id === editingFazenda.id ? formData : f));
-      toast({
+      safeToast({
         title: "Fazenda atualizada",
         description: "A fazenda foi atualizada com sucesso.",
       });
     } else {
       const newFazenda = { ...formData, id: Date.now().toString() };
       setFazendas(prev => [...prev, newFazenda]);
-      toast({
+      safeToast({
         title: "Fazenda criada",
         description: "A fazenda foi criada com sucesso.",
       });
@@ -99,7 +113,7 @@ export const useFazendaHandlers = (
       lote: ""
     });
 
-    toast({
+    safeToast({
       title: "Talhão adicionado",
       description: "O talhão foi adicionado com sucesso.",
     });
@@ -124,7 +138,7 @@ export const useFazendaHandlers = (
       }));
     }
 
-    toast({
+    safeToast({
       title: "Talhão removido",
       description: "O talhão foi removido com sucesso.",
     });
