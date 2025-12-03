@@ -2,6 +2,8 @@
 import { useState, useMemo, useCallback } from "react";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { Home, Users, MapPin, FileText, Calendar, DollarSign, Settings, LogOut, FlaskConical } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import ClientesPage from "./pages/ClientesPage";
 import FazendasPage from "./pages/FazendasPage";
 import PedidosPage from "./pages/PedidosPage";
@@ -13,6 +15,18 @@ import AnalisesPrincipalPage from "./pages/AnalisesPrincipalPage";
 
 const MainLayoutContent = () => {
   const [currentPage, setCurrentPage] = useState("dashboard");
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: "Erro ao sair",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const menuItems = [
     { id: "dashboard", title: "Dashboard", icon: Home },
@@ -75,7 +89,7 @@ const MainLayoutContent = () => {
               </SidebarMenuItem>
             ))}
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={() => window.location.reload()}>
+              <SidebarMenuButton onClick={handleLogout}>
                 <LogOut className="h-4 w-4" />
                 <span>Sair</span>
               </SidebarMenuButton>
