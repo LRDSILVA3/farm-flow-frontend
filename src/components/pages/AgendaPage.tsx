@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -6,13 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, Clock, MapPin, Edit, Plus, Trash2 } from "lucide-react";
+import { Calendar, Clock, Edit, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Execucao {
   id: string;
   cliente: string;
+  clienteId: string;
   fazenda: string;
+  fazendaId: string;
   servico: string;
   area: string;
   dataAgendada: string;
@@ -33,54 +36,8 @@ interface ExecucaoParcial {
 
 const AgendaPage = () => {
   const { toast } = useToast();
-
-  const [execucoes, setExecucoes] = useState<Execucao[]>([
-    {
-      id: "1",
-      cliente: "João Silva",
-      fazenda: "Fazenda São João",
-      servico: "Pulverização",
-      area: "45.5",
-      dataAgendada: "",
-      equipamento: "",
-      status: "Pendente",
-      execucoesParciais: []
-    },
-    {
-      id: "2",
-      cliente: "Maria Santos",
-      fazenda: "Fazenda Santa Maria",
-      servico: "Plantio",
-      area: "120",
-      dataAgendada: "",
-      equipamento: "",
-      status: "Pendente",
-      execucoesParciais: []
-    },
-    {
-      id: "3",
-      cliente: "Pedro Costa",
-      fazenda: "Fazenda Boa Vista",
-      servico: "Colheita",
-      area: "80",
-      dataAgendada: "2025-06-17",
-      equipamento: "Colheitadeira 01",
-      status: "Agendado",
-      execucoesParciais: []
-    },
-    {
-      id: "4",
-      cliente: "Ana Lima",
-      fazenda: "Fazenda Esperança",
-      servico: "Adubação",
-      area: "95",
-      dataAgendada: "2025-06-18",
-      equipamento: "Caminhão 02",
-      status: "Agendado",
-      execucoesParciais: []
-    }
-  ]);
-
+  const [execucoes, setExecucoes] = useState<Execucao[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showExecucaoForm, setShowExecucaoForm] = useState(false);
   const [showExecucaoParciaisModal, setShowExecucaoParciaisModal] = useState(false);
   const [editingExecucao, setEditingExecucao] = useState<Execucao | null>(null);
@@ -89,7 +46,9 @@ const AgendaPage = () => {
   const [formData, setFormData] = useState<Execucao>({
     id: "",
     cliente: "",
+    clienteId: "",
     fazenda: "",
+    fazendaId: "",
     servico: "",
     area: "",
     dataAgendada: "",
@@ -119,31 +78,111 @@ const AgendaPage = () => {
     "Pulverizador 02"
   ];
 
+  useEffect(() => {
+    fetchExecucoes();
+  }, []);
+
+  const fetchExecucoes = async () => {
+    try {
+      const { data: execucoesData, error } = await supabase
+        .from("execucoes")
+        .select(`
+          id, servico, area, data_agendada, equipamento, status,
+          clientes:cliente_id (id, nome),
+          fazendas:fazenda_id (id, nome)
+        `)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Fetch execuções parciais
+      const { data: parciaisData } = await supabase
+        .from("execucoes_parciais")
+        .select("*");
+
+      const mapped = (execucoesData || []).map(e => ({
+        id: e.id,
+        cliente: (e.clientes as any)?.nome || "",
+        clienteId: (e.clientes as any)?.id || "",
+        fazenda: (e.fazendas as any)?.nome || "",
+        fazendaId: (e.fazendas as any)?.id || "",
+        servico: e.servico || "",
+        area: e.area?.toString() || "",
+        dataAgendada: e.data_agendada || "",
+        equipamento: e.equipamento || "",
+        status: e.status || "Pendente",
+        execucoesParciais: (parciaisData || [])
+          .filter(p => p.execucao_id === e.id)
+          .map(p => ({
+            id: p.id,
+            data: p.data || "",
+            areaExecutada: p.area_executada?.toString() || "",
+            equipamento: p.equipamento || "",
+            operador: p.operador || "",
+            observacoes: p.observacoes || "",
+            status: p.status || "Concluída"
+          }))
+      }));
+
+      setExecucoes(mapped);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao carregar execuções",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleEdit = (execucao: Execucao) => {
     setEditingExecucao(execucao);
     setFormData(execucao);
     setShowExecucaoForm(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (editingExecucao) {
+    if (!editingExecucao) return;
+
+    try {
+      const { error } = await supabase
+        .from("execucoes")
+        .update({
+          servico: formData.servico,
+          area: formData.area ? parseFloat(formData.area) : null,
+          data_agendada: formData.dataAgendada || null,
+          equipamento: formData.equipamento || null,
+          status: formData.status
+        })
+        .eq("id", editingExecucao.id);
+
+      if (error) throw error;
+
       setExecucoes(prev => prev.map(ex => ex.id === editingExecucao.id ? formData : ex));
       toast({
         title: "Execução atualizada",
         description: "A execução foi atualizada com sucesso.",
       });
+      resetForm();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao atualizar execução",
+        description: error.message,
+        variant: "destructive"
+      });
     }
-    
-    resetForm();
   };
 
   const resetForm = () => {
     setFormData({
       id: "",
       cliente: "",
+      clienteId: "",
       fazenda: "",
+      fazendaId: "",
       servico: "",
       area: "",
       dataAgendada: "",
@@ -164,108 +203,99 @@ const AgendaPage = () => {
     setShowExecucaoParciaisModal(true);
   };
 
-  const handleAddExecucaoParciralToEdit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!editingExecucao) return;
-
-    const newExecucaoParcial = {
-      ...execucaoParciralForm,
-      id: Date.now().toString()
-    };
-
-    const updatedExecucao = {
-      ...formData,
-      execucoesParciais: [...formData.execucoesParciais, newExecucaoParcial]
-    };
-
-    setFormData(updatedExecucao);
-    setExecucoes(prev => prev.map(ex => ex.id === editingExecucao.id ? updatedExecucao : ex));
-
-    // Reset form
-    setExecucaoParciralForm({
-      id: "",
-      data: "",
-      areaExecutada: "",
-      equipamento: "",
-      operador: "",
-      observacoes: "",
-      status: "Concluída"
-    });
-
-    toast({
-      title: "Execução parcial adicionada",
-      description: "A execução parcial foi adicionada com sucesso.",
-    });
-  };
-
-  const handleDeleteExecucaoParciralFromEdit = (execucaoParciralId: string) => {
-    if (!editingExecucao) return;
-
-    const updatedExecucao = {
-      ...formData,
-      execucoesParciais: formData.execucoesParciais.filter(ep => ep.id !== execucaoParciralId)
-    };
-
-    setFormData(updatedExecucao);
-    setExecucoes(prev => prev.map(ex => ex.id === editingExecucao.id ? updatedExecucao : ex));
-
-    toast({
-      title: "Execução parcial removida",
-      description: "A execução parcial foi removida com sucesso.",
-    });
-  };
-
-  const handleAddExecucaoParcial = (e: React.FormEvent) => {
+  const handleAddExecucaoParcial = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!selectedExecucao) return;
 
-    const newExecucaoParcial = {
-      ...execucaoParciralForm,
-      id: Date.now().toString()
-    };
+    try {
+      const { data, error } = await supabase
+        .from("execucoes_parciais")
+        .insert({
+          execucao_id: selectedExecucao.id,
+          data: execucaoParciralForm.data || null,
+          area_executada: execucaoParciralForm.areaExecutada ? parseFloat(execucaoParciralForm.areaExecutada) : null,
+          equipamento: execucaoParciralForm.equipamento || null,
+          operador: execucaoParciralForm.operador || null,
+          observacoes: execucaoParciralForm.observacoes || null,
+          status: execucaoParciralForm.status
+        })
+        .select()
+        .single();
 
-    const updatedExecucao = {
-      ...selectedExecucao,
-      execucoesParciais: [...selectedExecucao.execucoesParciais, newExecucaoParcial]
-    };
+      if (error) throw error;
 
-    setExecucoes(prev => prev.map(ex => ex.id === selectedExecucao.id ? updatedExecucao : ex));
-    setSelectedExecucao(updatedExecucao);
+      const newExecucaoParcial = {
+        id: data.id,
+        data: data.data || "",
+        areaExecutada: data.area_executada?.toString() || "",
+        equipamento: data.equipamento || "",
+        operador: data.operador || "",
+        observacoes: data.observacoes || "",
+        status: data.status || "Concluída"
+      };
 
-    // Reset form
-    setExecucaoParciralForm({
-      id: "",
-      data: "",
-      areaExecutada: "",
-      equipamento: "",
-      operador: "",
-      observacoes: "",
-      status: "Concluída"
-    });
+      const updatedExecucao = {
+        ...selectedExecucao,
+        execucoesParciais: [...selectedExecucao.execucoesParciais, newExecucaoParcial]
+      };
 
-    toast({
-      title: "Execução parcial adicionada",
-      description: "A execução parcial foi adicionada com sucesso.",
-    });
+      setExecucoes(prev => prev.map(ex => ex.id === selectedExecucao.id ? updatedExecucao : ex));
+      setSelectedExecucao(updatedExecucao);
+
+      setExecucaoParciralForm({
+        id: "",
+        data: "",
+        areaExecutada: "",
+        equipamento: "",
+        operador: "",
+        observacoes: "",
+        status: "Concluída"
+      });
+
+      toast({
+        title: "Execução parcial adicionada",
+        description: "A execução parcial foi adicionada com sucesso.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao adicionar execução parcial",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleDeleteExecucaoParcial = (execucaoParciralId: string) => {
+  const handleDeleteExecucaoParcial = async (execucaoParciralId: string) => {
     if (!selectedExecucao) return;
 
-    const updatedExecucao = {
-      ...selectedExecucao,
-      execucoesParciais: selectedExecucao.execucoesParciais.filter(ep => ep.id !== execucaoParciralId)
-    };
+    try {
+      const { error } = await supabase
+        .from("execucoes_parciais")
+        .delete()
+        .eq("id", execucaoParciralId);
 
-    setExecucoes(prev => prev.map(ex => ex.id === selectedExecucao.id ? updatedExecucao : ex));
-    setSelectedExecucao(updatedExecucao);
+      if (error) throw error;
 
-    toast({
-      title: "Execução parcial removida",
-      description: "A execução parcial foi removida com sucesso.",
-    });
+      const updatedExecucao = {
+        ...selectedExecucao,
+        execucoesParciais: selectedExecucao.execucoesParciais.filter(ep => ep.id !== execucaoParciralId)
+      };
+
+      setExecucoes(prev => prev.map(ex => ex.id === selectedExecucao.id ? updatedExecucao : ex));
+      setSelectedExecucao(updatedExecucao);
+
+      toast({
+        title: "Execução parcial removida",
+        description: "A execução parcial foi removida com sucesso.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao remover execução parcial",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -290,6 +320,17 @@ const AgendaPage = () => {
   const execucoesPendentes = execucoes.filter(ex => ex.status === "Pendente");
   const proximasExecucoes = execucoes.filter(ex => ex.status === "Agendado");
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Agenda</h1>
+          <p className="text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -302,36 +343,32 @@ const AgendaPage = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              Execuções Pendentes
+              Execuções Pendentes ({execucoesPendentes.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {execucoesPendentes.map((execucao) => (
-                <div key={execucao.id} className="border-l-4 border-orange-500 pl-4 flex justify-between items-start">
-                  <div>
-                    <h4 className="font-medium">{execucao.servico} - {execucao.fazenda}</h4>
-                    <p className="text-sm text-gray-600">{execucao.area} hectares • Cliente: {execucao.cliente}</p>
-                    <p className="text-xs text-gray-500">Aguardando agendamento</p>
+              {execucoesPendentes.length === 0 ? (
+                <p className="text-sm text-gray-500">Nenhuma execução pendente</p>
+              ) : (
+                execucoesPendentes.map((execucao) => (
+                  <div key={execucao.id} className="border-l-4 border-orange-500 pl-4 flex justify-between items-start">
+                    <div>
+                      <h4 className="font-medium">{execucao.servico || "Serviço"} - {execucao.fazenda || "Fazenda"}</h4>
+                      <p className="text-sm text-gray-600">{execucao.area} hectares • Cliente: {execucao.cliente}</p>
+                      <p className="text-xs text-gray-500">Aguardando agendamento</p>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(execucao)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleExecucaoParciaisClick(execucao)}>
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(execucao)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleExecucaoParciaisClick(execucao)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -340,164 +377,138 @@ const AgendaPage = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5" />
-              Próximas Execuções
+              Próximas Execuções ({proximasExecucoes.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {proximasExecucoes.map((execucao) => (
-                <div key={execucao.id} className="border-l-4 border-green-500 pl-4 flex justify-between items-start">
-                  <div>
-                    <h4 className="font-medium">{execucao.servico} - {execucao.fazenda}</h4>
-                    <p className="text-sm text-gray-600">{execucao.area} hectares • {execucao.dataAgendada}</p>
-                    <p className="text-xs text-gray-500">Equipamento: {execucao.equipamento}</p>
+              {proximasExecucoes.length === 0 ? (
+                <p className="text-sm text-gray-500">Nenhuma execução agendada</p>
+              ) : (
+                proximasExecucoes.map((execucao) => (
+                  <div key={execucao.id} className="border-l-4 border-green-500 pl-4 flex justify-between items-start">
+                    <div>
+                      <h4 className="font-medium">{execucao.servico || "Serviço"} - {execucao.fazenda || "Fazenda"}</h4>
+                      <p className="text-sm text-gray-600">{execucao.area} hectares • {execucao.dataAgendada ? new Date(execucao.dataAgendada).toLocaleDateString('pt-BR') : "-"}</p>
+                      <p className="text-xs text-gray-500">Equipamento: {execucao.equipamento || "Não definido"}</p>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(execucao)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleExecucaoParciaisClick(execucao)}>
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(execucao)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleExecucaoParciaisClick(execucao)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Modal de Edição de Execução */}
+      {/* Modal de Edição */}
       <Dialog open={showExecucaoForm} onOpenChange={setShowExecucaoForm}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Editar Execução</DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="cliente">Cliente</Label>
-                  <Input
-                    id="cliente"
-                    value={formData.cliente}
-                    onChange={(e) => handleInputChange("cliente", e.target.value)}
-                    readOnly
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="fazenda">Fazenda</Label>
-                  <Input
-                    id="fazenda"
-                    value={formData.fazenda}
-                    onChange={(e) => handleInputChange("fazenda", e.target.value)}
-                    readOnly
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="servico">Serviço</Label>
-                  <Input
-                    id="servico"
-                    value={formData.servico}
-                    readOnly
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="area">Área (ha)</Label>
-                  <Input
-                    id="area"
-                    value={formData.area}
-                    readOnly
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="dataAgendada">Data Agendada</Label>
-                  <Input
-                    id="dataAgendada"
-                    type="date"
-                    value={formData.dataAgendada}
-                    onChange={(e) => handleInputChange("dataAgendada", e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="equipamento">Equipamento</Label>
-                  <Select value={formData.equipamento} onValueChange={(value) => handleInputChange("equipamento", value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um equipamento" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {equipamentosDisponiveis.map((equipamento) => (
-                        <SelectItem key={equipamento} value={equipamento}>
-                          {equipamento}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="status">Status</Label>
-                <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
+                <Label>Cliente</Label>
+                <Input value={formData.cliente} readOnly />
+              </div>
+              <div>
+                <Label>Fazenda</Label>
+                <Input value={formData.fazenda} readOnly />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Serviço</Label>
+                <Input value={formData.servico} readOnly />
+              </div>
+              <div>
+                <Label>Área (ha)</Label>
+                <Input value={formData.area} readOnly />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Data Agendada</Label>
+                <Input
+                  type="date"
+                  value={formData.dataAgendada}
+                  onChange={(e) => handleInputChange("dataAgendada", e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>Equipamento</Label>
+                <Select value={formData.equipamento} onValueChange={(value) => handleInputChange("equipamento", value)}>
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Pendente">Pendente</SelectItem>
-                    <SelectItem value="Agendado">Agendado</SelectItem>
-                    <SelectItem value="Em Andamento">Em Andamento</SelectItem>
-                    <SelectItem value="Concluído">Concluído</SelectItem>
+                    {equipamentosDisponiveis.map((eq) => (
+                      <SelectItem key={eq} value={eq}>{eq}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-              
-              <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={resetForm}>
-                  Cancelar
-                </Button>
-                <Button type="submit" className="bg-green-600 hover:bg-green-700">
-                  Atualizar
-                </Button>
-              </div>
-            </form>
+            </div>
+            
+            <div>
+              <Label>Status</Label>
+              <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pendente">Pendente</SelectItem>
+                  <SelectItem value="Agendado">Agendado</SelectItem>
+                  <SelectItem value="Em Andamento">Em Andamento</SelectItem>
+                  <SelectItem value="Concluído">Concluído</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex justify-end space-x-2">
+              <Button type="button" variant="outline" onClick={resetForm}>Cancelar</Button>
+              <Button type="submit" className="bg-green-600 hover:bg-green-700">Salvar</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-            {/* Seção de Execuções Parciais */}
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold mb-4">Execuções Parciais</h3>
-              
-              {/* Informações da Execução */}
-              <div className="bg-gray-50 p-4 rounded-lg mb-4">
+      {/* Modal de Execuções Parciais */}
+      <Dialog open={showExecucaoParciaisModal} onOpenChange={setShowExecucaoParciaisModal}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Execuções Parciais - {selectedExecucao?.servico}</DialogTitle>
+          </DialogHeader>
+          
+          {selectedExecucao && (
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div><strong>Área Total:</strong> {formData.area} ha</div>
-                  <div><strong>Área Executada:</strong> {calcularAreaTotal(formData.execucoesParciais)} ha</div>
-                  <div><strong>Área Restante:</strong> {parseFloat(formData.area || "0") - calcularAreaTotal(formData.execucoesParciais)} ha</div>
-                  <div><strong>Progresso:</strong> {formData.area ? Math.round((calcularAreaTotal(formData.execucoesParciais) / parseFloat(formData.area)) * 100) : 0}%</div>
+                  <div><strong>Área Total:</strong> {selectedExecucao.area} ha</div>
+                  <div><strong>Área Executada:</strong> {calcularAreaTotal(selectedExecucao.execucoesParciais)} ha</div>
+                  <div><strong>Área Restante:</strong> {parseFloat(selectedExecucao.area || "0") - calcularAreaTotal(selectedExecucao.execucoesParciais)} ha</div>
+                  <div><strong>Progresso:</strong> {selectedExecucao.area ? Math.round((calcularAreaTotal(selectedExecucao.execucoesParciais) / parseFloat(selectedExecucao.area)) * 100) : 0}%</div>
                 </div>
               </div>
 
-              {/* Formulário para Nova Execução Parcial */}
-              <form onSubmit={handleAddExecucaoParciralToEdit} className="border p-4 rounded-lg mb-4">
+              <form onSubmit={handleAddExecucaoParcial} className="border p-4 rounded-lg">
                 <h4 className="font-medium mb-4">Nova Execução Parcial</h4>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label htmlFor="data">Data</Label>
+                    <Label>Data</Label>
                     <Input
-                      id="data"
                       type="date"
                       value={execucaoParciralForm.data}
                       onChange={(e) => setExecucaoParciralForm(prev => ({ ...prev, data: e.target.value }))}
@@ -505,27 +516,27 @@ const AgendaPage = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="areaExecutada">Área Executada (ha)</Label>
+                    <Label>Área Executada (ha)</Label>
                     <Input
-                      id="areaExecutada"
                       type="number"
-                      step="0.1"
+                      step="0.01"
                       value={execucaoParciralForm.areaExecutada}
                       onChange={(e) => setExecucaoParciralForm(prev => ({ ...prev, areaExecutada: e.target.value }))}
                       required
                     />
                   </div>
                   <div>
-                    <Label htmlFor="equipamentoParcial">Equipamento</Label>
-                    <Select value={execucaoParciralForm.equipamento} onValueChange={(value) => setExecucaoParciralForm(prev => ({ ...prev, equipamento: value }))}>
+                    <Label>Equipamento</Label>
+                    <Select 
+                      value={execucaoParciralForm.equipamento} 
+                      onValueChange={(value) => setExecucaoParciralForm(prev => ({ ...prev, equipamento: value }))}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
-                        {equipamentosDisponiveis.map((equipamento) => (
-                          <SelectItem key={equipamento} value={equipamento}>
-                            {equipamento}
-                          </SelectItem>
+                        {equipamentosDisponiveis.map((eq) => (
+                          <SelectItem key={eq} value={eq}>{eq}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -533,196 +544,53 @@ const AgendaPage = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <div>
-                    <Label htmlFor="operador">Operador</Label>
+                    <Label>Operador</Label>
                     <Input
-                      id="operador"
                       value={execucaoParciralForm.operador}
                       onChange={(e) => setExecucaoParciralForm(prev => ({ ...prev, operador: e.target.value }))}
-                      required
                     />
                   </div>
                   <div>
-                    <Label htmlFor="observacoes">Observações</Label>
+                    <Label>Observações</Label>
                     <Input
-                      id="observacoes"
                       value={execucaoParciralForm.observacoes}
                       onChange={(e) => setExecucaoParciralForm(prev => ({ ...prev, observacoes: e.target.value }))}
                     />
                   </div>
                 </div>
-                <div className="flex justify-end mt-4">
-                  <Button type="submit" className="bg-green-600 hover:bg-green-700">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Adicionar Execução
-                  </Button>
-                </div>
+                <Button type="submit" className="mt-4 bg-green-600 hover:bg-green-700">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar
+                </Button>
               </form>
 
-              {/* Lista de Execuções Parciais */}
-              <div>
-                <h4 className="font-medium mb-4">Execuções Registradas</h4>
-                {formData.execucoesParciais.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">Nenhuma execução parcial registrada</p>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Área (ha)</TableHead>
-                        <TableHead>Equipamento</TableHead>
-                        <TableHead>Operador</TableHead>
-                        <TableHead>Observações</TableHead>
-                        <TableHead>Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {formData.execucoesParciais.map((execucaoParcial) => (
-                        <TableRow key={execucaoParcial.id}>
-                          <TableCell>{execucaoParcial.data}</TableCell>
-                          <TableCell>{execucaoParcial.areaExecutada}</TableCell>
-                          <TableCell>{execucaoParcial.equipamento}</TableCell>
-                          <TableCell>{execucaoParcial.operador}</TableCell>
-                          <TableCell>{execucaoParcial.observacoes}</TableCell>
-                          <TableCell>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteExecucaoParciralFromEdit(execucaoParcial.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal de Execuções Parciais */}
-      <Dialog open={showExecucaoParciaisModal} onOpenChange={setShowExecucaoParciaisModal}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              Execuções Parciais - {selectedExecucao?.servico} ({selectedExecucao?.fazenda})
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-6">
-            {/* Informações da Execução */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div><strong>Cliente:</strong> {selectedExecucao?.cliente}</div>
-                <div><strong>Área Total:</strong> {selectedExecucao?.area} ha</div>
-                <div><strong>Área Executada:</strong> {calcularAreaTotal(selectedExecucao?.execucoesParciais || [])} ha</div>
-                <div><strong>Área Restante:</strong> {parseFloat(selectedExecucao?.area || "0") - calcularAreaTotal(selectedExecucao?.execucoesParciais || [])} ha</div>
-              </div>
-            </div>
-
-            {/* Formulário para Nova Execução Parcial */}
-            <form onSubmit={handleAddExecucaoParcial} className="border p-4 rounded-lg">
-              <h3 className="font-medium mb-4">Nova Execução Parcial</h3>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="data">Data</Label>
-                  <Input
-                    id="data"
-                    type="date"
-                    value={execucaoParciralForm.data}
-                    onChange={(e) => setExecucaoParciralForm(prev => ({ ...prev, data: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="areaExecutada">Área Executada (ha)</Label>
-                  <Input
-                    id="areaExecutada"
-                    type="number"
-                    step="0.1"
-                    value={execucaoParciralForm.areaExecutada}
-                    onChange={(e) => setExecucaoParciralForm(prev => ({ ...prev, areaExecutada: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="equipamentoParcial">Equipamento</Label>
-                  <Select value={execucaoParciralForm.equipamento} onValueChange={(value) => setExecucaoParciralForm(prev => ({ ...prev, equipamento: value }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {equipamentosDisponiveis.map((equipamento) => (
-                        <SelectItem key={equipamento} value={equipamento}>
-                          {equipamento}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div>
-                  <Label htmlFor="operador">Operador</Label>
-                  <Input
-                    id="operador"
-                    value={execucaoParciralForm.operador}
-                    onChange={(e) => setExecucaoParciralForm(prev => ({ ...prev, operador: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="observacoes">Observações</Label>
-                  <Input
-                    id="observacoes"
-                    value={execucaoParciralForm.observacoes}
-                    onChange={(e) => setExecucaoParciralForm(prev => ({ ...prev, observacoes: e.target.value }))}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end mt-4">
-                <Button type="submit" className="bg-green-600 hover:bg-green-700">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Execução
-                </Button>
-              </div>
-            </form>
-
-            {/* Lista de Execuções Parciais */}
-            <div>
-              <h3 className="font-medium mb-4">Execuções Registradas</h3>
-              {selectedExecucao?.execucoesParciais.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">Nenhuma execução parcial registrada</p>
-              ) : (
+              {selectedExecucao.execucoesParciais.length > 0 && (
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Data</TableHead>
-                      <TableHead>Área (ha)</TableHead>
+                      <TableHead>Área</TableHead>
                       <TableHead>Equipamento</TableHead>
                       <TableHead>Operador</TableHead>
-                      <TableHead>Observações</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead>Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {selectedExecucao?.execucoesParciais.map((execucaoParcial) => (
-                      <TableRow key={execucaoParcial.id}>
-                        <TableCell>{execucaoParcial.data}</TableCell>
-                        <TableCell>{execucaoParcial.areaExecutada}</TableCell>
-                        <TableCell>{execucaoParcial.equipamento}</TableCell>
-                        <TableCell>{execucaoParcial.operador}</TableCell>
-                        <TableCell>{execucaoParcial.observacoes}</TableCell>
+                    {selectedExecucao.execucoesParciais.map((ep) => (
+                      <TableRow key={ep.id}>
+                        <TableCell>{ep.data ? new Date(ep.data).toLocaleDateString('pt-BR') : "-"}</TableCell>
+                        <TableCell>{ep.areaExecutada} ha</TableCell>
+                        <TableCell>{ep.equipamento || "-"}</TableCell>
+                        <TableCell>{ep.operador || "-"}</TableCell>
                         <TableCell>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteExecucaoParcial(execucaoParcial.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
+                          <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(ep.status)}`}>
+                            {ep.status}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteExecucaoParcial(ep.id)}>
+                            <Trash2 className="h-4 w-4 text-red-500" />
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -731,7 +599,7 @@ const AgendaPage = () => {
                 </Table>
               )}
             </div>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
