@@ -14,6 +14,79 @@ export type Database = {
   }
   public: {
     Tables: {
+      analises_execucao: {
+        Row: {
+          cliente_id: string | null
+          colaborador: string | null
+          created_at: string
+          data_envio: string | null
+          data_finalizacao: string | null
+          data_recebimento: string | null
+          fazenda_id: string | null
+          id: string
+          nome_analise: string
+          quantidade: number | null
+          status: string | null
+          talhao_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cliente_id?: string | null
+          colaborador?: string | null
+          created_at?: string
+          data_envio?: string | null
+          data_finalizacao?: string | null
+          data_recebimento?: string | null
+          fazenda_id?: string | null
+          id?: string
+          nome_analise: string
+          quantidade?: number | null
+          status?: string | null
+          talhao_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cliente_id?: string | null
+          colaborador?: string | null
+          created_at?: string
+          data_envio?: string | null
+          data_finalizacao?: string | null
+          data_recebimento?: string | null
+          fazenda_id?: string | null
+          id?: string
+          nome_analise?: string
+          quantidade?: number | null
+          status?: string | null
+          talhao_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analises_execucao_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analises_execucao_fazenda_id_fkey"
+            columns: ["fazenda_id"]
+            isOneToOne: false
+            referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analises_execucao_talhao_id_fkey"
+            columns: ["talhao_id"]
+            isOneToOne: false
+            referencedRelation: "talhoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clientes: {
         Row: {
           cad_pro: string | null
@@ -61,6 +134,120 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      execucoes: {
+        Row: {
+          area: number | null
+          cliente_id: string | null
+          created_at: string
+          data_agendada: string | null
+          equipamento: string | null
+          fazenda_id: string | null
+          id: string
+          pedido_id: string | null
+          servico: string | null
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          area?: number | null
+          cliente_id?: string | null
+          created_at?: string
+          data_agendada?: string | null
+          equipamento?: string | null
+          fazenda_id?: string | null
+          id?: string
+          pedido_id?: string | null
+          servico?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          area?: number | null
+          cliente_id?: string | null
+          created_at?: string
+          data_agendada?: string | null
+          equipamento?: string | null
+          fazenda_id?: string | null
+          id?: string
+          pedido_id?: string | null
+          servico?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "execucoes_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "execucoes_fazenda_id_fkey"
+            columns: ["fazenda_id"]
+            isOneToOne: false
+            referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "execucoes_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      execucoes_parciais: {
+        Row: {
+          area_executada: number | null
+          created_at: string
+          data: string | null
+          equipamento: string | null
+          execucao_id: string
+          id: string
+          observacoes: string | null
+          operador: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          area_executada?: number | null
+          created_at?: string
+          data?: string | null
+          equipamento?: string | null
+          execucao_id: string
+          id?: string
+          observacoes?: string | null
+          operador?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          area_executada?: number | null
+          created_at?: string
+          data?: string | null
+          equipamento?: string | null
+          execucao_id?: string
+          id?: string
+          observacoes?: string | null
+          operador?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "execucoes_parciais_execucao_id_fkey"
+            columns: ["execucao_id"]
+            isOneToOne: false
+            referencedRelation: "execucoes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fazendas: {
         Row: {
