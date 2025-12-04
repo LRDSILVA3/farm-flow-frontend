@@ -56,13 +56,16 @@ const FazendasPage = () => {
     itemsPerPage,
     setItemsPerPage,
     talhaoForm,
-    setTalhaoForm
+    setTalhaoForm,
+    addFazenda,
+    updateFazenda,
+    addTalhao,
+    deleteTalhao
   } = useFazendas();
 
   // Cleanup para prevenir erros de DOM ao navegar
   useEffect(() => {
     return () => {
-      // Limpa qualquer estado pendente ao desmontar
       setShowFazendaForm(false);
       setShowTalhoesModal(false);
       setEditingFazenda(null);
@@ -95,7 +98,11 @@ const FazendasPage = () => {
     setShowTalhoesModal,
     editingFazenda,
     formData,
-    setTalhaoForm
+    setTalhaoForm,
+    addFazenda,
+    updateFazenda,
+    addTalhao,
+    deleteTalhao
   );
 
   const handleAddTalhaoWrapper = (fazendaId: string) => {
