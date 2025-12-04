@@ -14,6 +14,179 @@ export type Database = {
   }
   public: {
     Tables: {
+      clientes: {
+        Row: {
+          cad_pro: string | null
+          cep: string | null
+          cidade: string | null
+          cpf: string
+          created_at: string
+          data_nascimento: string | null
+          email: string | null
+          estado: string | null
+          id: string
+          nome: string
+          telefone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cad_pro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cpf: string
+          created_at?: string
+          data_nascimento?: string | null
+          email?: string | null
+          estado?: string | null
+          id?: string
+          nome: string
+          telefone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cad_pro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cpf?: string
+          created_at?: string
+          data_nascimento?: string | null
+          email?: string | null
+          estado?: string | null
+          id?: string
+          nome?: string
+          telefone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      fazendas: {
+        Row: {
+          area: number | null
+          cidade: string | null
+          cliente_id: string | null
+          contato: string | null
+          created_at: string
+          estado: string | null
+          id: string
+          lote: string | null
+          matricula: string | null
+          nome: string
+          proprietario: string | null
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          area?: number | null
+          cidade?: string | null
+          cliente_id?: string | null
+          contato?: string | null
+          created_at?: string
+          estado?: string | null
+          id?: string
+          lote?: string | null
+          matricula?: string | null
+          nome: string
+          proprietario?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          area?: number | null
+          cidade?: string | null
+          cliente_id?: string | null
+          contato?: string | null
+          created_at?: string
+          estado?: string | null
+          id?: string
+          lote?: string | null
+          matricula?: string | null
+          nome?: string
+          proprietario?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fazendas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pedidos: {
+        Row: {
+          area: number | null
+          cliente_id: string | null
+          created_at: string
+          fazenda_id: string | null
+          grupo_servico: string | null
+          id: string
+          pagamento: string | null
+          produtos: Json | null
+          servico: string | null
+          status: string | null
+          tipo: string
+          updated_at: string
+          user_id: string
+          valor: number | null
+        }
+        Insert: {
+          area?: number | null
+          cliente_id?: string | null
+          created_at?: string
+          fazenda_id?: string | null
+          grupo_servico?: string | null
+          id?: string
+          pagamento?: string | null
+          produtos?: Json | null
+          servico?: string | null
+          status?: string | null
+          tipo?: string
+          updated_at?: string
+          user_id: string
+          valor?: number | null
+        }
+        Update: {
+          area?: number | null
+          cliente_id?: string | null
+          created_at?: string
+          fazenda_id?: string | null
+          grupo_servico?: string | null
+          id?: string
+          pagamento?: string | null
+          produtos?: Json | null
+          servico?: string | null
+          status?: string | null
+          tipo?: string
+          updated_at?: string
+          user_id?: string
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_fazenda_id_fkey"
+            columns: ["fazenda_id"]
+            isOneToOne: false
+            referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -43,6 +216,56 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      talhoes: {
+        Row: {
+          area: number | null
+          cidade: string | null
+          created_at: string
+          estado: string | null
+          fazenda_id: string
+          id: string
+          lote: string | null
+          matricula: string | null
+          nome: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          area?: number | null
+          cidade?: string | null
+          created_at?: string
+          estado?: string | null
+          fazenda_id: string
+          id?: string
+          lote?: string | null
+          matricula?: string | null
+          nome: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          area?: number | null
+          cidade?: string | null
+          created_at?: string
+          estado?: string | null
+          fazenda_id?: string
+          id?: string
+          lote?: string | null
+          matricula?: string | null
+          nome?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talhoes_fazenda_id_fkey"
+            columns: ["fazenda_id"]
+            isOneToOne: false
+            referencedRelation: "fazendas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

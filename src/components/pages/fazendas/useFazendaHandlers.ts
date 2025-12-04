@@ -1,7 +1,5 @@
-
 import { useRef, useEffect } from "react";
 import { Fazenda, Talhao } from "../FazendasPage";
-import { useToast } from "@/hooks/use-toast";
 
 export const useFazendaHandlers = (
   fazendas: Fazenda[],
@@ -13,9 +11,12 @@ export const useFazendaHandlers = (
   setShowTalhoesModal: (show: boolean) => void,
   editingFazenda: Fazenda | null,
   formData: Fazenda,
-  setTalhaoForm: (talhao: Talhao) => void
+  setTalhaoForm: (talhao: Talhao) => void,
+  addFazenda?: (fazenda: Omit<Fazenda, 'id' | 'talhoes'>) => Promise<any>,
+  updateFazenda?: (fazenda: Fazenda) => Promise<void>,
+  addTalhao?: (fazendaId: string, talhao: Omit<Talhao, 'id'>) => Promise<void>,
+  deleteTalhao?: (fazendaId: string, talhaoId: string) => Promise<void>
 ) => {
-  const { toast } = useToast();
   const isMountedRef = useRef(true);
   
   useEffect(() => {
@@ -24,14 +25,7 @@ export const useFazendaHandlers = (
     };
   }, []);
 
-  const safeToast = (toastData: any) => {
-    if (isMountedRef.current) {
-      toast(toastData);
-    }
-  };
-
   const handleEdit = (fazenda: Fazenda) => {
-    console.log("Editando fazenda:", fazenda);
     setEditingFazenda(fazenda);
     setFormData(fazenda);
     setShowFazendaForm(true);
@@ -42,22 +36,17 @@ export const useFazendaHandlers = (
     setShowTalhoesModal(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (editingFazenda) {
-      setFazendas(prev => prev.map(f => f.id === editingFazenda.id ? formData : f));
-      safeToast({
-        title: "Fazenda atualizada",
-        description: "A fazenda foi atualizada com sucesso.",
-      });
+      if (updateFazenda) {
+        await updateFazenda(formData);
+      }
     } else {
-      const newFazenda = { ...formData, id: Date.now().toString() };
-      setFazendas(prev => [...prev, newFazenda]);
-      safeToast({
-        title: "Fazenda criada",
-        description: "A fazenda foi criada com sucesso.",
-      });
+      if (addFazenda) {
+        await addFazenda(formData);
+      }
     }
     
     resetForm();
@@ -85,22 +74,10 @@ export const useFazendaHandlers = (
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleAddTalhao = (fazendaId: string, talhaoForm: Talhao) => {
-    const newTalhao = {
-      ...talhaoForm,
-      id: Date.now().toString()
-    };
-
-    setFazendas(prev => prev.map(fazenda => 
-      fazenda.id === fazendaId 
-        ? { ...fazenda, talhoes: [...fazenda.talhoes, newTalhao] }
-        : fazenda
-    ));
-
-    setSelectedFazenda(prev => prev ? {
-      ...prev,
-      talhoes: [...prev.talhoes, newTalhao]
-    } : null);
+  const handleAddTalhao = async (fazendaId: string, talhaoForm: Talhao) => {
+    if (addTalhao) {
+      await addTalhao(fazendaId, talhaoForm);
+    }
 
     setTalhaoForm({
       id: "",
@@ -112,24 +89,12 @@ export const useFazendaHandlers = (
       matricula: "",
       lote: ""
     });
-
-    safeToast({
-      title: "Talhão adicionado",
-      description: "O talhão foi adicionado com sucesso.",
-    });
   };
 
-  const handleDeleteTalhao = (fazendaId: string, talhaoId: string) => {
-    setFazendas(prev => prev.map(fazenda => 
-      fazenda.id === fazendaId 
-        ? { ...fazenda, talhoes: fazenda.talhoes.filter(t => t.id !== talhaoId) }
-        : fazenda
-    ));
-
-    setSelectedFazenda(prev => prev ? {
-      ...prev,
-      talhoes: prev.talhoes.filter(t => t.id !== talhaoId)
-    } : null);
+  const handleDeleteTalhao = async (fazendaId: string, talhaoId: string) => {
+    if (deleteTalhao) {
+      await deleteTalhao(fazendaId, talhaoId);
+    }
 
     if (editingFazenda && editingFazenda.id === fazendaId) {
       setFormData(prev => ({
@@ -137,11 +102,6 @@ export const useFazendaHandlers = (
         talhoes: prev.talhoes.filter(t => t.id !== talhaoId)
       }));
     }
-
-    safeToast({
-      title: "Talhão removido",
-      description: "O talhão foi removido com sucesso.",
-    });
   };
 
   return {

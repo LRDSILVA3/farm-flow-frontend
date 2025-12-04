@@ -37,7 +37,9 @@ const PedidosPage = () => {
     currentPage,
     setCurrentPage,
     itemsPerPage,
-    setItemsPerPage
+    setItemsPerPage,
+    addPedido,
+    updatePedido
   } = usePedidos();
 
   // Estados para filtros
@@ -52,24 +54,13 @@ const PedidosPage = () => {
     setShowPedidoForm(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (editingPedido) {
-      // Atualizar pedido existente
-      setPedidos(prev => prev.map(p => p.id === editingPedido.id ? formData : p));
-      toast({
-        title: "Pedido atualizado",
-        description: "O pedido foi atualizado com sucesso.",
-      });
+      await updatePedido(formData);
     } else {
-      // Criar novo pedido
-      const newPedido = { ...formData, id: Date.now().toString() };
-      setPedidos(prev => [...prev, newPedido]);
-      toast({
-        title: "Pedido criado",
-        description: "O pedido foi criado com sucesso.",
-      });
+      await addPedido(formData);
     }
     
     resetForm();
