@@ -1,6 +1,7 @@
-
-import { useState } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface Produto {
   id: string;
@@ -11,12 +12,10 @@ export interface Produto {
 
 export const useProdutos = () => {
   const { toast } = useToast();
-  
-  const [produtos, setProdutos] = useState<Produto[]>([
-    { id: "1", nome: "Defensivo A", valorUn: "45.00", status: "Ativo" },
-    { id: "2", nome: "Sementes Milho", valorUn: "120.00", status: "Ativo" }
-  ]);
+  const { user } = useAuth();
 
+  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [loading, setLoading] = useState(true);
   const [produtosPage, setProdutosPage] = useState(1);
   const [produtosPerPage, setProdutosPerPage] = useState(10);
   const [showProdutoForm, setShowProdutoForm] = useState(false);
@@ -28,31 +27,76 @@ export const useProdutos = () => {
     status: "Ativo"
   });
 
+  const fetchProdutos = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("produtos")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast({ title: "Erro ao carregar produtos", description: error.message, variant: "destructive" });
+    } else {
+      setProdutos(data?.map(p => ({
+        id: p.id,
+        nome: p.nome,
+        valorUn: p.valor_un || "",
+        status: p.status || "Ativo"
+      })) || []);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchProdutos();
+  }, [user]);
+
   const handleEditProduto = (produto: Produto) => {
-    console.log("Editando produto:", produto);
     setEditingProduto(produto);
     setProdutoFormData(produto);
     setShowProdutoForm(true);
   };
 
-  const handleProdutoSubmit = (e: React.FormEvent) => {
+  const handleProdutoSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+    if (!user) return;
+
     if (editingProduto) {
-      setProdutos(prev => prev.map(p => p.id === editingProduto.id ? produtoFormData : p));
-      toast({
-        title: "Produto atualizado",
-        description: "O produto foi atualizado com sucesso.",
-      });
+      const { error } = await supabase
+        .from("produtos")
+        .update({
+          nome: produtoFormData.nome,
+          valor_un: produtoFormData.valorUn,
+          status: produtoFormData.status
+        })
+        .eq("id", editingProduto.id);
+
+      if (error) {
+        toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Produto atualizado", description: "O produto foi atualizado com sucesso." });
+        fetchProdutos();
+      }
     } else {
-      const newProduto = { ...produtoFormData, id: Date.now().toString() };
-      setProdutos(prev => [...prev, newProduto]);
-      toast({
-        title: "Produto criado",
-        description: "O produto foi criado com sucesso.",
-      });
+      const { error } = await supabase
+        .from("produtos")
+        .insert({
+          user_id: user.id,
+          nome: produtoFormData.nome,
+          valor_un: produtoFormData.valorUn,
+          status: produtoFormData.status
+        });
+
+      if (error) {
+        toast({ title: "Erro ao criar", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Produto criado", description: "O produto foi criado com sucesso." });
+        fetchProdutos();
+      }
     }
-    
+
     resetProdutoForm();
   };
 
@@ -71,7 +115,6 @@ export const useProdutos = () => {
     setProdutoFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Pagination logic
   const totalProdutos = produtos.length;
   const totalProdutosPages = Math.ceil(totalProdutos / produtosPerPage);
   const produtosStartIndex = (produtosPage - 1) * produtosPerPage;
@@ -80,6 +123,7 @@ export const useProdutos = () => {
 
   return {
     produtos,
+    loading,
     produtosPage,
     setProdutosPage,
     produtosPerPage,
@@ -96,6 +140,7 @@ export const useProdutos = () => {
     totalProdutosPages,
     produtosStartIndex,
     produtosEndIndex,
-    currentProdutos
+    currentProdutos,
+    fetchProdutos
   };
 };

@@ -1,6 +1,7 @@
-
-import { useState } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface Servico {
   id: string;
@@ -12,12 +13,10 @@ export interface Servico {
 
 export const useServicos = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   
-  const [servicos, setServicos] = useState<Servico[]>([
-    { id: "1", nome: "Pulverização", valorAlqueire: "200.00", status: "Ativo", produtos: "Defensivo A, Defensivo B" },
-    { id: "2", nome: "Plantio", valorAlqueire: "150.00", status: "Ativo", produtos: "Sementes, Fertilizante" }
-  ]);
-
+  const [servicos, setServicos] = useState<Servico[]>([]);
+  const [loading, setLoading] = useState(true);
   const [servicosPage, setServicosPage] = useState(1);
   const [servicosPerPage, setServicosPerPage] = useState(10);
   const [showServicoForm, setShowServicoForm] = useState(false);
@@ -30,31 +29,79 @@ export const useServicos = () => {
     produtos: ""
   });
 
+  const fetchServicos = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("servicos")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast({ title: "Erro ao carregar serviços", description: error.message, variant: "destructive" });
+    } else {
+      setServicos(data?.map(s => ({
+        id: s.id,
+        nome: s.nome,
+        valorAlqueire: s.valor_alqueire || "",
+        status: s.status || "Ativo",
+        produtos: s.produtos || ""
+      })) || []);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchServicos();
+  }, [user]);
+
   const handleEditServico = (servico: Servico) => {
-    console.log("Editando serviço:", servico);
     setEditingServico(servico);
     setServicoFormData(servico);
     setShowServicoForm(true);
   };
 
-  const handleServicoSubmit = (e: React.FormEvent) => {
+  const handleServicoSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+    if (!user) return;
+
     if (editingServico) {
-      setServicos(prev => prev.map(s => s.id === editingServico.id ? servicoFormData : s));
-      toast({
-        title: "Serviço atualizado",
-        description: "O serviço foi atualizado com sucesso.",
-      });
+      const { error } = await supabase
+        .from("servicos")
+        .update({
+          nome: servicoFormData.nome,
+          valor_alqueire: servicoFormData.valorAlqueire,
+          status: servicoFormData.status,
+          produtos: servicoFormData.produtos
+        })
+        .eq("id", editingServico.id);
+
+      if (error) {
+        toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Serviço atualizado", description: "O serviço foi atualizado com sucesso." });
+        fetchServicos();
+      }
     } else {
-      const newServico = { ...servicoFormData, id: Date.now().toString() };
-      setServicos(prev => [...prev, newServico]);
-      toast({
-        title: "Serviço criado",
-        description: "O serviço foi criado com sucesso.",
-      });
+      const { error } = await supabase
+        .from("servicos")
+        .insert({
+          user_id: user.id,
+          nome: servicoFormData.nome,
+          valor_alqueire: servicoFormData.valorAlqueire,
+          status: servicoFormData.status,
+          produtos: servicoFormData.produtos
+        });
+
+      if (error) {
+        toast({ title: "Erro ao criar", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Serviço criado", description: "O serviço foi criado com sucesso." });
+        fetchServicos();
+      }
     }
-    
+
     resetServicoForm();
   };
 
@@ -74,7 +121,6 @@ export const useServicos = () => {
     setServicoFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Pagination logic
   const totalServicos = servicos.length;
   const totalServicosPages = Math.ceil(totalServicos / servicosPerPage);
   const servicosStartIndex = (servicosPage - 1) * servicosPerPage;
@@ -83,6 +129,7 @@ export const useServicos = () => {
 
   return {
     servicos,
+    loading,
     servicosPage,
     setServicosPage,
     servicosPerPage,
@@ -99,6 +146,7 @@ export const useServicos = () => {
     totalServicosPages,
     servicosStartIndex,
     servicosEndIndex,
-    currentServicos
+    currentServicos,
+    fetchServicos
   };
 };

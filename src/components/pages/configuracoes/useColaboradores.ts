@@ -1,6 +1,7 @@
-
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface Colaborador {
   id: string;
@@ -11,21 +12,10 @@ export interface Colaborador {
 
 export const useColaboradores = () => {
   const { toast } = useToast();
-  const [colaboradores, setColaboradores] = useState<Colaborador[]>([
-    {
-      id: "1",
-      nome: "Laboratorio 1",
-      endereco: "Rua das Flores, 123 - São Paulo/SP",
-      status: "Ativo"
-    },
-    {
-      id: "2", 
-      nome: "Laboratorio 2",
-      endereco: "Av. Principal, 456 - Campinas/SP",
-      status: "Ativo"
-    }
-  ]);
+  const { user } = useAuth();
 
+  const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
+  const [loading, setLoading] = useState(true);
   const [colaboradoresPage, setColaboradoresPage] = useState(1);
   const [colaboradoresPerPage, setColaboradoresPerPage] = useState(10);
   const [showColaboradorForm, setShowColaboradorForm] = useState(false);
@@ -37,24 +27,70 @@ export const useColaboradores = () => {
     status: "Ativo"
   });
 
-  const handleColaboradorSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    
-    if (editingColaborador) {
-      setColaboradores(prev => prev.map(c => c.id === editingColaborador.id ? colaboradorFormData : c));
-      toast({
-        title: "Colaborador atualizado",
-        description: "O colaborador foi atualizado com sucesso.",
-      });
+  const fetchColaboradores = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("colaboradores")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast({ title: "Erro ao carregar colaboradores", description: error.message, variant: "destructive" });
     } else {
-      const newColaborador = { ...colaboradorFormData, id: Date.now().toString() };
-      setColaboradores(prev => [...prev, newColaborador]);
-      toast({
-        title: "Colaborador criado",
-        description: "O colaborador foi criado com sucesso.",
-      });
+      setColaboradores(data?.map(c => ({
+        id: c.id,
+        nome: c.nome,
+        endereco: c.endereco || "",
+        status: (c.status as "Ativo" | "Inativo") || "Ativo"
+      })) || []);
     }
-    
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchColaboradores();
+  }, [user]);
+
+  const handleColaboradorSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    if (editingColaborador) {
+      const { error } = await supabase
+        .from("colaboradores")
+        .update({
+          nome: colaboradorFormData.nome,
+          endereco: colaboradorFormData.endereco,
+          status: colaboradorFormData.status
+        })
+        .eq("id", editingColaborador.id);
+
+      if (error) {
+        toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Colaborador atualizado", description: "O colaborador foi atualizado com sucesso." });
+        fetchColaboradores();
+      }
+    } else {
+      const { error } = await supabase
+        .from("colaboradores")
+        .insert({
+          user_id: user.id,
+          nome: colaboradorFormData.nome,
+          endereco: colaboradorFormData.endereco,
+          status: colaboradorFormData.status
+        });
+
+      if (error) {
+        toast({ title: "Erro ao criar", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Colaborador criado", description: "O colaborador foi criado com sucesso." });
+        fetchColaboradores();
+      }
+    }
+
     resetColaboradorForm();
   };
 
@@ -73,7 +109,6 @@ export const useColaboradores = () => {
     setColaboradorFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Pagination logic
   const totalColaboradores = colaboradores.length;
   const totalColaboradoresPages = Math.ceil(totalColaboradores / colaboradoresPerPage);
   const colaboradoresStartIndex = (colaboradoresPage - 1) * colaboradoresPerPage;
@@ -82,6 +117,7 @@ export const useColaboradores = () => {
 
   return {
     colaboradores,
+    loading,
     colaboradoresPage,
     setColaboradoresPage,
     colaboradoresPerPage,
@@ -99,6 +135,7 @@ export const useColaboradores = () => {
     totalColaboradoresPages,
     colaboradoresStartIndex,
     colaboradoresEndIndex,
-    currentColaboradores
+    currentColaboradores,
+    fetchColaboradores
   };
 };
