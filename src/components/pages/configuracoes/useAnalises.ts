@@ -1,6 +1,7 @@
-
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface AnaliseConfig {
   id: string;
@@ -14,27 +15,10 @@ export interface AnaliseConfig {
 
 export const useAnalises = () => {
   const { toast } = useToast();
-  const [analises, setAnalises] = useState<AnaliseConfig[]>([
-    {
-      id: "1",
-      nome: "Macro",
-      tipo: "Solo",
-      colaborador: "Laboratorio 1",
-      prazo: 7,
-      valor: "150.00",
-      status: "Ativo"
-    },
-    {
-      id: "2",
-      nome: "Foliar",
-      tipo: "Folha", 
-      colaborador: "Laboratorio 2",
-      prazo: 5,
-      valor: "120.00",
-      status: "Ativo"
-    }
-  ]);
+  const { user } = useAuth();
 
+  const [analises, setAnalises] = useState<AnaliseConfig[]>([]);
+  const [loading, setLoading] = useState(true);
   const [analisesPage, setAnalisesPage] = useState(1);
   const [analisesPerPage, setAnalisesPerPage] = useState(10);
   const [showAnaliseForm, setShowAnaliseForm] = useState(false);
@@ -49,24 +33,79 @@ export const useAnalises = () => {
     status: "Ativo"
   });
 
-  const handleAnaliseSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    
-    if (editingAnalise) {
-      setAnalises(prev => prev.map(a => a.id === editingAnalise.id ? analiseFormData : a));
-      toast({
-        title: "Análise atualizada",
-        description: "A análise foi atualizada com sucesso.",
-      });
+  const fetchAnalises = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("analises")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast({ title: "Erro ao carregar análises", description: error.message, variant: "destructive" });
     } else {
-      const newAnalise = { ...analiseFormData, id: Date.now().toString() };
-      setAnalises(prev => [...prev, newAnalise]);
-      toast({
-        title: "Análise criada",
-        description: "A análise foi criada com sucesso.",
-      });
+      setAnalises(data?.map(a => ({
+        id: a.id,
+        nome: a.nome,
+        tipo: (a.tipo as "Solo" | "Folha") || "Solo",
+        colaborador: a.colaborador || "",
+        prazo: a.prazo || 0,
+        valor: a.valor || "",
+        status: (a.status as "Ativo" | "Inativo") || "Ativo"
+      })) || []);
     }
-    
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchAnalises();
+  }, [user]);
+
+  const handleAnaliseSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    if (editingAnalise) {
+      const { error } = await supabase
+        .from("analises")
+        .update({
+          nome: analiseFormData.nome,
+          tipo: analiseFormData.tipo,
+          colaborador: analiseFormData.colaborador,
+          prazo: analiseFormData.prazo,
+          valor: analiseFormData.valor,
+          status: analiseFormData.status
+        })
+        .eq("id", editingAnalise.id);
+
+      if (error) {
+        toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Análise atualizada", description: "A análise foi atualizada com sucesso." });
+        fetchAnalises();
+      }
+    } else {
+      const { error } = await supabase
+        .from("analises")
+        .insert({
+          user_id: user.id,
+          nome: analiseFormData.nome,
+          tipo: analiseFormData.tipo,
+          colaborador: analiseFormData.colaborador,
+          prazo: analiseFormData.prazo,
+          valor: analiseFormData.valor,
+          status: analiseFormData.status
+        });
+
+      if (error) {
+        toast({ title: "Erro ao criar", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Análise criada", description: "A análise foi criada com sucesso." });
+        fetchAnalises();
+      }
+    }
+
     resetAnaliseForm();
   };
 
@@ -88,7 +127,6 @@ export const useAnalises = () => {
     setAnaliseFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Pagination logic
   const totalAnalises = analises.length;
   const totalAnalisesPages = Math.ceil(totalAnalises / analisesPerPage);
   const analisesStartIndex = (analisesPage - 1) * analisesPerPage;
@@ -97,6 +135,7 @@ export const useAnalises = () => {
 
   return {
     analises,
+    loading,
     analisesPage,
     setAnalisesPage,
     analisesPerPage,
@@ -114,6 +153,7 @@ export const useAnalises = () => {
     totalAnalisesPages,
     analisesStartIndex,
     analisesEndIndex,
-    currentAnalises
+    currentAnalises,
+    fetchAnalises
   };
 };

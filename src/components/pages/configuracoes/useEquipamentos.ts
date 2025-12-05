@@ -1,6 +1,7 @@
-
-import { useState } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface Equipamento {
   id: string;
@@ -10,12 +11,10 @@ export interface Equipamento {
 
 export const useEquipamentos = () => {
   const { toast } = useToast();
-  
-  const [equipamentos, setEquipamentos] = useState<Equipamento[]>([
-    { id: "1", nome: "Caminhão 01", status: "Disponível" },
-    { id: "2", nome: "Colheitadeira 01", status: "Em Manutenção" }
-  ]);
+  const { user } = useAuth();
 
+  const [equipamentos, setEquipamentos] = useState<Equipamento[]>([]);
+  const [loading, setLoading] = useState(true);
   const [equipamentosPage, setEquipamentosPage] = useState(1);
   const [equipamentosPerPage, setEquipamentosPerPage] = useState(10);
   const [showEquipamentoForm, setShowEquipamentoForm] = useState(false);
@@ -26,31 +25,73 @@ export const useEquipamentos = () => {
     status: "Disponível"
   });
 
+  const fetchEquipamentos = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("equipamentos")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast({ title: "Erro ao carregar equipamentos", description: error.message, variant: "destructive" });
+    } else {
+      setEquipamentos(data?.map(e => ({
+        id: e.id,
+        nome: e.nome,
+        status: e.status || "Disponível"
+      })) || []);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchEquipamentos();
+  }, [user]);
+
   const handleEditEquipamento = (equipamento: Equipamento) => {
-    console.log("Editando equipamento:", equipamento);
     setEditingEquipamento(equipamento);
     setEquipamentoFormData(equipamento);
     setShowEquipamentoForm(true);
   };
 
-  const handleEquipamentoSubmit = (e: React.FormEvent) => {
+  const handleEquipamentoSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+    if (!user) return;
+
     if (editingEquipamento) {
-      setEquipamentos(prev => prev.map(e => e.id === editingEquipamento.id ? equipamentoFormData : e));
-      toast({
-        title: "Equipamento atualizado",
-        description: "O equipamento foi atualizado com sucesso.",
-      });
+      const { error } = await supabase
+        .from("equipamentos")
+        .update({
+          nome: equipamentoFormData.nome,
+          status: equipamentoFormData.status
+        })
+        .eq("id", editingEquipamento.id);
+
+      if (error) {
+        toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Equipamento atualizado", description: "O equipamento foi atualizado com sucesso." });
+        fetchEquipamentos();
+      }
     } else {
-      const newEquipamento = { ...equipamentoFormData, id: Date.now().toString() };
-      setEquipamentos(prev => [...prev, newEquipamento]);
-      toast({
-        title: "Equipamento criado",
-        description: "O equipamento foi criado com sucesso.",
-      });
+      const { error } = await supabase
+        .from("equipamentos")
+        .insert({
+          user_id: user.id,
+          nome: equipamentoFormData.nome,
+          status: equipamentoFormData.status
+        });
+
+      if (error) {
+        toast({ title: "Erro ao criar", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Equipamento criado", description: "O equipamento foi criado com sucesso." });
+        fetchEquipamentos();
+      }
     }
-    
+
     resetEquipamentoForm();
   };
 
@@ -68,7 +109,6 @@ export const useEquipamentos = () => {
     setEquipamentoFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Pagination logic
   const totalEquipamentos = equipamentos.length;
   const totalEquipamentosPages = Math.ceil(totalEquipamentos / equipamentosPerPage);
   const equipamentosStartIndex = (equipamentosPage - 1) * equipamentosPerPage;
@@ -77,6 +117,7 @@ export const useEquipamentos = () => {
 
   return {
     equipamentos,
+    loading,
     equipamentosPage,
     setEquipamentosPage,
     equipamentosPerPage,
@@ -93,6 +134,7 @@ export const useEquipamentos = () => {
     totalEquipamentosPages,
     equipamentosStartIndex,
     equipamentosEndIndex,
-    currentEquipamentos
+    currentEquipamentos,
+    fetchEquipamentos
   };
 };

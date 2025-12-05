@@ -1,6 +1,7 @@
-
-import { useState } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface GrupoServico {
   id: string;
@@ -12,24 +13,10 @@ export interface GrupoServico {
 
 export const useGruposServicos = () => {
   const { toast } = useToast();
-  
-  const [gruposServicos, setGruposServicos] = useState<GrupoServico[]>([
-    { 
-      id: "1", 
-      nome: "Pacote Completo", 
-      descricao: "Pulverização + Plantio + Colheita", 
-      servicosIds: ["1", "2", "3"], 
-      status: "Ativo" 
-    },
-    { 
-      id: "2", 
-      nome: "Pacote Básico", 
-      descricao: "Pulverização + Adubação", 
-      servicosIds: ["1", "4"], 
-      status: "Ativo" 
-    }
-  ]);
+  const { user } = useAuth();
 
+  const [gruposServicos, setGruposServicos] = useState<GrupoServico[]>([]);
+  const [loading, setLoading] = useState(true);
   const [gruposServicosPage, setGruposServicosPage] = useState(1);
   const [gruposServicosPerPage, setGruposServicosPerPage] = useState(10);
   const [showGrupoServicoForm, setShowGrupoServicoForm] = useState(false);
@@ -42,31 +29,79 @@ export const useGruposServicos = () => {
     status: "Ativo"
   });
 
-  const handleEditGrupoServico = (grupoServico: GrupoServico) => {
-    console.log("Editando grupo de serviço:", grupoServico);
-    setEditingGrupoServico(grupoServico);
-    setGrupoServicoFormData(grupoServico);
+  const fetchGruposServicos = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("grupos_servicos")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast({ title: "Erro ao carregar grupos de serviços", description: error.message, variant: "destructive" });
+    } else {
+      setGruposServicos(data?.map(g => ({
+        id: g.id,
+        nome: g.nome,
+        descricao: g.descricao || "",
+        servicosIds: g.servicos_ids || [],
+        status: g.status || "Ativo"
+      })) || []);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchGruposServicos();
+  }, [user]);
+
+  const handleEditGrupoServico = (grupo: GrupoServico) => {
+    setEditingGrupoServico(grupo);
+    setGrupoServicoFormData(grupo);
     setShowGrupoServicoForm(true);
   };
 
-  const handleGrupoServicoSubmit = (e: React.FormEvent) => {
+  const handleGrupoServicoSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+    if (!user) return;
+
     if (editingGrupoServico) {
-      setGruposServicos(prev => prev.map(g => g.id === editingGrupoServico.id ? grupoServicoFormData : g));
-      toast({
-        title: "Grupo de serviço atualizado",
-        description: "O grupo de serviço foi atualizado com sucesso.",
-      });
+      const { error } = await supabase
+        .from("grupos_servicos")
+        .update({
+          nome: grupoServicoFormData.nome,
+          descricao: grupoServicoFormData.descricao,
+          servicos_ids: grupoServicoFormData.servicosIds,
+          status: grupoServicoFormData.status
+        })
+        .eq("id", editingGrupoServico.id);
+
+      if (error) {
+        toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Grupo atualizado", description: "O grupo de serviços foi atualizado com sucesso." });
+        fetchGruposServicos();
+      }
     } else {
-      const newGrupoServico = { ...grupoServicoFormData, id: Date.now().toString() };
-      setGruposServicos(prev => [...prev, newGrupoServico]);
-      toast({
-        title: "Grupo de serviço criado",
-        description: "O grupo de serviço foi criado com sucesso.",
-      });
+      const { error } = await supabase
+        .from("grupos_servicos")
+        .insert({
+          user_id: user.id,
+          nome: grupoServicoFormData.nome,
+          descricao: grupoServicoFormData.descricao,
+          servicos_ids: grupoServicoFormData.servicosIds,
+          status: grupoServicoFormData.status
+        });
+
+      if (error) {
+        toast({ title: "Erro ao criar", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Grupo criado", description: "O grupo de serviços foi criado com sucesso." });
+        fetchGruposServicos();
+      }
     }
-    
+
     resetGrupoServicoForm();
   };
 
@@ -86,7 +121,6 @@ export const useGruposServicos = () => {
     setGrupoServicoFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Pagination logic
   const totalGruposServicos = gruposServicos.length;
   const totalGruposServicosPages = Math.ceil(totalGruposServicos / gruposServicosPerPage);
   const gruposServicosStartIndex = (gruposServicosPage - 1) * gruposServicosPerPage;
@@ -95,6 +129,7 @@ export const useGruposServicos = () => {
 
   return {
     gruposServicos,
+    loading,
     gruposServicosPage,
     setGruposServicosPage,
     gruposServicosPerPage,
@@ -111,6 +146,7 @@ export const useGruposServicos = () => {
     totalGruposServicosPages,
     gruposServicosStartIndex,
     gruposServicosEndIndex,
-    currentGruposServicos
+    currentGruposServicos,
+    fetchGruposServicos
   };
 };

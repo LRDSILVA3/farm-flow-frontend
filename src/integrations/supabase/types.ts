@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      analises: {
+        Row: {
+          colaborador: string | null
+          created_at: string
+          id: string
+          nome: string
+          prazo: number | null
+          status: string | null
+          tipo: string | null
+          updated_at: string
+          user_id: string
+          valor: string | null
+        }
+        Insert: {
+          colaborador?: string | null
+          created_at?: string
+          id?: string
+          nome: string
+          prazo?: number | null
+          status?: string | null
+          tipo?: string | null
+          updated_at?: string
+          user_id: string
+          valor?: string | null
+        }
+        Update: {
+          colaborador?: string | null
+          created_at?: string
+          id?: string
+          nome?: string
+          prazo?: number | null
+          status?: string | null
+          tipo?: string | null
+          updated_at?: string
+          user_id?: string
+          valor?: string | null
+        }
+        Relationships: []
+      }
       analises_execucao: {
         Row: {
           cliente_id: string | null
@@ -130,6 +169,63 @@ export type Database = {
           id?: string
           nome?: string
           telefone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      colaboradores: {
+        Row: {
+          created_at: string
+          endereco: string | null
+          id: string
+          nome: string
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          endereco?: string | null
+          id?: string
+          nome: string
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          endereco?: string | null
+          id?: string
+          nome?: string
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      equipamentos: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          status?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -308,6 +404,39 @@ export type Database = {
           },
         ]
       }
+      grupos_servicos: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          servicos_ids: string[] | null
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          servicos_ids?: string[] | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          servicos_ids?: string[] | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pedidos: {
         Row: {
           area: number | null
@@ -374,6 +503,36 @@ export type Database = {
           },
         ]
       }
+      produtos: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          status: string | null
+          updated_at: string
+          user_id: string
+          valor_un: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          status?: string | null
+          updated_at?: string
+          user_id: string
+          valor_un?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+          valor_un?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -401,6 +560,39 @@ export type Database = {
           nome?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      servicos: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          produtos: string | null
+          status: string | null
+          updated_at: string
+          user_id: string
+          valor_alqueire: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          produtos?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+          valor_alqueire?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          produtos?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+          valor_alqueire?: string | null
         }
         Relationships: []
       }
