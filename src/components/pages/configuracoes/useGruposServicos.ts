@@ -117,6 +117,22 @@ export const useGruposServicos = () => {
     setShowGrupoServicoForm(false);
   };
 
+  const handleDeleteGrupoServico = async (id: string) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("grupos_servicos")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Grupo excluído", description: "O grupo de serviços foi excluído com sucesso." });
+      fetchGruposServicos();
+    }
+  };
+
   const handleGrupoServicoInputChange = (field: keyof GrupoServico, value: string | string[]) => {
     setGrupoServicoFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -142,6 +158,7 @@ export const useGruposServicos = () => {
     handleGrupoServicoSubmit,
     resetGrupoServicoForm,
     handleGrupoServicoInputChange,
+    handleDeleteGrupoServico,
     totalGruposServicos,
     totalGruposServicosPages,
     gruposServicosStartIndex,

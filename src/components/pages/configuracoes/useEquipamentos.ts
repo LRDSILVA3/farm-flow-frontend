@@ -105,6 +105,22 @@ export const useEquipamentos = () => {
     setShowEquipamentoForm(false);
   };
 
+  const handleDeleteEquipamento = async (id: string) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("equipamentos")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Equipamento excluído", description: "O equipamento foi excluído com sucesso." });
+      fetchEquipamentos();
+    }
+  };
+
   const handleEquipamentoInputChange = (field: keyof Equipamento, value: string) => {
     setEquipamentoFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -130,6 +146,7 @@ export const useEquipamentos = () => {
     handleEquipamentoSubmit,
     resetEquipamentoForm,
     handleEquipamentoInputChange,
+    handleDeleteEquipamento,
     totalEquipamentos,
     totalEquipamentosPages,
     equipamentosStartIndex,

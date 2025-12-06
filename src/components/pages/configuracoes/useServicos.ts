@@ -117,6 +117,22 @@ export const useServicos = () => {
     setShowServicoForm(false);
   };
 
+  const handleDeleteServico = async (id: string) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("servicos")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Serviço excluído", description: "O serviço foi excluído com sucesso." });
+      fetchServicos();
+    }
+  };
+
   const handleServicoInputChange = (field: keyof Servico, value: string) => {
     setServicoFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -142,6 +158,7 @@ export const useServicos = () => {
     handleServicoSubmit,
     resetServicoForm,
     handleServicoInputChange,
+    handleDeleteServico,
     totalServicos,
     totalServicosPages,
     servicosStartIndex,
