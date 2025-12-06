@@ -123,6 +123,22 @@ export const useAnalises = () => {
     setShowAnaliseForm(false);
   };
 
+  const handleDeleteAnalise = async (id: string) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("analises")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Análise excluída", description: "A análise foi excluída com sucesso." });
+      fetchAnalises();
+    }
+  };
+
   const handleAnaliseInputChange = (field: keyof AnaliseConfig, value: string | number) => {
     setAnaliseFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -149,6 +165,7 @@ export const useAnalises = () => {
     handleAnaliseSubmit,
     resetAnaliseForm,
     handleAnaliseInputChange,
+    handleDeleteAnalise,
     totalAnalises,
     totalAnalisesPages,
     analisesStartIndex,

@@ -111,6 +111,22 @@ export const useProdutos = () => {
     setShowProdutoForm(false);
   };
 
+  const handleDeleteProduto = async (id: string) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("produtos")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Produto excluído", description: "O produto foi excluído com sucesso." });
+      fetchProdutos();
+    }
+  };
+
   const handleProdutoInputChange = (field: keyof Produto, value: string) => {
     setProdutoFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -136,6 +152,7 @@ export const useProdutos = () => {
     handleProdutoSubmit,
     resetProdutoForm,
     handleProdutoInputChange,
+    handleDeleteProduto,
     totalProdutos,
     totalProdutosPages,
     produtosStartIndex,

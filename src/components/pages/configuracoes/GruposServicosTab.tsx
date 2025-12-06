@@ -1,10 +1,12 @@
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit } from "lucide-react";
+import { Plus, Edit, Trash2 } from "lucide-react";
 import { useGruposServicos } from "./useGruposServicos";
 import { GrupoServicoModal } from "./GrupoServicoModal";
+import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 
 export const GruposServicosTab = () => {
   const {
@@ -24,8 +26,25 @@ export const GruposServicosTab = () => {
     grupoServicoFormData,
     handleGrupoServicoSubmit,
     resetGrupoServicoForm,
-    handleGrupoServicoInputChange
+    handleGrupoServicoInputChange,
+    handleDeleteGrupoServico
   } = useGruposServicos();
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [grupoToDelete, setGrupoToDelete] = useState<string | null>(null);
+
+  const openDeleteDialog = (id: string) => {
+    setGrupoToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (grupoToDelete) {
+      handleDeleteGrupoServico(grupoToDelete);
+      setGrupoToDelete(null);
+    }
+    setDeleteDialogOpen(false);
+  };
 
   return (
     <div className="space-y-4">
@@ -66,13 +85,23 @@ export const GruposServicosTab = () => {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleEditGrupoServico(grupo)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditGrupoServico(grupo)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openDeleteDialog(grupo.id)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -117,6 +146,14 @@ export const GruposServicosTab = () => {
         handleGrupoServicoSubmit={handleGrupoServicoSubmit}
         resetGrupoServicoForm={resetGrupoServicoForm}
         handleGrupoServicoInputChange={handleGrupoServicoInputChange}
+      />
+
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={confirmDelete}
+        title="Excluir grupo"
+        description="Tem certeza que deseja excluir este grupo de serviços? Esta ação não pode ser desfeita."
       />
     </div>
   );

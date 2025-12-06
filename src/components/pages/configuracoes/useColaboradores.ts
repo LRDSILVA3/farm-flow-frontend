@@ -105,6 +105,22 @@ export const useColaboradores = () => {
     setShowColaboradorForm(false);
   };
 
+  const handleDeleteColaborador = async (id: string) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("colaboradores")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Colaborador excluído", description: "O colaborador foi excluído com sucesso." });
+      fetchColaboradores();
+    }
+  };
+
   const handleColaboradorInputChange = (field: keyof Colaborador, value: string) => {
     setColaboradorFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -131,6 +147,7 @@ export const useColaboradores = () => {
     handleColaboradorSubmit,
     resetColaboradorForm,
     handleColaboradorInputChange,
+    handleDeleteColaborador,
     totalColaboradores,
     totalColaboradoresPages,
     colaboradoresStartIndex,
