@@ -563,10 +563,47 @@ export type Database = {
         }
         Relationships: []
       }
+      servico_variaveis: {
+        Row: {
+          created_at: string
+          id: string
+          servico_id: string
+          variavel_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          servico_id: string
+          variavel_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          servico_id?: string
+          variavel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "servico_variaveis_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "servicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "servico_variaveis_variavel_id_fkey"
+            columns: ["variavel_id"]
+            isOneToOne: false
+            referencedRelation: "variaveis_custo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       servicos: {
         Row: {
           created_at: string
           id: string
+          is_fixed: boolean | null
           nome: string
           produtos: string | null
           status: string | null
@@ -577,6 +614,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_fixed?: boolean | null
           nome: string
           produtos?: string | null
           status?: string | null
@@ -587,6 +625,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_fixed?: boolean | null
           nome?: string
           produtos?: string | null
           status?: string | null
@@ -645,6 +684,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      variaveis_custo: {
+        Row: {
+          codigo: string
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          updated_at: string
+          user_id: string
+          valor: number | null
+        }
+        Insert: {
+          codigo: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+          user_id: string
+          valor?: number | null
+        }
+        Update: {
+          codigo?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+          user_id?: string
+          valor?: number | null
+        }
+        Relationships: []
       }
     }
     Views: {

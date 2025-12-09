@@ -9,6 +9,7 @@ export interface Servico {
   valorAlqueire: string;
   status: string;
   produtos: string;
+  isFixed: boolean;
 }
 
 export const useServicos = () => {
@@ -26,7 +27,8 @@ export const useServicos = () => {
     nome: "",
     valorAlqueire: "",
     status: "Ativo",
-    produtos: ""
+    produtos: "",
+    isFixed: false
   });
 
   const fetchServicos = async () => {
@@ -46,7 +48,8 @@ export const useServicos = () => {
         nome: s.nome,
         valorAlqueire: s.valor_alqueire || "",
         status: s.status || "Ativo",
-        produtos: s.produtos || ""
+        produtos: s.produtos || "",
+        isFixed: s.is_fixed || false
       })) || []);
     }
     setLoading(false);
@@ -111,7 +114,8 @@ export const useServicos = () => {
       nome: "",
       valorAlqueire: "",
       status: "Ativo",
-      produtos: ""
+      produtos: "",
+      isFixed: false
     });
     setEditingServico(null);
     setShowServicoForm(false);
