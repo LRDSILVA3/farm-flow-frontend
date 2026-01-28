@@ -5,8 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 interface Profile {
   id: string;
   user_id: string;
-  nome: string | null;
-  cargo: string | null;
+  name: string | null;
+  role: string | null;
   avatar_url: string | null;
 }
 
@@ -17,13 +17,11 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Fetch profile with setTimeout to avoid deadlock
         if (session?.user) {
           setTimeout(() => {
             fetchProfile(session.user.id);
@@ -34,7 +32,6 @@ export const useAuth = () => {
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -59,7 +56,7 @@ export const useAuth = () => {
     }
   };
 
-  const signUp = async (email: string, password: string, nome: string) => {
+  const signUp = async (email: string, password: string, name: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
     const { data, error } = await supabase.auth.signUp({
@@ -68,7 +65,7 @@ export const useAuth = () => {
       options: {
         emailRedirectTo: redirectUrl,
         data: {
-          nome
+          name
         }
       }
     });

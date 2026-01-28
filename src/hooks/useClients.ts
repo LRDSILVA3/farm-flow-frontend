@@ -2,63 +2,63 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-export interface Cliente {
+export interface Client {
   id: string;
   cpf: string;
-  nome: string;
-  dataNascimento: string;
+  name: string;
+  birthDate: string;
   email: string;
-  telefone: string;
-  cep: string;
-  cidade: string;
-  estado: string;
+  phone: string;
+  zipCode: string;
+  city: string;
+  state: string;
   cadPro?: string;
 }
 
-interface ClienteDB {
+interface ClientDB {
   id: string;
   user_id: string;
   cpf: string;
-  nome: string;
-  data_nascimento: string | null;
+  name: string;
+  birth_date: string | null;
   email: string | null;
-  telefone: string | null;
-  cep: string | null;
-  cidade: string | null;
-  estado: string | null;
+  phone: string | null;
+  zip_code: string | null;
+  city: string | null;
+  state: string | null;
   cad_pro: string | null;
   created_at: string;
   updated_at: string;
 }
 
-const mapFromDB = (db: ClienteDB): Cliente => ({
+const mapFromDB = (db: ClientDB): Client => ({
   id: db.id,
   cpf: db.cpf,
-  nome: db.nome,
-  dataNascimento: db.data_nascimento || "",
+  name: db.name,
+  birthDate: db.birth_date || "",
   email: db.email || "",
-  telefone: db.telefone || "",
-  cep: db.cep || "",
-  cidade: db.cidade || "",
-  estado: db.estado || "",
+  phone: db.phone || "",
+  zipCode: db.zip_code || "",
+  city: db.city || "",
+  state: db.state || "",
   cadPro: db.cad_pro || ""
 });
 
-export const useClientes = () => {
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [editingClient, setEditingClient] = useState<Cliente | null>(null);
+export const useClients = () => {
+  const [clients, setClients] = useState<Client[]>([]);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchClientes = async () => {
+  const fetchClients = async () => {
     try {
       const { data, error } = await supabase
-        .from("clientes")
+        .from("clients")
         .select("*")
-        .order("nome");
+        .order("name");
 
       if (error) throw error;
-      setClientes((data || []).map(mapFromDB));
+      setClients((data || []).map(mapFromDB));
     } catch (error: any) {
       toast({
         title: "Erro ao carregar clientes",
@@ -71,33 +71,33 @@ export const useClientes = () => {
   };
 
   useEffect(() => {
-    fetchClientes();
+    fetchClients();
   }, []);
 
-  const addCliente = async (cliente: Omit<Cliente, 'id'>) => {
+  const addClient = async (client: Omit<Client, 'id'>) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
       const { data, error } = await supabase
-        .from("clientes")
+        .from("clients")
         .insert({
           user_id: user.id,
-          cpf: cliente.cpf,
-          nome: cliente.nome,
-          data_nascimento: cliente.dataNascimento || null,
-          email: cliente.email || null,
-          telefone: cliente.telefone || null,
-          cep: cliente.cep || null,
-          cidade: cliente.cidade || null,
-          estado: cliente.estado || null,
-          cad_pro: cliente.cadPro || null
+          cpf: client.cpf,
+          name: client.name,
+          birth_date: client.birthDate || null,
+          email: client.email || null,
+          phone: client.phone || null,
+          zip_code: client.zipCode || null,
+          city: client.city || null,
+          state: client.state || null,
+          cad_pro: client.cadPro || null
         })
         .select()
         .single();
 
       if (error) throw error;
-      setClientes(prev => [...prev, mapFromDB(data)]);
+      setClients(prev => [...prev, mapFromDB(data)]);
       toast({
         title: "Cliente cadastrado",
         description: "O cliente foi cadastrado com sucesso."
@@ -111,25 +111,25 @@ export const useClientes = () => {
     }
   };
 
-  const updateCliente = async (updatedClient: Cliente) => {
+  const updateClient = async (updatedClient: Client) => {
     try {
       const { error } = await supabase
-        .from("clientes")
+        .from("clients")
         .update({
           cpf: updatedClient.cpf,
-          nome: updatedClient.nome,
-          data_nascimento: updatedClient.dataNascimento || null,
+          name: updatedClient.name,
+          birth_date: updatedClient.birthDate || null,
           email: updatedClient.email || null,
-          telefone: updatedClient.telefone || null,
-          cep: updatedClient.cep || null,
-          cidade: updatedClient.cidade || null,
-          estado: updatedClient.estado || null,
+          phone: updatedClient.phone || null,
+          zip_code: updatedClient.zipCode || null,
+          city: updatedClient.city || null,
+          state: updatedClient.state || null,
           cad_pro: updatedClient.cadPro || null
         })
         .eq("id", updatedClient.id);
 
       if (error) throw error;
-      setClientes(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
+      setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
       toast({
         title: "Cliente atualizado",
         description: "O cliente foi atualizado com sucesso."
@@ -143,8 +143,8 @@ export const useClientes = () => {
     }
   };
 
-  const startEditing = (cliente: Cliente) => {
-    setEditingClient(cliente);
+  const startEditing = (client: Client) => {
+    setEditingClient(client);
   };
 
   const stopEditing = () => {
@@ -152,13 +152,13 @@ export const useClientes = () => {
   };
 
   return {
-    clientes,
+    clients,
     editingClient,
     loading,
-    addCliente,
-    updateCliente,
+    addClient,
+    updateClient,
     startEditing,
     stopEditing,
-    refetch: fetchClientes
+    refetch: fetchClients
   };
 };

@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus } from "lucide-react";
-import { useClientes } from "./clientes/useClientes";
+import { useClients, Client } from "@/hooks/useClients";
 import { ClienteForm } from "./clientes/ClienteForm";
 import { ClientesFilters } from "./clientes/ClientesFilters";
 import { ClientesTable } from "./clientes/ClientesTable";
@@ -14,13 +13,13 @@ interface ClientesPageProps {
 
 const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
   const {
-    clientes,
+    clients,
     editingClient,
-    addCliente,
-    updateCliente,
+    addClient,
+    updateClient,
     startEditing,
     stopEditing
-  } = useClientes();
+  } = useClients();
 
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -28,7 +27,6 @@ const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Cleanup para prevenir erros de DOM ao navegar
   useEffect(() => {
     return () => {
       setShowForm(false);
@@ -36,18 +34,18 @@ const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
     };
   }, []);
 
-  const handleEdit = (cliente: any) => {
-    startEditing(cliente);
+  const handleEdit = (client: Client) => {
+    startEditing(client);
     setShowForm(true);
   };
 
-  const handleSave = (clienteData: any) => {
-    addCliente(clienteData);
+  const handleSave = (clientData: Omit<Client, 'id'>) => {
+    addClient(clientData);
     setShowForm(false);
   };
 
-  const handleUpdate = (clienteData: any) => {
-    updateCliente(clienteData);
+  const handleUpdate = (clientData: Client) => {
+    updateClient(clientData);
     setShowForm(false);
     stopEditing();
   };
@@ -62,15 +60,14 @@ const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
     onNavigateToFazendas(cpf);
   };
 
-  // Obter lista única de cidades/estados para o filtro
-  const cidadesEstados = Array.from(new Set(clientes.map(c => `${c.estado}/${c.cidade}`))).sort();
+  const cidadesEstados = Array.from(new Set(clients.map(c => `${c.state}/${c.city}`))).sort();
 
-  const filteredClientes = clientes.filter(cliente => {
-    const matchesSearch = cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cliente.cpf.includes(searchTerm) ||
-      cliente.email.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredClients = clients.filter(client => {
+    const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.cpf.includes(searchTerm) ||
+      client.email.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCidadeEstado = !cidadeEstadoFilter || cidadeEstadoFilter === "all" || `${cliente.estado}/${cliente.cidade}` === cidadeEstadoFilter;
+    const matchesCidadeEstado = !cidadeEstadoFilter || cidadeEstadoFilter === "all" || `${client.state}/${client.city}` === cidadeEstadoFilter;
     
     return matchesSearch && matchesCidadeEstado;
   });
@@ -121,7 +118,7 @@ const ClientesPage = ({ onNavigateToFazendas }: ClientesPageProps) => {
         </CardHeader>
         <CardContent>
           <ClientesTable
-            clientes={filteredClientes}
+            clientes={filteredClients}
             onEdit={handleEdit}
             onNavigateToFazendas={handleNavigateToFazendas}
             currentPage={currentPage}

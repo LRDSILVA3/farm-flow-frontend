@@ -7,7 +7,7 @@ import { Plus, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { PedidosTable } from "./pedidos/PedidosTable";
 import { PedidoForm } from "./pedidos/PedidoForm";
-import { usePedidos } from "./pedidos/usePedidos";
+import { useOrders, Order } from "@/hooks/useOrders";
 
 export interface Pedido {
   id: string;
@@ -23,26 +23,47 @@ export interface Pedido {
   pagamento: string;
 }
 
+// Map between English and Portuguese
+const mapOrderToPedido = (order: Order): Pedido => ({
+  id: order.id,
+  cliente: order.clientId,
+  fazenda: order.farmId,
+  tipo: order.type,
+  servico: order.serviceName,
+  produtos: order.productsData,
+  grupoServico: order.serviceGroup,
+  area: order.area,
+  valor: order.value,
+  status: order.status,
+  pagamento: order.payment
+});
+
+const mapPedidoToOrder = (pedido: Pedido): Order => ({
+  id: pedido.id,
+  clientId: pedido.cliente,
+  farmId: pedido.fazenda,
+  type: pedido.tipo,
+  serviceName: pedido.servico,
+  productsData: pedido.produtos,
+  serviceGroup: pedido.grupoServico,
+  area: pedido.area,
+  value: pedido.valor,
+  status: pedido.status,
+  payment: pedido.pagamento
+});
+
 const PedidosPage = () => {
   const { toast } = useToast();
-  const {
-    pedidos,
-    setPedidos,
-    showPedidoForm,
-    setShowPedidoForm,
-    editingPedido,
-    setEditingPedido,
-    formData,
-    setFormData,
-    currentPage,
-    setCurrentPage,
-    itemsPerPage,
-    setItemsPerPage,
-    addPedido,
-    updatePedido
-  } = usePedidos();
+  const orderHook = useOrders();
+  
+  const pedidos = orderHook.orders.map(mapOrderToPedido);
+  const showPedidoForm = orderHook.showOrderForm;
+  const setShowPedidoForm = orderHook.setShowOrderForm;
+  const editingPedido = orderHook.editingOrder ? mapOrderToPedido(orderHook.editingOrder) : null;
+  const setEditingPedido = (p: Pedido | null) => orderHook.setEditingOrder(p ? mapPedidoToOrder(p) : null);
+  const formData = mapOrderToPedido(orderHook.formData);
+  const setFormData = (p: Pedido) => orderHook.setFormData(mapPedidoToOrder(p));
 
-  // Estados para filtros
   const [searchTerm, setSearchTerm] = useState("");
   const [servicoFilter, setServicoFilter] = useState("");
   const [cidadeEstadoFilter, setCidadeEstadoFilter] = useState("");
@@ -58,9 +79,9 @@ const PedidosPage = () => {
     e.preventDefault();
     
     if (editingPedido) {
-      await updatePedido(formData);
+      await orderHook.updateOrder(mapPedidoToOrder(formData));
     } else {
-      await addPedido(formData);
+      await orderHook.addOrder(mapPedidoToOrder(formData));
     }
     
     resetForm();
@@ -85,20 +106,18 @@ const PedidosPage = () => {
   };
 
   const handleInputChange = (field: keyof Pedido, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData({ ...formData, [field]: value });
   };
 
-  // Listas para filtros
   const servicosDisponiveis = ["Pulverização", "Plantio", "Colheita", "Adubação"];
-  const cidadesEstados = ["Interior SP", "Interior MG", "Interior GO"]; // Mock data
+  const cidadesEstados = ["Interior SP", "Interior MG", "Interior GO"];
 
-  // Filtrar pedidos baseado nos critérios de busca
   const filteredPedidos = pedidos.filter(pedido => {
     const matchesSearch = pedido.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
       pedido.fazenda.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesServico = !servicoFilter || servicoFilter === "all" || pedido.servico === servicoFilter || pedido.grupoServico === servicoFilter;
-    const matchesCidadeEstado = !cidadeEstadoFilter || cidadeEstadoFilter === "all"; // Seria implementado com dados reais das fazendas
+    const matchesCidadeEstado = !cidadeEstadoFilter || cidadeEstadoFilter === "all";
     
     return matchesSearch && matchesServico && matchesCidadeEstado;
   });
@@ -165,10 +184,10 @@ const PedidosPage = () => {
         <CardContent>
           <PedidosTable
             pedidos={filteredPedidos}
-            currentPage={currentPage}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={setItemsPerPage}
+            currentPage={orderHook.currentPage}
+            itemsPerPage={orderHook.itemsPerPage}
+            onPageChange={orderHook.setCurrentPage}
+            onItemsPerPageChange={orderHook.setItemsPerPage}
             onEdit={handleEdit}
           />
         </CardContent>

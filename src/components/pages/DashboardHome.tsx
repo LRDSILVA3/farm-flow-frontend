@@ -19,25 +19,25 @@ const AnimatedValue = ({ value, prefix = "", suffix = "" }: { value: number; pre
 };
 
 interface DashboardStats {
-  clientesAtivos: number;
-  fazendasCadastradas: number;
-  pedidosPendentes: number;
-  execucoesAgendadas: number;
-  faturamentoMensal: number;
-  hectaresTrabalhados: number;
+  activeClients: number;
+  registeredFarms: number;
+  pendingOrders: number;
+  scheduledExecutions: number;
+  monthlyRevenue: number;
+  workedHectares: number;
 }
 
 const DashboardHome = () => {
   const [stats, setStats] = useState<DashboardStats>({
-    clientesAtivos: 0,
-    fazendasCadastradas: 0,
-    pedidosPendentes: 0,
-    execucoesAgendadas: 0,
-    faturamentoMensal: 0,
-    hectaresTrabalhados: 0
+    activeClients: 0,
+    registeredFarms: 0,
+    pendingOrders: 0,
+    scheduledExecutions: 0,
+    monthlyRevenue: 0,
+    workedHectares: 0
   });
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
-  const [proximasExecucoes, setProximasExecucoes] = useState<any[]>([]);
+  const [upcomingExecutions, setUpcomingExecutions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -47,66 +47,66 @@ const DashboardHome = () => {
   const fetchDashboardData = async () => {
     try {
       // Fetch counts
-      const [clientesRes, fazendasRes, pedidosRes, execucoesRes] = await Promise.all([
-        supabase.from("clientes").select("id", { count: "exact", head: true }),
-        supabase.from("fazendas").select("id, area", { count: "exact" }),
-        supabase.from("pedidos").select("id, status, valor, area", { count: "exact" }),
-        supabase.from("execucoes").select("id, status, data_agendada, servico, area, fazenda_id", { count: "exact" })
+      const [clientsRes, farmsRes, ordersRes, executionsRes] = await Promise.all([
+        supabase.from("clients").select("id", { count: "exact", head: true }),
+        supabase.from("farms").select("id, area", { count: "exact" }),
+        supabase.from("orders").select("id, status, value, area", { count: "exact" }),
+        supabase.from("executions").select("id, status, scheduled_date, service_name, area, farm_id", { count: "exact" })
       ]);
 
-      const clientesCount = clientesRes.count || 0;
-      const fazendasCount = fazendasRes.count || 0;
+      const clientsCount = clientsRes.count || 0;
+      const farmsCount = farmsRes.count || 0;
       
-      const pedidosPendentes = (pedidosRes.data || []).filter(p => p.status === "Pendente").length;
-      const execucoesAgendadas = (execucoesRes.data || []).filter(e => e.status === "Agendado").length;
+      const pendingOrders = (ordersRes.data || []).filter(p => p.status === "Pendente").length;
+      const scheduledExecutions = (executionsRes.data || []).filter(e => e.status === "Agendado").length;
       
-      // Calculate faturamento (sum of paid pedidos)
-      const faturamento = (pedidosRes.data || [])
+      // Calculate revenue (sum of completed orders)
+      const revenue = (ordersRes.data || [])
         .filter(p => p.status === "Concluído")
-        .reduce((sum, p) => sum + (Number(p.valor) || 0), 0);
+        .reduce((sum, p) => sum + (Number(p.value) || 0), 0);
       
       // Calculate hectares
-      const hectares = (execucoesRes.data || [])
+      const hectares = (executionsRes.data || [])
         .filter(e => e.status === "Concluído")
         .reduce((sum, e) => sum + (Number(e.area) || 0), 0);
 
       setStats({
-        clientesAtivos: clientesCount,
-        fazendasCadastradas: fazendasCount,
-        pedidosPendentes,
-        execucoesAgendadas,
-        faturamentoMensal: faturamento,
-        hectaresTrabalhados: hectares
+        activeClients: clientsCount,
+        registeredFarms: farmsCount,
+        pendingOrders,
+        scheduledExecutions,
+        monthlyRevenue: revenue,
+        workedHectares: hectares
       });
 
-      // Fetch recent clientes for activities
-      const { data: recentClientes } = await supabase
-        .from("clientes")
-        .select("nome, created_at")
+      // Fetch recent clients for activities
+      const { data: recentClients } = await supabase
+        .from("clients")
+        .select("name, created_at")
         .order("created_at", { ascending: false })
         .limit(4);
 
-      setRecentActivities((recentClientes || []).map(c => ({
-        action: `Novo cliente: ${c.nome}`,
+      setRecentActivities((recentClients || []).map(c => ({
+        action: `Novo cliente: ${c.name}`,
         time: formatTimeAgo(c.created_at),
-        user: c.nome
+        user: c.name
       })));
 
-      // Fetch próximas execuções
-      const { data: execucoes } = await supabase
-        .from("execucoes")
+      // Fetch upcoming executions
+      const { data: executions } = await supabase
+        .from("executions")
         .select(`
-          id, servico, area, data_agendada,
-          fazendas:fazenda_id (nome)
+          id, service_name, area, scheduled_date,
+          farms:farm_id (name)
         `)
         .eq("status", "Agendado")
-        .order("data_agendada", { ascending: true })
+        .order("scheduled_date", { ascending: true })
         .limit(4);
 
-      setProximasExecucoes((execucoes || []).map(e => ({
-        service: e.servico || "Serviço",
-        farm: (e.fazendas as any)?.nome || "Fazenda",
-        date: e.data_agendada ? new Date(e.data_agendada).toLocaleDateString('pt-BR') : "-",
+      setUpcomingExecutions((executions || []).map(e => ({
+        service: e.service_name || "Serviço",
+        farm: (e.farms as any)?.name || "Fazenda",
+        date: e.scheduled_date ? new Date(e.scheduled_date).toLocaleDateString('pt-BR') : "-",
         area: `${e.area || 0} ha`
       })));
 
@@ -132,7 +132,7 @@ const DashboardHome = () => {
   const statCards = [
     {
       title: "Clientes Ativos",
-      value: stats.clientesAtivos,
+      value: stats.activeClients,
       description: "Total cadastrado",
       icon: Users,
       color: "text-blue-600",
@@ -141,7 +141,7 @@ const DashboardHome = () => {
     },
     {
       title: "Fazendas Cadastradas",
-      value: stats.fazendasCadastradas,
+      value: stats.registeredFarms,
       description: "Total cadastrado",
       icon: MapPin,
       color: "text-green-600",
@@ -150,7 +150,7 @@ const DashboardHome = () => {
     },
     {
       title: "Pedidos Pendentes",
-      value: stats.pedidosPendentes,
+      value: stats.pendingOrders,
       description: "Para aprovação",
       icon: FileText,
       color: "text-orange-600",
@@ -159,7 +159,7 @@ const DashboardHome = () => {
     },
     {
       title: "Execuções Agendadas",
-      value: stats.execucoesAgendadas,
+      value: stats.scheduledExecutions,
       description: "Próximos dias",
       icon: Calendar,
       color: "text-purple-600",
@@ -168,7 +168,7 @@ const DashboardHome = () => {
     },
     {
       title: "Faturamento Mensal",
-      value: stats.faturamentoMensal,
+      value: stats.monthlyRevenue,
       description: "Pedidos concluídos",
       icon: DollarSign,
       color: "text-emerald-600",
@@ -177,7 +177,7 @@ const DashboardHome = () => {
     },
     {
       title: "Hectares Trabalhados",
-      value: stats.hectaresTrabalhados,
+      value: stats.workedHectares,
       description: "Total executado",
       icon: TrendingUp,
       color: "text-cyan-600",
@@ -248,8 +248,8 @@ const DashboardHome = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {proximasExecucoes.length > 0 ? (
-                proximasExecucoes.map((execution, index) => (
+              {upcomingExecutions.length > 0 ? (
+                upcomingExecutions.map((execution, index) => (
                   <div key={index} className="border-l-4 border-green-500 pl-4">
                     <p className="text-sm font-medium">{execution.service}</p>
                     <p className="text-xs text-gray-600">{execution.farm} • {execution.area}</p>
