@@ -12,58 +12,58 @@ import { Edit, Search, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-interface AnaliseExecucao {
+interface AnalysisExecution {
   id: string;
-  nomeAnalise: string;
-  colaborador: string;
-  clienteId: string;
-  cliente: string;
-  fazendaId: string;
-  fazenda: string;
-  talhaoId: string;
-  talhao: string;
-  quantidade: number;
+  analysisName: string;
+  collaborator: string;
+  clientId: string;
+  clientName: string;
+  farmId: string;
+  farmName: string;
+  plotId: string;
+  plotName: string;
+  quantity: number;
   status: "Pendente" | "Enviado" | "Recebido" | "Executando" | "Finalizado";
-  dataEnvio: string;
-  dataRecebimento: string;
-  dataFinalizacao: string;
+  sendDate: string;
+  receiptDate: string;
+  completionDate: string;
 }
 
 const AnalisesPrincipalPage = () => {
   const { toast } = useToast();
-  const [analises, setAnalises] = useState<AnaliseExecucao[]>([]);
+  const [analyses, setAnalyses] = useState<AnalysisExecution[]>([]);
   const [loading, setLoading] = useState(true);
-  const [clientes, setClientes] = useState<{id: string; nome: string}[]>([]);
-  const [fazendas, setFazendas] = useState<{id: string; nome: string}[]>([]);
-  const [talhoes, setTalhoes] = useState<{id: string; nome: string}[]>([]);
+  const [clients, setClients] = useState<{id: string; name: string}[]>([]);
+  const [farms, setFarms] = useState<{id: string; name: string}[]>([]);
+  const [plots, setPlots] = useState<{id: string; name: string}[]>([]);
 
-  const colaboradoresConfig = [
-    { id: "1", nome: "Laboratorio 1" },
-    { id: "2", nome: "Laboratorio 2" }
+  const collaboratorsConfig = [
+    { id: "1", name: "Laboratorio 1" },
+    { id: "2", name: "Laboratorio 2" }
   ];
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [colaboradorFilter, setColaboradorFilter] = useState("");
-  const [analisesPage, setAnalisesPage] = useState(1);
-  const [analisesPerPage, setAnalisesPerPage] = useState(10);
+  const [collaboratorFilter, setCollaboratorFilter] = useState("");
+  const [analysesPage, setAnalysesPage] = useState(1);
+  const [analysesPerPage, setAnalysesPerPage] = useState(10);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingAnalise, setEditingAnalise] = useState<AnaliseExecucao | null>(null);
-  const [formData, setFormData] = useState<AnaliseExecucao>({
+  const [editingAnalysis, setEditingAnalysis] = useState<AnalysisExecution | null>(null);
+  const [formData, setFormData] = useState<AnalysisExecution>({
     id: "",
-    nomeAnalise: "",
-    colaborador: "",
-    clienteId: "",
-    cliente: "",
-    fazendaId: "",
-    fazenda: "",
-    talhaoId: "",
-    talhao: "",
-    quantidade: 1,
+    analysisName: "",
+    collaborator: "",
+    clientId: "",
+    clientName: "",
+    farmId: "",
+    farmName: "",
+    plotId: "",
+    plotName: "",
+    quantity: 1,
     status: "Pendente",
-    dataEnvio: "",
-    dataRecebimento: "",
-    dataFinalizacao: ""
+    sendDate: "",
+    receiptDate: "",
+    completionDate: ""
   });
 
   useEffect(() => {
@@ -72,42 +72,42 @@ const AnalisesPrincipalPage = () => {
 
   const fetchData = async () => {
     try {
-      const [analisesRes, clientesRes, fazendasRes, talhoesRes] = await Promise.all([
-        supabase.from("analises_execucao").select(`
-          id, nome_analise, colaborador, quantidade, status, 
-          data_envio, data_recebimento, data_finalizacao,
-          clientes:cliente_id (id, nome),
-          fazendas:fazenda_id (id, nome),
-          talhoes:talhao_id (id, nome)
+      const [analysesRes, clientsRes, farmsRes, plotsRes] = await Promise.all([
+        supabase.from("analysis_executions").select(`
+          id, analysis_name, collaborator, quantity, status, 
+          send_date, receipt_date, completion_date,
+          clients:client_id (id, name),
+          farms:farm_id (id, name),
+          plots:plot_id (id, name)
         `).order("created_at", { ascending: false }),
-        supabase.from("clientes").select("id, nome").order("nome"),
-        supabase.from("fazendas").select("id, nome").order("nome"),
-        supabase.from("talhoes").select("id, nome").order("nome")
+        supabase.from("clients").select("id, name").order("name"),
+        supabase.from("farms").select("id, name").order("name"),
+        supabase.from("plots").select("id, name").order("name")
       ]);
 
-      if (analisesRes.error) throw analisesRes.error;
+      if (analysesRes.error) throw analysesRes.error;
 
-      const mapped = (analisesRes.data || []).map(a => ({
+      const mapped = (analysesRes.data || []).map(a => ({
         id: a.id,
-        nomeAnalise: a.nome_analise || "",
-        colaborador: a.colaborador || "",
-        clienteId: (a.clientes as any)?.id || "",
-        cliente: (a.clientes as any)?.nome || "",
-        fazendaId: (a.fazendas as any)?.id || "",
-        fazenda: (a.fazendas as any)?.nome || "",
-        talhaoId: (a.talhoes as any)?.id || "",
-        talhao: (a.talhoes as any)?.nome || "",
-        quantidade: a.quantidade || 1,
+        analysisName: a.analysis_name || "",
+        collaborator: a.collaborator || "",
+        clientId: (a.clients as any)?.id || "",
+        clientName: (a.clients as any)?.name || "",
+        farmId: (a.farms as any)?.id || "",
+        farmName: (a.farms as any)?.name || "",
+        plotId: (a.plots as any)?.id || "",
+        plotName: (a.plots as any)?.name || "",
+        quantity: a.quantity || 1,
         status: (a.status as any) || "Pendente",
-        dataEnvio: a.data_envio || "",
-        dataRecebimento: a.data_recebimento || "",
-        dataFinalizacao: a.data_finalizacao || ""
+        sendDate: a.send_date || "",
+        receiptDate: a.receipt_date || "",
+        completionDate: a.completion_date || ""
       }));
 
-      setAnalises(mapped);
-      setClientes(clientesRes.data || []);
-      setFazendas(fazendasRes.data || []);
-      setTalhoes(talhoesRes.data || []);
+      setAnalyses(mapped);
+      setClients(clientsRes.data || []);
+      setFarms(farmsRes.data || []);
+      setPlots(plotsRes.data || []);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar análises",
@@ -119,46 +119,46 @@ const AnalisesPrincipalPage = () => {
     }
   };
 
-  const filteredAnalises = analises.filter(analise => {
-    const matchesSearch = analise.colaborador.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      analise.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      analise.fazenda.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      analise.talhao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      analise.nomeAnalise.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredAnalyses = analyses.filter(analysis => {
+    const matchesSearch = analysis.collaborator.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      analysis.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      analysis.farmName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      analysis.plotName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      analysis.analysisName.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesColaborador = !colaboradorFilter || colaboradorFilter === "all" || analise.colaborador === colaboradorFilter;
+    const matchesCollaborator = !collaboratorFilter || collaboratorFilter === "all" || analysis.collaborator === collaboratorFilter;
     
-    return matchesSearch && matchesColaborador;
+    return matchesSearch && matchesCollaborator;
   });
 
-  const totalAnalises = filteredAnalises.length;
-  const totalAnalisesPages = Math.ceil(totalAnalises / analisesPerPage);
-  const analisesStartIndex = (analisesPage - 1) * analisesPerPage;
-  const analisesEndIndex = analisesStartIndex + analisesPerPage;
-  const currentAnalises = filteredAnalises.slice(analisesStartIndex, analisesEndIndex);
+  const totalAnalyses = filteredAnalyses.length;
+  const totalAnalysesPages = Math.ceil(totalAnalyses / analysesPerPage);
+  const analysesStartIndex = (analysesPage - 1) * analysesPerPage;
+  const analysesEndIndex = analysesStartIndex + analysesPerPage;
+  const currentAnalyses = filteredAnalyses.slice(analysesStartIndex, analysesEndIndex);
 
-  const handleEdit = (analise: AnaliseExecucao) => {
-    setEditingAnalise(analise);
-    setFormData(analise);
+  const handleEdit = (analysis: AnalysisExecution) => {
+    setEditingAnalysis(analysis);
+    setFormData(analysis);
     setShowEditModal(true);
   };
 
   const handleCreate = () => {
     setFormData({
       id: "",
-      nomeAnalise: "",
-      colaborador: "",
-      clienteId: "",
-      cliente: "",
-      fazendaId: "",
-      fazenda: "",
-      talhaoId: "",
-      talhao: "",
-      quantidade: 1,
+      analysisName: "",
+      collaborator: "",
+      clientId: "",
+      clientName: "",
+      farmId: "",
+      farmName: "",
+      plotId: "",
+      plotName: "",
+      quantity: 1,
       status: "Pendente",
-      dataEnvio: "",
-      dataRecebimento: "",
-      dataFinalizacao: ""
+      sendDate: "",
+      receiptDate: "",
+      completionDate: ""
     });
     setShowCreateModal(true);
   };
@@ -168,24 +168,24 @@ const AnalisesPrincipalPage = () => {
     
     try {
       const { error } = await supabase
-        .from("analises_execucao")
+        .from("analysis_executions")
         .update({
-          nome_analise: formData.nomeAnalise,
-          colaborador: formData.colaborador,
-          cliente_id: formData.clienteId || null,
-          fazenda_id: formData.fazendaId || null,
-          talhao_id: formData.talhaoId || null,
-          quantidade: formData.quantidade,
+          analysis_name: formData.analysisName,
+          collaborator: formData.collaborator,
+          client_id: formData.clientId || null,
+          farm_id: formData.farmId || null,
+          plot_id: formData.plotId || null,
+          quantity: formData.quantity,
           status: formData.status,
-          data_envio: formData.dataEnvio || null,
-          data_recebimento: formData.dataRecebimento || null,
-          data_finalizacao: formData.dataFinalizacao || null
+          send_date: formData.sendDate || null,
+          receipt_date: formData.receiptDate || null,
+          completion_date: formData.completionDate || null
         })
-        .eq("id", editingAnalise?.id);
+        .eq("id", editingAnalysis?.id);
 
       if (error) throw error;
 
-      setAnalises(prev => prev.map(a => a.id === editingAnalise?.id ? formData : a));
+      setAnalyses(prev => prev.map(a => a.id === editingAnalysis?.id ? formData : a));
       toast({
         title: "Análise atualizada",
         description: "A análise foi atualizada com sucesso.",
@@ -208,38 +208,38 @@ const AnalisesPrincipalPage = () => {
       if (!user) throw new Error("Usuário não autenticado");
 
       const { data, error } = await supabase
-        .from("analises_execucao")
+        .from("analysis_executions")
         .insert({
           user_id: user.id,
-          nome_analise: formData.nomeAnalise,
-          colaborador: formData.colaborador,
-          cliente_id: formData.clienteId || null,
-          fazenda_id: formData.fazendaId || null,
-          talhao_id: formData.talhaoId || null,
-          quantidade: formData.quantidade,
+          analysis_name: formData.analysisName,
+          collaborator: formData.collaborator,
+          client_id: formData.clientId || null,
+          farm_id: formData.farmId || null,
+          plot_id: formData.plotId || null,
+          quantity: formData.quantity,
           status: formData.status,
-          data_envio: formData.dataEnvio || null,
-          data_recebimento: formData.dataRecebimento || null,
-          data_finalizacao: formData.dataFinalizacao || null
+          send_date: formData.sendDate || null,
+          receipt_date: formData.receiptDate || null,
+          completion_date: formData.completionDate || null
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      const clienteNome = clientes.find(c => c.id === formData.clienteId)?.nome || "";
-      const fazendaNome = fazendas.find(f => f.id === formData.fazendaId)?.nome || "";
-      const talhaoNome = talhoes.find(t => t.id === formData.talhaoId)?.nome || "";
+      const clientName = clients.find(c => c.id === formData.clientId)?.name || "";
+      const farmName = farms.find(f => f.id === formData.farmId)?.name || "";
+      const plotName = plots.find(t => t.id === formData.plotId)?.name || "";
 
-      const newAnalise: AnaliseExecucao = {
+      const newAnalysis: AnalysisExecution = {
         ...formData,
         id: data.id,
-        cliente: clienteNome,
-        fazenda: fazendaNome,
-        talhao: talhaoNome
+        clientName,
+        farmName,
+        plotName
       };
 
-      setAnalises(prev => [newAnalise, ...prev]);
+      setAnalyses(prev => [newAnalysis, ...prev]);
       toast({
         title: "Análise criada",
         description: "A análise foi criada com sucesso.",
@@ -258,25 +258,25 @@ const AnalisesPrincipalPage = () => {
   const resetForm = () => {
     setFormData({
       id: "",
-      nomeAnalise: "",
-      colaborador: "",
-      clienteId: "",
-      cliente: "",
-      fazendaId: "",
-      fazenda: "",
-      talhaoId: "",
-      talhao: "",
-      quantidade: 1,
+      analysisName: "",
+      collaborator: "",
+      clientId: "",
+      clientName: "",
+      farmId: "",
+      farmName: "",
+      plotId: "",
+      plotName: "",
+      quantity: 1,
       status: "Pendente",
-      dataEnvio: "",
-      dataRecebimento: "",
-      dataFinalizacao: ""
+      sendDate: "",
+      receiptDate: "",
+      completionDate: ""
     });
-    setEditingAnalise(null);
+    setEditingAnalysis(null);
     setShowEditModal(false);
   };
 
-  const handleInputChange = (field: keyof AnaliseExecucao, value: string | number) => {
+  const handleInputChange = (field: keyof AnalysisExecution, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -329,14 +329,14 @@ const AnalisesPrincipalPage = () => {
                   className="w-64"
                 />
               </div>
-              <Select value={colaboradorFilter} onValueChange={setColaboradorFilter}>
+              <Select value={collaboratorFilter} onValueChange={setCollaboratorFilter}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="Colaborador" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  {colaboradoresConfig.map((colab) => (
-                    <SelectItem key={colab.id} value={colab.nome}>{colab.nome}</SelectItem>
+                  {collaboratorsConfig.map((colab) => (
+                    <SelectItem key={colab.id} value={colab.name}>{colab.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -344,7 +344,7 @@ const AnalisesPrincipalPage = () => {
           </div>
         </CardHeader>
         <CardContent>
-          {analises.length === 0 ? (
+          {analyses.length === 0 ? (
             <p className="text-center text-gray-500 py-8">Nenhuma análise cadastrada</p>
           ) : (
             <div className="space-y-4">
@@ -366,22 +366,22 @@ const AnalisesPrincipalPage = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {currentAnalises.map((analise) => (
-                      <TableRow key={analise.id}>
-                        <TableCell className="font-medium">{analise.nomeAnalise}</TableCell>
-                        <TableCell>{analise.colaborador || "-"}</TableCell>
-                        <TableCell>{analise.cliente || "-"}</TableCell>
-                        <TableCell>{analise.fazenda || "-"}</TableCell>
-                        <TableCell>{analise.talhao || "-"}</TableCell>
-                        <TableCell>{analise.quantidade}</TableCell>
+                    {currentAnalyses.map((analysis) => (
+                      <TableRow key={analysis.id}>
+                        <TableCell className="font-medium">{analysis.analysisName}</TableCell>
+                        <TableCell>{analysis.collaborator || "-"}</TableCell>
+                        <TableCell>{analysis.clientName || "-"}</TableCell>
+                        <TableCell>{analysis.farmName || "-"}</TableCell>
+                        <TableCell>{analysis.plotName || "-"}</TableCell>
+                        <TableCell>{analysis.quantity}</TableCell>
                         <TableCell>
-                          <Badge variant={getStatusColor(analise.status)}>{analise.status}</Badge>
+                          <Badge variant={getStatusColor(analysis.status)}>{analysis.status}</Badge>
                         </TableCell>
-                        <TableCell>{analise.dataEnvio ? new Date(analise.dataEnvio).toLocaleDateString('pt-BR') : "-"}</TableCell>
-                        <TableCell>{analise.dataRecebimento ? new Date(analise.dataRecebimento).toLocaleDateString('pt-BR') : "-"}</TableCell>
-                        <TableCell>{analise.dataFinalizacao ? new Date(analise.dataFinalizacao).toLocaleDateString('pt-BR') : "-"}</TableCell>
+                        <TableCell>{analysis.sendDate ? new Date(analysis.sendDate).toLocaleDateString('pt-BR') : "-"}</TableCell>
+                        <TableCell>{analysis.receiptDate ? new Date(analysis.receiptDate).toLocaleDateString('pt-BR') : "-"}</TableCell>
+                        <TableCell>{analysis.completionDate ? new Date(analysis.completionDate).toLocaleDateString('pt-BR') : "-"}</TableCell>
                         <TableCell>
-                          <Button variant="ghost" size="sm" onClick={() => handleEdit(analise)}>
+                          <Button variant="ghost" size="sm" onClick={() => handleEdit(analysis)}>
                             <Edit className="h-4 w-4" />
                           </Button>
                         </TableCell>
@@ -394,11 +394,11 @@ const AnalisesPrincipalPage = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-gray-600">
-                    Mostrando {analisesStartIndex + 1} a {Math.min(analisesEndIndex, totalAnalises)} de {totalAnalises}
+                    Mostrando {analysesStartIndex + 1} a {Math.min(analysesEndIndex, totalAnalyses)} de {totalAnalyses}
                   </span>
-                  <Select value={analisesPerPage.toString()} onValueChange={(value) => {
-                    setAnalisesPerPage(Number(value));
-                    setAnalisesPage(1);
+                  <Select value={analysesPerPage.toString()} onValueChange={(value) => {
+                    setAnalysesPerPage(Number(value));
+                    setAnalysesPage(1);
                   }}>
                     <SelectTrigger className="w-20">
                       <SelectValue />
@@ -411,20 +411,20 @@ const AnalisesPrincipalPage = () => {
                   </Select>
                 </div>
                 
-                {totalAnalisesPages > 1 && (
+                {totalAnalysesPages > 1 && (
                   <Pagination>
                     <PaginationContent>
                       <PaginationItem>
                         <PaginationPrevious 
-                          onClick={() => setAnalisesPage(Math.max(1, analisesPage - 1))}
-                          className={analisesPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          onClick={() => setAnalysesPage(Math.max(1, analysesPage - 1))}
+                          className={analysesPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                         />
                       </PaginationItem>
-                      {Array.from({ length: totalAnalisesPages }, (_, i) => i + 1).map((page) => (
+                      {Array.from({ length: totalAnalysesPages }, (_, i) => i + 1).map((page) => (
                         <PaginationItem key={page}>
                           <PaginationLink
-                            onClick={() => setAnalisesPage(page)}
-                            isActive={analisesPage === page}
+                            onClick={() => setAnalysesPage(page)}
+                            isActive={analysesPage === page}
                             className="cursor-pointer"
                           >
                             {page}
@@ -433,8 +433,8 @@ const AnalisesPrincipalPage = () => {
                       ))}
                       <PaginationItem>
                         <PaginationNext 
-                          onClick={() => setAnalisesPage(Math.min(totalAnalisesPages, analisesPage + 1))}
-                          className={analisesPage === totalAnalisesPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          onClick={() => setAnalysesPage(Math.min(totalAnalysesPages, analysesPage + 1))}
+                          className={analysesPage === totalAnalysesPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                         />
                       </PaginationItem>
                     </PaginationContent>
@@ -446,7 +446,7 @@ const AnalisesPrincipalPage = () => {
         </CardContent>
       </Card>
 
-      {/* Modal de Edição */}
+      {/* Edit Modal */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
@@ -457,74 +457,83 @@ const AnalisesPrincipalPage = () => {
               <div className="space-y-2">
                 <Label>Nome da Análise</Label>
                 <Input
-                  value={formData.nomeAnalise}
-                  onChange={(e) => handleInputChange("nomeAnalise", e.target.value)}
+                  value={formData.analysisName}
+                  onChange={(e) => handleInputChange("analysisName", e.target.value)}
                   required
                 />
               </div>
               <div className="space-y-2">
                 <Label>Colaborador</Label>
-                <Select value={formData.colaborador} onValueChange={(value) => handleInputChange("colaborador", value)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <Select value={formData.collaborator} onValueChange={(value) => handleInputChange("collaborator", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {colaboradoresConfig.map((colab) => (
-                      <SelectItem key={colab.id} value={colab.nome}>{colab.nome}</SelectItem>
+                    {collaboratorsConfig.map((colab) => (
+                      <SelectItem key={colab.id} value={colab.name}>{colab.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
-
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Cliente</Label>
-                <Select value={formData.clienteId} onValueChange={(value) => handleInputChange("clienteId", value)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <Select value={formData.clientId} onValueChange={(value) => handleInputChange("clientId", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {clientes.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                    {clients.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Fazenda</Label>
-                <Select value={formData.fazendaId} onValueChange={(value) => handleInputChange("fazendaId", value)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <Select value={formData.farmId} onValueChange={(value) => handleInputChange("farmId", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {fazendas.map((f) => (
-                      <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>
+                    {farms.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Talhão</Label>
-                <Select value={formData.talhaoId} onValueChange={(value) => handleInputChange("talhaoId", value)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <Select value={formData.plotId} onValueChange={(value) => handleInputChange("plotId", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {talhoes.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+                    {plots.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Quantidade</Label>
                 <Input
                   type="number"
                   min="1"
-                  value={formData.quantidade}
-                  onChange={(e) => handleInputChange("quantidade", parseInt(e.target.value) || 1)}
+                  value={formData.quantity}
+                  onChange={(e) => handleInputChange("quantity", parseInt(e.target.value))}
+                  required
                 />
               </div>
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Pendente">Pendente</SelectItem>
                     <SelectItem value="Enviado">Enviado</SelectItem>
@@ -535,31 +544,41 @@ const AnalisesPrincipalPage = () => {
                 </Select>
               </div>
             </div>
-
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Data Envio</Label>
-                <Input type="date" value={formData.dataEnvio} onChange={(e) => handleInputChange("dataEnvio", e.target.value)} />
+                <Input
+                  type="date"
+                  value={formData.sendDate}
+                  onChange={(e) => handleInputChange("sendDate", e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Data Recebimento</Label>
-                <Input type="date" value={formData.dataRecebimento} onChange={(e) => handleInputChange("dataRecebimento", e.target.value)} />
+                <Input
+                  type="date"
+                  value={formData.receiptDate}
+                  onChange={(e) => handleInputChange("receiptDate", e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Data Finalização</Label>
-                <Input type="date" value={formData.dataFinalizacao} onChange={(e) => handleInputChange("dataFinalizacao", e.target.value)} />
+                <Input
+                  type="date"
+                  value={formData.completionDate}
+                  onChange={(e) => handleInputChange("completionDate", e.target.value)}
+                />
               </div>
             </div>
-
             <div className="flex justify-end space-x-2">
               <Button type="button" variant="outline" onClick={resetForm}>Cancelar</Button>
-              <Button type="submit" className="bg-green-600 hover:bg-green-700">Salvar</Button>
+              <Button type="submit">Salvar</Button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Modal de Criação */}
+      {/* Create Modal */}
       <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
@@ -570,74 +589,83 @@ const AnalisesPrincipalPage = () => {
               <div className="space-y-2">
                 <Label>Nome da Análise</Label>
                 <Input
-                  value={formData.nomeAnalise}
-                  onChange={(e) => handleInputChange("nomeAnalise", e.target.value)}
+                  value={formData.analysisName}
+                  onChange={(e) => handleInputChange("analysisName", e.target.value)}
                   required
                 />
               </div>
               <div className="space-y-2">
                 <Label>Colaborador</Label>
-                <Select value={formData.colaborador} onValueChange={(value) => handleInputChange("colaborador", value)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <Select value={formData.collaborator} onValueChange={(value) => handleInputChange("collaborator", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {colaboradoresConfig.map((colab) => (
-                      <SelectItem key={colab.id} value={colab.nome}>{colab.nome}</SelectItem>
+                    {collaboratorsConfig.map((colab) => (
+                      <SelectItem key={colab.id} value={colab.name}>{colab.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
-
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Cliente</Label>
-                <Select value={formData.clienteId} onValueChange={(value) => handleInputChange("clienteId", value)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <Select value={formData.clientId} onValueChange={(value) => handleInputChange("clientId", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {clientes.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                    {clients.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Fazenda</Label>
-                <Select value={formData.fazendaId} onValueChange={(value) => handleInputChange("fazendaId", value)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <Select value={formData.farmId} onValueChange={(value) => handleInputChange("farmId", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {fazendas.map((f) => (
-                      <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>
+                    {farms.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Talhão</Label>
-                <Select value={formData.talhaoId} onValueChange={(value) => handleInputChange("talhaoId", value)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <Select value={formData.plotId} onValueChange={(value) => handleInputChange("plotId", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {talhoes.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+                    {plots.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Quantidade</Label>
                 <Input
                   type="number"
                   min="1"
-                  value={formData.quantidade}
-                  onChange={(e) => handleInputChange("quantidade", parseInt(e.target.value) || 1)}
+                  value={formData.quantity}
+                  onChange={(e) => handleInputChange("quantity", parseInt(e.target.value))}
+                  required
                 />
               </div>
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Pendente">Pendente</SelectItem>
                     <SelectItem value="Enviado">Enviado</SelectItem>
@@ -648,10 +676,35 @@ const AnalisesPrincipalPage = () => {
                 </Select>
               </div>
             </div>
-
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Data Envio</Label>
+                <Input
+                  type="date"
+                  value={formData.sendDate}
+                  onChange={(e) => handleInputChange("sendDate", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Data Recebimento</Label>
+                <Input
+                  type="date"
+                  value={formData.receiptDate}
+                  onChange={(e) => handleInputChange("receiptDate", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Data Finalização</Label>
+                <Input
+                  type="date"
+                  value={formData.completionDate}
+                  onChange={(e) => handleInputChange("completionDate", e.target.value)}
+                />
+              </div>
+            </div>
             <div className="flex justify-end space-x-2">
               <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)}>Cancelar</Button>
-              <Button type="submit" className="bg-green-600 hover:bg-green-700">Criar</Button>
+              <Button type="submit">Criar</Button>
             </div>
           </form>
         </DialogContent>

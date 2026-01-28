@@ -10,27 +10,27 @@ import { Calendar, Edit, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-interface Execucao {
+interface Execution {
   id: string;
-  cliente: string;
-  clienteId: string;
-  fazenda: string;
-  fazendaId: string;
-  servico: string;
+  clientName: string;
+  clientId: string;
+  farmName: string;
+  farmId: string;
+  serviceName: string;
   area: string;
-  dataAgendada: string;
-  equipamento: string;
+  scheduledDate: string;
+  equipmentName: string;
   status: string;
-  execucoesParciais: ExecucaoParcial[];
+  partialExecutions: PartialExecution[];
 }
 
-interface ExecucaoParcial {
+interface PartialExecution {
   id: string;
-  data: string;
-  areaExecutada: string;
-  equipamento: string;
-  operador: string;
-  observacoes: string;
+  date: string;
+  executedArea: string;
+  equipmentName: string;
+  operator: string;
+  notes: string;
   status: string;
 }
 
@@ -38,96 +38,96 @@ const statusOptions = ["Todos", "Pendente", "Agendado", "Em Andamento", "Conclu�
 
 const AgendaPage = () => {
   const { toast } = useToast();
-  const [execucoes, setExecucoes] = useState<Execucao[]>([]);
+  const [executions, setExecutions] = useState<Execution[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("Todos");
-  const [showExecucaoForm, setShowExecucaoForm] = useState(false);
-  const [showExecucaoParciaisModal, setShowExecucaoParciaisModal] = useState(false);
-  const [editingExecucao, setEditingExecucao] = useState<Execucao | null>(null);
-  const [selectedExecucao, setSelectedExecucao] = useState<Execucao | null>(null);
+  const [showExecutionForm, setShowExecutionForm] = useState(false);
+  const [showPartialExecutionsModal, setShowPartialExecutionsModal] = useState(false);
+  const [editingExecution, setEditingExecution] = useState<Execution | null>(null);
+  const [selectedExecution, setSelectedExecution] = useState<Execution | null>(null);
 
-  const [formData, setFormData] = useState<Execucao>({
+  const [formData, setFormData] = useState<Execution>({
     id: "",
-    cliente: "",
-    clienteId: "",
-    fazenda: "",
-    fazendaId: "",
-    servico: "",
+    clientName: "",
+    clientId: "",
+    farmName: "",
+    farmId: "",
+    serviceName: "",
     area: "",
-    dataAgendada: "",
-    equipamento: "",
+    scheduledDate: "",
+    equipmentName: "",
     status: "Pendente",
-    execucoesParciais: []
+    partialExecutions: []
   });
 
-  const [execucaoParciralForm, setExecucaoParciralForm] = useState<ExecucaoParcial>({
+  const [partialExecutionForm, setPartialExecutionForm] = useState<PartialExecution>({
     id: "",
-    data: "",
-    areaExecutada: "",
-    equipamento: "",
-    operador: "",
-    observacoes: "",
+    date: "",
+    executedArea: "",
+    equipmentName: "",
+    operator: "",
+    notes: "",
     status: "Concluída"
   });
 
-  const [equipamentos, setEquipamentos] = useState<string[]>([]);
+  const [equipmentList, setEquipmentList] = useState<string[]>([]);
 
   useEffect(() => {
-    fetchExecucoes();
-    fetchEquipamentos();
+    fetchExecutions();
+    fetchEquipment();
   }, []);
 
-  const fetchEquipamentos = async () => {
+  const fetchEquipment = async () => {
     const { data } = await supabase
-      .from("equipamentos")
-      .select("nome")
+      .from("equipment")
+      .select("name")
       .eq("status", "Disponível");
     
-    setEquipamentos((data || []).map(e => e.nome));
+    setEquipmentList((data || []).map(e => e.name));
   };
 
-  const fetchExecucoes = async () => {
+  const fetchExecutions = async () => {
     try {
-      const { data: execucoesData, error } = await supabase
-        .from("execucoes")
+      const { data: executionsData, error } = await supabase
+        .from("executions")
         .select(`
-          id, servico, area, data_agendada, equipamento, status,
-          clientes:cliente_id (id, nome),
-          fazendas:fazenda_id (id, nome)
+          id, service_name, area, scheduled_date, equipment_name, status,
+          clients:client_id (id, name),
+          farms:farm_id (id, name)
         `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      const { data: parciaisData } = await supabase
-        .from("execucoes_parciais")
+      const { data: partialsData } = await supabase
+        .from("partial_executions")
         .select("*");
 
-      const mapped = (execucoesData || []).map(e => ({
+      const mapped = (executionsData || []).map(e => ({
         id: e.id,
-        cliente: (e.clientes as any)?.nome || "",
-        clienteId: (e.clientes as any)?.id || "",
-        fazenda: (e.fazendas as any)?.nome || "",
-        fazendaId: (e.fazendas as any)?.id || "",
-        servico: e.servico || "",
+        clientName: (e.clients as any)?.name || "",
+        clientId: (e.clients as any)?.id || "",
+        farmName: (e.farms as any)?.name || "",
+        farmId: (e.farms as any)?.id || "",
+        serviceName: e.service_name || "",
         area: e.area?.toString() || "",
-        dataAgendada: e.data_agendada || "",
-        equipamento: e.equipamento || "",
+        scheduledDate: e.scheduled_date || "",
+        equipmentName: e.equipment_name || "",
         status: e.status || "Pendente",
-        execucoesParciais: (parciaisData || [])
-          .filter(p => p.execucao_id === e.id)
+        partialExecutions: (partialsData || [])
+          .filter(p => p.execution_id === e.id)
           .map(p => ({
             id: p.id,
-            data: p.data || "",
-            areaExecutada: p.area_executada?.toString() || "",
-            equipamento: p.equipamento || "",
-            operador: p.operador || "",
-            observacoes: p.observacoes || "",
+            date: p.date || "",
+            executedArea: p.executed_area?.toString() || "",
+            equipmentName: p.equipment_name || "",
+            operator: p.operator || "",
+            notes: p.notes || "",
             status: p.status || "Concluída"
           }))
       }));
 
-      setExecucoes(mapped);
+      setExecutions(mapped);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar execuções",
@@ -139,32 +139,32 @@ const AgendaPage = () => {
     }
   };
 
-  const handleEdit = (execucao: Execucao) => {
-    setEditingExecucao(execucao);
-    setFormData(execucao);
-    setShowExecucaoForm(true);
+  const handleEdit = (execution: Execution) => {
+    setEditingExecution(execution);
+    setFormData(execution);
+    setShowExecutionForm(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!editingExecucao) return;
+    if (!editingExecution) return;
 
     try {
       const { error } = await supabase
-        .from("execucoes")
+        .from("executions")
         .update({
-          servico: formData.servico,
+          service_name: formData.serviceName,
           area: formData.area ? parseFloat(formData.area) : null,
-          data_agendada: formData.dataAgendada || null,
-          equipamento: formData.equipamento || null,
+          scheduled_date: formData.scheduledDate || null,
+          equipment_name: formData.equipmentName || null,
           status: formData.status
         })
-        .eq("id", editingExecucao.id);
+        .eq("id", editingExecution.id);
 
       if (error) throw error;
 
-      setExecucoes(prev => prev.map(ex => ex.id === editingExecucao.id ? formData : ex));
+      setExecutions(prev => prev.map(ex => ex.id === editingExecution.id ? formData : ex));
       toast({
         title: "Execução atualizada",
         description: "A execução foi atualizada com sucesso.",
@@ -182,77 +182,77 @@ const AgendaPage = () => {
   const resetForm = () => {
     setFormData({
       id: "",
-      cliente: "",
-      clienteId: "",
-      fazenda: "",
-      fazendaId: "",
-      servico: "",
+      clientName: "",
+      clientId: "",
+      farmName: "",
+      farmId: "",
+      serviceName: "",
       area: "",
-      dataAgendada: "",
-      equipamento: "",
+      scheduledDate: "",
+      equipmentName: "",
       status: "Pendente",
-      execucoesParciais: []
+      partialExecutions: []
     });
-    setEditingExecucao(null);
-    setShowExecucaoForm(false);
+    setEditingExecution(null);
+    setShowExecutionForm(false);
   };
 
-  const handleInputChange = (field: keyof Execucao, value: string) => {
+  const handleInputChange = (field: keyof Execution, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleExecucaoParciaisClick = (execucao: Execucao) => {
-    setSelectedExecucao(execucao);
-    setShowExecucaoParciaisModal(true);
+  const handlePartialExecutionsClick = (execution: Execution) => {
+    setSelectedExecution(execution);
+    setShowPartialExecutionsModal(true);
   };
 
-  const handleAddExecucaoParcial = async (e: React.FormEvent) => {
+  const handleAddPartialExecution = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!selectedExecucao) return;
+    if (!selectedExecution) return;
 
     try {
       const { data, error } = await supabase
-        .from("execucoes_parciais")
+        .from("partial_executions")
         .insert({
-          execucao_id: selectedExecucao.id,
-          data: execucaoParciralForm.data || null,
-          area_executada: execucaoParciralForm.areaExecutada ? parseFloat(execucaoParciralForm.areaExecutada) : null,
-          equipamento: execucaoParciralForm.equipamento || null,
-          operador: execucaoParciralForm.operador || null,
-          observacoes: execucaoParciralForm.observacoes || null,
-          status: execucaoParciralForm.status
+          execution_id: selectedExecution.id,
+          date: partialExecutionForm.date || null,
+          executed_area: partialExecutionForm.executedArea ? parseFloat(partialExecutionForm.executedArea) : null,
+          equipment_name: partialExecutionForm.equipmentName || null,
+          operator: partialExecutionForm.operator || null,
+          notes: partialExecutionForm.notes || null,
+          status: partialExecutionForm.status
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      const newExecucaoParcial = {
+      const newPartialExecution = {
         id: data.id,
-        data: data.data || "",
-        areaExecutada: data.area_executada?.toString() || "",
-        equipamento: data.equipamento || "",
-        operador: data.operador || "",
-        observacoes: data.observacoes || "",
+        date: data.date || "",
+        executedArea: data.executed_area?.toString() || "",
+        equipmentName: data.equipment_name || "",
+        operator: data.operator || "",
+        notes: data.notes || "",
         status: data.status || "Concluída"
       };
 
-      const updatedExecucao = {
-        ...selectedExecucao,
-        execucoesParciais: [...selectedExecucao.execucoesParciais, newExecucaoParcial]
+      const updatedExecution = {
+        ...selectedExecution,
+        partialExecutions: [...selectedExecution.partialExecutions, newPartialExecution]
       };
 
-      setExecucoes(prev => prev.map(ex => ex.id === selectedExecucao.id ? updatedExecucao : ex));
-      setSelectedExecucao(updatedExecucao);
+      setExecutions(prev => prev.map(ex => ex.id === selectedExecution.id ? updatedExecution : ex));
+      setSelectedExecution(updatedExecution);
 
-      setExecucaoParciralForm({
+      setPartialExecutionForm({
         id: "",
-        data: "",
-        areaExecutada: "",
-        equipamento: "",
-        operador: "",
-        observacoes: "",
+        date: "",
+        executedArea: "",
+        equipmentName: "",
+        operator: "",
+        notes: "",
         status: "Concluída"
       });
 
@@ -269,24 +269,24 @@ const AgendaPage = () => {
     }
   };
 
-  const handleDeleteExecucaoParcial = async (execucaoParciralId: string) => {
-    if (!selectedExecucao) return;
+  const handleDeletePartialExecution = async (partialExecutionId: string) => {
+    if (!selectedExecution) return;
 
     try {
       const { error } = await supabase
-        .from("execucoes_parciais")
+        .from("partial_executions")
         .delete()
-        .eq("id", execucaoParciralId);
+        .eq("id", partialExecutionId);
 
       if (error) throw error;
 
-      const updatedExecucao = {
-        ...selectedExecucao,
-        execucoesParciais: selectedExecucao.execucoesParciais.filter(ep => ep.id !== execucaoParciralId)
+      const updatedExecution = {
+        ...selectedExecution,
+        partialExecutions: selectedExecution.partialExecutions.filter(ep => ep.id !== partialExecutionId)
       };
 
-      setExecucoes(prev => prev.map(ex => ex.id === selectedExecucao.id ? updatedExecucao : ex));
-      setSelectedExecucao(updatedExecucao);
+      setExecutions(prev => prev.map(ex => ex.id === selectedExecution.id ? updatedExecution : ex));
+      setSelectedExecution(updatedExecution);
 
       toast({
         title: "Execução parcial removida",
@@ -316,13 +316,13 @@ const AgendaPage = () => {
     }
   };
 
-  const calcularAreaTotal = (execucoesParciais: ExecucaoParcial[]) => {
-    return execucoesParciais.reduce((total, ep) => total + parseFloat(ep.areaExecutada || "0"), 0);
+  const calculateTotalArea = (partialExecutions: PartialExecution[]) => {
+    return partialExecutions.reduce((total, ep) => total + parseFloat(ep.executedArea || "0"), 0);
   };
 
-  const filteredExecucoes = statusFilter === "Todos" 
-    ? execucoes 
-    : execucoes.filter(ex => ex.status === statusFilter);
+  const filteredExecutions = statusFilter === "Todos" 
+    ? executions 
+    : executions.filter(ex => ex.status === statusFilter);
 
   if (loading) {
     return (
@@ -346,7 +346,7 @@ const AgendaPage = () => {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Execuções ({filteredExecucoes.length})
+            Execuções ({filteredExecutions.length})
           </CardTitle>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-48">
@@ -360,7 +360,7 @@ const AgendaPage = () => {
           </Select>
         </CardHeader>
         <CardContent>
-          {filteredExecucoes.length === 0 ? (
+          {filteredExecutions.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">Nenhuma execução encontrada</p>
           ) : (
             <Table>
@@ -377,29 +377,29 @@ const AgendaPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredExecucoes.map((execucao) => (
-                  <TableRow key={execucao.id}>
-                    <TableCell className="font-medium">{execucao.cliente || "-"}</TableCell>
-                    <TableCell>{execucao.fazenda || "-"}</TableCell>
-                    <TableCell>{execucao.servico || "-"}</TableCell>
-                    <TableCell>{execucao.area || "-"}</TableCell>
+                {filteredExecutions.map((execution) => (
+                  <TableRow key={execution.id}>
+                    <TableCell className="font-medium">{execution.clientName || "-"}</TableCell>
+                    <TableCell>{execution.farmName || "-"}</TableCell>
+                    <TableCell>{execution.serviceName || "-"}</TableCell>
+                    <TableCell>{execution.area || "-"}</TableCell>
                     <TableCell>
-                      {execucao.dataAgendada 
-                        ? new Date(execucao.dataAgendada).toLocaleDateString('pt-BR') 
+                      {execution.scheduledDate 
+                        ? new Date(execution.scheduledDate).toLocaleDateString('pt-BR') 
                         : "-"}
                     </TableCell>
-                    <TableCell>{execucao.equipamento || "-"}</TableCell>
+                    <TableCell>{execution.equipmentName || "-"}</TableCell>
                     <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(execucao.status)}`}>
-                        {execucao.status}
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(execution.status)}`}>
+                        {execution.status}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button variant="outline" size="sm" onClick={() => handleEdit(execucao)}>
+                        <Button variant="outline" size="sm" onClick={() => handleEdit(execution)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleExecucaoParciaisClick(execucao)}>
+                        <Button variant="outline" size="sm" onClick={() => handlePartialExecutionsClick(execution)}>
                           <Plus className="h-4 w-4" />
                         </Button>
                       </div>
@@ -412,8 +412,8 @@ const AgendaPage = () => {
         </CardContent>
       </Card>
 
-      {/* Modal de Edição */}
-      <Dialog open={showExecucaoForm} onOpenChange={setShowExecucaoForm}>
+      {/* Edit Modal */}
+      <Dialog open={showExecutionForm} onOpenChange={setShowExecutionForm}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Editar Execução</DialogTitle>
@@ -423,18 +423,18 @@ const AgendaPage = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Cliente</Label>
-                <Input value={formData.cliente} readOnly className="bg-muted" />
+                <Input value={formData.clientName} readOnly className="bg-muted" />
               </div>
               <div>
                 <Label>Fazenda</Label>
-                <Input value={formData.fazenda} readOnly className="bg-muted" />
+                <Input value={formData.farmName} readOnly className="bg-muted" />
               </div>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Serviço</Label>
-                <Input value={formData.servico} readOnly className="bg-muted" />
+                <Input value={formData.serviceName} readOnly className="bg-muted" />
               </div>
               <div>
                 <Label>Área (ha)</Label>
@@ -447,18 +447,18 @@ const AgendaPage = () => {
                 <Label>Data Agendada</Label>
                 <Input
                   type="date"
-                  value={formData.dataAgendada}
-                  onChange={(e) => handleInputChange("dataAgendada", e.target.value)}
+                  value={formData.scheduledDate}
+                  onChange={(e) => handleInputChange("scheduledDate", e.target.value)}
                 />
               </div>
               <div>
                 <Label>Equipamento</Label>
-                <Select value={formData.equipamento} onValueChange={(value) => handleInputChange("equipamento", value)}>
+                <Select value={formData.equipmentName} onValueChange={(value) => handleInputChange("equipmentName", value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    {equipamentos.map((eq) => (
+                    {equipmentList.map((eq) => (
                       <SelectItem key={eq} value={eq}>{eq}</SelectItem>
                     ))}
                   </SelectContent>
@@ -489,33 +489,39 @@ const AgendaPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Modal de Execuções Parciais */}
-      <Dialog open={showExecucaoParciaisModal} onOpenChange={setShowExecucaoParciaisModal}>
+      {/* Partial Executions Modal */}
+      <Dialog open={showPartialExecutionsModal} onOpenChange={setShowPartialExecutionsModal}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Execuções Parciais - {selectedExecucao?.servico}</DialogTitle>
+            <DialogTitle>Execuções Parciais - {selectedExecution?.serviceName}</DialogTitle>
           </DialogHeader>
           
-          {selectedExecucao && (
+          {selectedExecution && (
             <div className="space-y-4">
               <div className="bg-muted p-4 rounded-lg">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div><strong>Área Total:</strong> {selectedExecucao.area} ha</div>
-                  <div><strong>Área Executada:</strong> {calcularAreaTotal(selectedExecucao.execucoesParciais)} ha</div>
-                  <div><strong>Cliente:</strong> {selectedExecucao.cliente}</div>
-                  <div><strong>Fazenda:</strong> {selectedExecucao.fazenda}</div>
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium">Área Total:</span> {selectedExecution.area} ha
+                  </div>
+                  <div>
+                    <span className="font-medium">Área Executada:</span> {calculateTotalArea(selectedExecution.partialExecutions).toFixed(2)} ha
+                  </div>
+                  <div>
+                    <span className="font-medium">Área Restante:</span> {(parseFloat(selectedExecution.area || "0") - calculateTotalArea(selectedExecution.partialExecutions)).toFixed(2)} ha
+                  </div>
                 </div>
               </div>
 
-              <form onSubmit={handleAddExecucaoParcial} className="space-y-4 border-t pt-4">
+              <form onSubmit={handleAddPartialExecution} className="space-y-4 border p-4 rounded-lg">
                 <h4 className="font-medium">Adicionar Execução Parcial</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>Data</Label>
                     <Input
                       type="date"
-                      value={execucaoParciralForm.data}
-                      onChange={(e) => setExecucaoParciralForm(prev => ({ ...prev, data: e.target.value }))}
+                      value={partialExecutionForm.date}
+                      onChange={(e) => setPartialExecutionForm(prev => ({ ...prev, date: e.target.value }))}
+                      required
                     />
                   </div>
                   <div>
@@ -523,23 +529,22 @@ const AgendaPage = () => {
                     <Input
                       type="number"
                       step="0.01"
-                      value={execucaoParciralForm.areaExecutada}
-                      onChange={(e) => setExecucaoParciralForm(prev => ({ ...prev, areaExecutada: e.target.value }))}
+                      value={partialExecutionForm.executedArea}
+                      onChange={(e) => setPartialExecutionForm(prev => ({ ...prev, executedArea: e.target.value }))}
+                      required
                     />
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>Equipamento</Label>
                     <Select 
-                      value={execucaoParciralForm.equipamento} 
-                      onValueChange={(value) => setExecucaoParciralForm(prev => ({ ...prev, equipamento: value }))}
+                      value={partialExecutionForm.equipmentName} 
+                      onValueChange={(value) => setPartialExecutionForm(prev => ({ ...prev, equipmentName: value }))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
-                        {equipamentos.map((eq) => (
+                        {equipmentList.map((eq) => (
                           <SelectItem key={eq} value={eq}>{eq}</SelectItem>
                         ))}
                       </SelectContent>
@@ -548,59 +553,58 @@ const AgendaPage = () => {
                   <div>
                     <Label>Operador</Label>
                     <Input
-                      value={execucaoParciralForm.operador}
-                      onChange={(e) => setExecucaoParciralForm(prev => ({ ...prev, operador: e.target.value }))}
+                      value={partialExecutionForm.operator}
+                      onChange={(e) => setPartialExecutionForm(prev => ({ ...prev, operator: e.target.value }))}
                     />
                   </div>
                 </div>
                 <div>
                   <Label>Observações</Label>
                   <Input
-                    value={execucaoParciralForm.observacoes}
-                    onChange={(e) => setExecucaoParciralForm(prev => ({ ...prev, observacoes: e.target.value }))}
+                    value={partialExecutionForm.notes}
+                    onChange={(e) => setPartialExecutionForm(prev => ({ ...prev, notes: e.target.value }))}
                   />
                 </div>
-                <Button type="submit">Adicionar</Button>
+                <Button type="submit" className="w-full">Adicionar</Button>
               </form>
 
-              {selectedExecucao.execucoesParciais.length > 0 && (
-                <div className="border-t pt-4">
-                  <h4 className="font-medium mb-2">Execuções Parciais Registradas</h4>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Área (ha)</TableHead>
-                        <TableHead>Equipamento</TableHead>
-                        <TableHead>Operador</TableHead>
-                        <TableHead>Observações</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
+              {selectedExecution.partialExecutions.length > 0 && (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Área (ha)</TableHead>
+                      <TableHead>Equipamento</TableHead>
+                      <TableHead>Operador</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedExecution.partialExecutions.map((pe) => (
+                      <TableRow key={pe.id}>
+                        <TableCell>{pe.date ? new Date(pe.date).toLocaleDateString('pt-BR') : "-"}</TableCell>
+                        <TableCell>{pe.executedArea}</TableCell>
+                        <TableCell>{pe.equipmentName || "-"}</TableCell>
+                        <TableCell>{pe.operator || "-"}</TableCell>
+                        <TableCell>
+                          <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                            {pe.status}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleDeletePartialExecution(pe.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {selectedExecucao.execucoesParciais.map((ep) => (
-                        <TableRow key={ep.id}>
-                          <TableCell>
-                            {ep.data ? new Date(ep.data).toLocaleDateString('pt-BR') : "-"}
-                          </TableCell>
-                          <TableCell>{ep.areaExecutada || "-"}</TableCell>
-                          <TableCell>{ep.equipamento || "-"}</TableCell>
-                          <TableCell>{ep.operador || "-"}</TableCell>
-                          <TableCell>{ep.observacoes || "-"}</TableCell>
-                          <TableCell className="text-right">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleDeleteExecucaoParcial(ep.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                    ))}
+                  </TableBody>
+                </Table>
               )}
             </div>
           )}

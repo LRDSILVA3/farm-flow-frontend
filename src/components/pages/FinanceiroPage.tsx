@@ -6,70 +6,69 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DollarSign, TrendingUp, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-interface PedidoFinanceiro {
+interface OrderFinancial {
   id: string;
-  cliente: string;
-  servico: string;
-  valor: string;
-  data: string;
+  clientName: string;
+  serviceName: string;
+  value: string;
+  date: string;
   status: string;
 }
 
 const FinanceiroPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [pedidosFinalizados, setPedidosFinalizados] = useState<PedidoFinanceiro[]>([]);
+  const [completedOrders, setCompletedOrders] = useState<OrderFinancial[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
-    faturamentoMensal: 0,
-    pagamentosPendentes: 0,
-    pedidosAguardando: 0
+    totalRevenue: 0,
+    pendingPayments: 0,
+    waitingOrders: 0
   });
 
   useEffect(() => {
-    fetchFinanceiroData();
+    fetchFinancialData();
   }, []);
 
-  const fetchFinanceiroData = async () => {
+  const fetchFinancialData = async () => {
     try {
-      // Fetch pedidos com status concluído ou com pagamento definido
-      const { data: pedidos, error } = await supabase
-        .from("pedidos")
+      const { data: orders, error } = await supabase
+        .from("orders")
         .select(`
-          id, servico, valor, pagamento, created_at,
-          clientes:cliente_id (nome)
+          id, service_name, value, payment, created_at,
+          clients:client_id (name)
         `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      const mapped = (pedidos || []).map(p => ({
-        id: p.id,
-        cliente: (p.clientes as any)?.nome || "Cliente",
-        servico: p.servico || "Serviço",
-        valor: p.valor ? `R$ ${Number(p.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : "R$ 0,00",
-        data: p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : "-",
-        status: p.pagamento || "Aguardando"
+      const mapped = (orders || []).map(o => ({
+        id: o.id,
+        clientName: (o.clients as any)?.name || "Cliente",
+        serviceName: o.service_name || "Serviço",
+        value: o.value ? `R$ ${Number(o.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : "R$ 0,00",
+        date: o.created_at ? new Date(o.created_at).toLocaleDateString('pt-BR') : "-",
+        status: o.payment || "Aguardando"
       }));
 
-      setPedidosFinalizados(mapped);
+      setCompletedOrders(mapped);
 
       // Calculate stats
-      const faturamento = (pedidos || [])
-        .filter(p => p.pagamento === "Pago")
-        .reduce((sum, p) => sum + (Number(p.valor) || 0), 0);
+      const revenue = (orders || [])
+        .filter(o => o.payment === "Pago")
+        .reduce((sum, o) => sum + (Number(o.value) || 0), 0);
 
-      const pendentes = (pedidos || [])
-        .filter(p => p.pagamento === "Aguardando" || !p.pagamento)
-        .reduce((sum, p) => sum + (Number(p.valor) || 0), 0);
+      const pending = (orders || [])
+        .filter(o => o.payment === "Aguardando" || !o.payment)
+        .reduce((sum, o) => sum + (Number(o.value) || 0), 0);
 
-      const aguardando = (pedidos || [])
-        .filter(p => p.pagamento === "Aguardando" || !p.pagamento).length;
+      const waiting = (orders || [])
+        .filter(o => o.payment === "Aguardando" || !o.payment).length;
 
       setStats({
-        faturamentoMensal: faturamento,
-        pagamentosPendentes: pendentes,
-        pedidosAguardando: aguardando
+        totalRevenue: revenue,
+        pendingPayments: pending,
+        waitingOrders: waiting
       });
 
     } catch (error) {
@@ -79,12 +78,11 @@ const FinanceiroPage = () => {
     }
   };
 
-  // Pagination logic
-  const totalItems = pedidosFinalizados.length;
+  const totalItems = completedOrders.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentPedidos = pedidosFinalizados.slice(startIndex, endIndex);
+  const currentOrders = completedOrders.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -110,7 +108,7 @@ const FinanceiroPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              R$ {stats.faturamentoMensal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {stats.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-gray-600">Pedidos pagos</p>
           </CardContent>
@@ -123,9 +121,9 @@ const FinanceiroPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              R$ {stats.pagamentosPendentes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {stats.pendingPayments.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
-            <p className="text-xs text-gray-600">{stats.pedidosAguardando} pedidos aguardando</p>
+            <p className="text-xs text-gray-600">{stats.waitingOrders} pedidos aguardando</p>
           </CardContent>
         </Card>
 
@@ -136,7 +134,7 @@ const FinanceiroPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              R$ {(stats.faturamentoMensal + stats.pagamentosPendentes).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {(stats.totalRevenue + stats.pendingPayments).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
             <p className="text-xs text-gray-600">Todos os pedidos</p>
           </CardContent>
@@ -151,7 +149,7 @@ const FinanceiroPage = () => {
           <div className="space-y-4">
             {loading ? (
               <p className="text-center text-gray-500 py-8">Carregando...</p>
-            ) : pedidosFinalizados.length === 0 ? (
+            ) : completedOrders.length === 0 ? (
               <p className="text-center text-gray-500 py-8">Nenhum pedido encontrado</p>
             ) : (
               <>
@@ -166,19 +164,19 @@ const FinanceiroPage = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {currentPedidos.map((pedido) => (
-                      <TableRow key={pedido.id}>
-                        <TableCell>{pedido.cliente}</TableCell>
-                        <TableCell>{pedido.servico}</TableCell>
-                        <TableCell>{pedido.valor}</TableCell>
-                        <TableCell>{pedido.data}</TableCell>
+                    {currentOrders.map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell>{order.clientName}</TableCell>
+                        <TableCell>{order.serviceName}</TableCell>
+                        <TableCell>{order.value}</TableCell>
+                        <TableCell>{order.date}</TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs ${
-                            pedido.status === "Pago" 
+                            order.status === "Pago" 
                               ? "bg-green-100 text-green-800" 
                               : "bg-orange-100 text-orange-800"
                           }`}>
-                            {pedido.status}
+                            {order.status}
                           </span>
                         </TableCell>
                       </TableRow>

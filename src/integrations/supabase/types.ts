@@ -14,209 +14,242 @@ export type Database = {
   }
   public: {
     Tables: {
-      analises: {
+      analyses: {
         Row: {
-          colaborador: string | null
+          collaborator: string | null
           created_at: string
+          deadline: number | null
           id: string
-          nome: string
-          prazo: number | null
+          name: string
           status: string | null
-          tipo: string | null
+          type: string | null
           updated_at: string
           user_id: string
-          valor: string | null
+          value: string | null
         }
         Insert: {
-          colaborador?: string | null
+          collaborator?: string | null
           created_at?: string
+          deadline?: number | null
           id?: string
-          nome: string
-          prazo?: number | null
+          name: string
           status?: string | null
-          tipo?: string | null
+          type?: string | null
           updated_at?: string
           user_id: string
-          valor?: string | null
+          value?: string | null
         }
         Update: {
-          colaborador?: string | null
+          collaborator?: string | null
           created_at?: string
+          deadline?: number | null
           id?: string
-          nome?: string
-          prazo?: number | null
+          name?: string
           status?: string | null
-          tipo?: string | null
+          type?: string | null
           updated_at?: string
           user_id?: string
-          valor?: string | null
+          value?: string | null
         }
         Relationships: []
       }
-      analises_execucao: {
+      analysis_executions: {
         Row: {
-          cliente_id: string | null
-          colaborador: string | null
+          analysis_name: string
+          client_id: string | null
+          collaborator: string | null
+          completion_date: string | null
           created_at: string
-          data_envio: string | null
-          data_finalizacao: string | null
-          data_recebimento: string | null
-          fazenda_id: string | null
+          farm_id: string | null
           id: string
-          nome_analise: string
-          quantidade: number | null
+          plot_id: string | null
+          quantity: number | null
+          receipt_date: string | null
+          send_date: string | null
           status: string | null
-          talhao_id: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
-          cliente_id?: string | null
-          colaborador?: string | null
+          analysis_name: string
+          client_id?: string | null
+          collaborator?: string | null
+          completion_date?: string | null
           created_at?: string
-          data_envio?: string | null
-          data_finalizacao?: string | null
-          data_recebimento?: string | null
-          fazenda_id?: string | null
+          farm_id?: string | null
           id?: string
-          nome_analise: string
-          quantidade?: number | null
+          plot_id?: string | null
+          quantity?: number | null
+          receipt_date?: string | null
+          send_date?: string | null
           status?: string | null
-          talhao_id?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
-          cliente_id?: string | null
-          colaborador?: string | null
+          analysis_name?: string
+          client_id?: string | null
+          collaborator?: string | null
+          completion_date?: string | null
           created_at?: string
-          data_envio?: string | null
-          data_finalizacao?: string | null
-          data_recebimento?: string | null
-          fazenda_id?: string | null
+          farm_id?: string | null
           id?: string
-          nome_analise?: string
-          quantidade?: number | null
+          plot_id?: string | null
+          quantity?: number | null
+          receipt_date?: string | null
+          send_date?: string | null
           status?: string | null
-          talhao_id?: string | null
           updated_at?: string
           user_id?: string
         }
         Relationships: [
           {
             foreignKeyName: "analises_execucao_cliente_id_fkey"
-            columns: ["cliente_id"]
+            columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "clientes"
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "analises_execucao_fazenda_id_fkey"
-            columns: ["fazenda_id"]
+            columns: ["farm_id"]
             isOneToOne: false
-            referencedRelation: "fazendas"
+            referencedRelation: "farms"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "analises_execucao_talhao_id_fkey"
-            columns: ["talhao_id"]
+            columns: ["plot_id"]
             isOneToOne: false
-            referencedRelation: "talhoes"
+            referencedRelation: "plots"
             referencedColumns: ["id"]
           },
         ]
       }
-      clientes: {
+      clients: {
         Row: {
+          birth_date: string | null
           cad_pro: string | null
-          cep: string | null
-          cidade: string | null
+          city: string | null
           cpf: string
           created_at: string
-          data_nascimento: string | null
           email: string | null
-          estado: string | null
           id: string
-          nome: string
-          telefone: string | null
+          name: string
+          phone: string | null
+          state: string | null
           updated_at: string
           user_id: string
+          zip_code: string | null
         }
         Insert: {
+          birth_date?: string | null
           cad_pro?: string | null
-          cep?: string | null
-          cidade?: string | null
+          city?: string | null
           cpf: string
           created_at?: string
-          data_nascimento?: string | null
           email?: string | null
-          estado?: string | null
           id?: string
-          nome: string
-          telefone?: string | null
+          name: string
+          phone?: string | null
+          state?: string | null
           updated_at?: string
           user_id: string
+          zip_code?: string | null
         }
         Update: {
+          birth_date?: string | null
           cad_pro?: string | null
-          cep?: string | null
-          cidade?: string | null
+          city?: string | null
           cpf?: string
           created_at?: string
-          data_nascimento?: string | null
           email?: string | null
-          estado?: string | null
           id?: string
-          nome?: string
-          telefone?: string | null
+          name?: string
+          phone?: string | null
+          state?: string | null
+          updated_at?: string
+          user_id?: string
+          zip_code?: string | null
+        }
+        Relationships: []
+      }
+      collaborators: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          name: string
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          status?: string | null
           updated_at?: string
           user_id?: string
         }
         Relationships: []
       }
-      colaboradores: {
+      cost_variables: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+          value: number | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+          value?: number | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+          value?: number | null
+        }
+        Relationships: []
+      }
+      equipment: {
         Row: {
           created_at: string
-          endereco: string | null
           id: string
-          nome: string
+          name: string
           status: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
-          endereco?: string | null
           id?: string
-          nome: string
-          status?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          endereco?: string | null
-          id?: string
-          nome?: string
-          status?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      equipamentos: {
-        Row: {
-          created_at: string
-          id: string
-          nome: string
-          status: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          nome: string
+          name: string
           status?: string | null
           updated_at?: string
           user_id: string
@@ -224,52 +257,52 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          nome?: string
+          name?: string
           status?: string | null
           updated_at?: string
           user_id?: string
         }
         Relationships: []
       }
-      execucoes: {
+      executions: {
         Row: {
           area: number | null
-          cliente_id: string | null
+          client_id: string | null
           created_at: string
-          data_agendada: string | null
-          equipamento: string | null
-          fazenda_id: string | null
+          equipment_name: string | null
+          farm_id: string | null
           id: string
-          pedido_id: string | null
-          servico: string | null
+          order_id: string | null
+          scheduled_date: string | null
+          service_name: string | null
           status: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           area?: number | null
-          cliente_id?: string | null
+          client_id?: string | null
           created_at?: string
-          data_agendada?: string | null
-          equipamento?: string | null
-          fazenda_id?: string | null
+          equipment_name?: string | null
+          farm_id?: string | null
           id?: string
-          pedido_id?: string | null
-          servico?: string | null
+          order_id?: string | null
+          scheduled_date?: string | null
+          service_name?: string | null
           status?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           area?: number | null
-          cliente_id?: string | null
+          client_id?: string | null
           created_at?: string
-          data_agendada?: string | null
-          equipamento?: string | null
-          fazenda_id?: string | null
+          equipment_name?: string | null
+          farm_id?: string | null
           id?: string
-          pedido_id?: string | null
-          servico?: string | null
+          order_id?: string | null
+          scheduled_date?: string | null
+          service_name?: string | null
           status?: string | null
           updated_at?: string
           user_id?: string
@@ -277,119 +310,72 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "execucoes_cliente_id_fkey"
-            columns: ["cliente_id"]
+            columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "clientes"
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "execucoes_fazenda_id_fkey"
-            columns: ["fazenda_id"]
+            columns: ["farm_id"]
             isOneToOne: false
-            referencedRelation: "fazendas"
+            referencedRelation: "farms"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "execucoes_pedido_id_fkey"
-            columns: ["pedido_id"]
+            columns: ["order_id"]
             isOneToOne: false
-            referencedRelation: "pedidos"
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
       }
-      execucoes_parciais: {
-        Row: {
-          area_executada: number | null
-          created_at: string
-          data: string | null
-          equipamento: string | null
-          execucao_id: string
-          id: string
-          observacoes: string | null
-          operador: string | null
-          status: string | null
-          updated_at: string
-        }
-        Insert: {
-          area_executada?: number | null
-          created_at?: string
-          data?: string | null
-          equipamento?: string | null
-          execucao_id: string
-          id?: string
-          observacoes?: string | null
-          operador?: string | null
-          status?: string | null
-          updated_at?: string
-        }
-        Update: {
-          area_executada?: number | null
-          created_at?: string
-          data?: string | null
-          equipamento?: string | null
-          execucao_id?: string
-          id?: string
-          observacoes?: string | null
-          operador?: string | null
-          status?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "execucoes_parciais_execucao_id_fkey"
-            columns: ["execucao_id"]
-            isOneToOne: false
-            referencedRelation: "execucoes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      fazendas: {
+      farms: {
         Row: {
           area: number | null
-          cidade: string | null
-          cliente_id: string | null
-          contato: string | null
+          city: string | null
+          client_id: string | null
+          contact: string | null
           created_at: string
-          estado: string | null
           id: string
-          lote: string | null
-          matricula: string | null
-          nome: string
-          proprietario: string | null
+          lot: string | null
+          name: string
+          owner: string | null
+          registration: string | null
+          state: string | null
           status: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           area?: number | null
-          cidade?: string | null
-          cliente_id?: string | null
-          contato?: string | null
+          city?: string | null
+          client_id?: string | null
+          contact?: string | null
           created_at?: string
-          estado?: string | null
           id?: string
-          lote?: string | null
-          matricula?: string | null
-          nome: string
-          proprietario?: string | null
+          lot?: string | null
+          name: string
+          owner?: string | null
+          registration?: string | null
+          state?: string | null
           status?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           area?: number | null
-          cidade?: string | null
-          cliente_id?: string | null
-          contato?: string | null
+          city?: string | null
+          client_id?: string | null
+          contact?: string | null
           created_at?: string
-          estado?: string | null
           id?: string
-          lote?: string | null
-          matricula?: string | null
-          nome?: string
-          proprietario?: string | null
+          lot?: string | null
+          name?: string
+          owner?: string | null
+          registration?: string | null
+          state?: string | null
           status?: string | null
           updated_at?: string
           user_id?: string
@@ -397,324 +383,338 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "fazendas_cliente_id_fkey"
-            columns: ["cliente_id"]
+            columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "clientes"
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
       }
-      grupos_servicos: {
-        Row: {
-          created_at: string
-          descricao: string | null
-          id: string
-          nome: string
-          servicos_ids: string[] | null
-          status: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          descricao?: string | null
-          id?: string
-          nome: string
-          servicos_ids?: string[] | null
-          status?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          descricao?: string | null
-          id?: string
-          nome?: string
-          servicos_ids?: string[] | null
-          status?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      pedidos: {
+      orders: {
         Row: {
           area: number | null
-          cliente_id: string | null
+          client_id: string | null
           created_at: string
-          fazenda_id: string | null
-          grupo_servico: string | null
+          farm_id: string | null
           id: string
-          pagamento: string | null
-          produtos: Json | null
-          servico: string | null
+          payment: string | null
+          products_data: Json | null
+          service_group: string | null
+          service_name: string | null
           status: string | null
-          tipo: string
+          type: string
           updated_at: string
           user_id: string
-          valor: number | null
+          value: number | null
         }
         Insert: {
           area?: number | null
-          cliente_id?: string | null
+          client_id?: string | null
           created_at?: string
-          fazenda_id?: string | null
-          grupo_servico?: string | null
+          farm_id?: string | null
           id?: string
-          pagamento?: string | null
-          produtos?: Json | null
-          servico?: string | null
+          payment?: string | null
+          products_data?: Json | null
+          service_group?: string | null
+          service_name?: string | null
           status?: string | null
-          tipo?: string
+          type?: string
           updated_at?: string
           user_id: string
-          valor?: number | null
+          value?: number | null
         }
         Update: {
           area?: number | null
-          cliente_id?: string | null
+          client_id?: string | null
           created_at?: string
-          fazenda_id?: string | null
-          grupo_servico?: string | null
+          farm_id?: string | null
           id?: string
-          pagamento?: string | null
-          produtos?: Json | null
-          servico?: string | null
+          payment?: string | null
+          products_data?: Json | null
+          service_group?: string | null
+          service_name?: string | null
           status?: string | null
-          tipo?: string
+          type?: string
           updated_at?: string
           user_id?: string
-          valor?: number | null
+          value?: number | null
         }
         Relationships: [
           {
             foreignKeyName: "pedidos_cliente_id_fkey"
-            columns: ["cliente_id"]
+            columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "clientes"
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "pedidos_fazenda_id_fkey"
-            columns: ["fazenda_id"]
+            columns: ["farm_id"]
             isOneToOne: false
-            referencedRelation: "fazendas"
+            referencedRelation: "farms"
             referencedColumns: ["id"]
           },
         ]
       }
-      produtos: {
+      partial_executions: {
         Row: {
           created_at: string
+          date: string | null
+          equipment_name: string | null
+          executed_area: number | null
+          execution_id: string
           id: string
-          nome: string
+          notes: string | null
+          operator: string | null
           status: string | null
           updated_at: string
-          user_id: string
-          valor_un: string | null
         }
         Insert: {
           created_at?: string
+          date?: string | null
+          equipment_name?: string | null
+          executed_area?: number | null
+          execution_id: string
           id?: string
-          nome: string
+          notes?: string | null
+          operator?: string | null
           status?: string | null
           updated_at?: string
-          user_id: string
-          valor_un?: string | null
         }
         Update: {
           created_at?: string
+          date?: string | null
+          equipment_name?: string | null
+          executed_area?: number | null
+          execution_id?: string
           id?: string
-          nome?: string
+          notes?: string | null
+          operator?: string | null
           status?: string | null
           updated_at?: string
-          user_id?: string
-          valor_un?: string | null
-        }
-        Relationships: []
-      }
-      profiles: {
-        Row: {
-          avatar_url: string | null
-          cargo: string | null
-          created_at: string
-          id: string
-          nome: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          avatar_url?: string | null
-          cargo?: string | null
-          created_at?: string
-          id?: string
-          nome?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          avatar_url?: string | null
-          cargo?: string | null
-          created_at?: string
-          id?: string
-          nome?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      servico_variaveis: {
-        Row: {
-          created_at: string
-          id: string
-          servico_id: string
-          variavel_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          servico_id: string
-          variavel_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          servico_id?: string
-          variavel_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "servico_variaveis_servico_id_fkey"
-            columns: ["servico_id"]
+            foreignKeyName: "execucoes_parciais_execucao_id_fkey"
+            columns: ["execution_id"]
             isOneToOne: false
-            referencedRelation: "servicos"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "servico_variaveis_variavel_id_fkey"
-            columns: ["variavel_id"]
-            isOneToOne: false
-            referencedRelation: "variaveis_custo"
+            referencedRelation: "executions"
             referencedColumns: ["id"]
           },
         ]
       }
-      servicos: {
-        Row: {
-          created_at: string
-          id: string
-          is_fixed: boolean | null
-          nome: string
-          produtos: string | null
-          status: string | null
-          updated_at: string
-          user_id: string
-          valor_alqueire: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_fixed?: boolean | null
-          nome: string
-          produtos?: string | null
-          status?: string | null
-          updated_at?: string
-          user_id: string
-          valor_alqueire?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_fixed?: boolean | null
-          nome?: string
-          produtos?: string | null
-          status?: string | null
-          updated_at?: string
-          user_id?: string
-          valor_alqueire?: string | null
-        }
-        Relationships: []
-      }
-      talhoes: {
+      plots: {
         Row: {
           area: number | null
-          cidade: string | null
+          city: string | null
           created_at: string
-          estado: string | null
-          fazenda_id: string
+          farm_id: string
           id: string
-          lote: string | null
-          matricula: string | null
-          nome: string
+          lot: string | null
+          name: string
+          registration: string | null
+          state: string | null
           status: string | null
           updated_at: string
         }
         Insert: {
           area?: number | null
-          cidade?: string | null
+          city?: string | null
           created_at?: string
-          estado?: string | null
-          fazenda_id: string
+          farm_id: string
           id?: string
-          lote?: string | null
-          matricula?: string | null
-          nome: string
+          lot?: string | null
+          name: string
+          registration?: string | null
+          state?: string | null
           status?: string | null
           updated_at?: string
         }
         Update: {
           area?: number | null
-          cidade?: string | null
+          city?: string | null
           created_at?: string
-          estado?: string | null
-          fazenda_id?: string
+          farm_id?: string
           id?: string
-          lote?: string | null
-          matricula?: string | null
-          nome?: string
+          lot?: string | null
+          name?: string
+          registration?: string | null
+          state?: string | null
           status?: string | null
           updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "talhoes_fazenda_id_fkey"
-            columns: ["fazenda_id"]
+            columns: ["farm_id"]
             isOneToOne: false
-            referencedRelation: "fazendas"
+            referencedRelation: "farms"
             referencedColumns: ["id"]
           },
         ]
       }
-      variaveis_custo: {
+      products: {
         Row: {
-          codigo: string
           created_at: string
-          descricao: string | null
           id: string
-          nome: string
+          name: string
+          status: string | null
+          unit_value: string | null
           updated_at: string
           user_id: string
-          valor: number | null
         }
         Insert: {
-          codigo: string
           created_at?: string
-          descricao?: string | null
           id?: string
-          nome: string
+          name: string
+          status?: string | null
+          unit_value?: string | null
           updated_at?: string
           user_id: string
-          valor?: number | null
         }
         Update: {
-          codigo?: string
           created_at?: string
-          descricao?: string | null
           id?: string
-          nome?: string
+          name?: string
+          status?: string | null
+          unit_value?: string | null
           updated_at?: string
           user_id?: string
-          valor?: number | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          name: string | null
+          role: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          name?: string | null
+          role?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          name?: string | null
+          role?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      service_groups: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          services_ids: string[] | null
+          status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          services_ids?: string[] | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          services_ids?: string[] | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      service_variables: {
+        Row: {
+          created_at: string
+          id: string
+          service_id: string
+          variable_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          service_id: string
+          variable_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          service_id?: string
+          variable_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "servico_variaveis_servico_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "servico_variaveis_variavel_id_fkey"
+            columns: ["variable_id"]
+            isOneToOne: false
+            referencedRelation: "cost_variables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      services: {
+        Row: {
+          created_at: string
+          id: string
+          is_fixed: boolean | null
+          name: string
+          products: string | null
+          status: string | null
+          updated_at: string
+          user_id: string
+          value_per_alqueire: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_fixed?: boolean | null
+          name: string
+          products?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+          value_per_alqueire?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_fixed?: boolean | null
+          name?: string
+          products?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+          value_per_alqueire?: string | null
         }
         Relationships: []
       }
