@@ -37,14 +37,14 @@ const mapFromDB = (db: OrderDB): Order => ({
   id: db.id,
   clientId: db.client_id || "",
   farmId: db.farm_id || "",
-  type: db.type || "Serviço",
+  type: db.type || "Service",
   serviceName: db.service_name || "",
   productsData: Array.isArray(db.products_data) ? db.products_data : [],
   serviceGroup: db.service_group || "",
   area: db.area?.toString() || "",
   value: db.value ? `R$ ${db.value.toFixed(2).replace('.', ',')}` : "",
-  status: db.status || "Pendente",
-  payment: db.payment || "Aguardando"
+  status: db.status || "Pending",
+  payment: db.payment || "Awaiting"
 });
 
 const parseValue = (value: string): number | null => {
@@ -67,14 +67,14 @@ export const useOrders = () => {
     id: "",
     clientId: "",
     farmId: "",
-    type: "Serviço",
+    type: "Service",
     serviceName: "",
     productsData: [],
     serviceGroup: "",
     area: "",
     value: "",
-    status: "Pendente",
-    payment: "Aguardando"
+    status: "Pending",
+    payment: "Awaiting"
   });
 
   const fetchOrders = async () => {

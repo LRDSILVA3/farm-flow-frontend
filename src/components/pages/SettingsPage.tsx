@@ -7,24 +7,24 @@ import { SystemSection } from "./settings/SystemSection";
 import { UsersSection } from "./settings/UsersSection";
 import { AppSection } from "./settings/AppSection";
 
-const ConfiguracoesPage = () => {
-  const [activeSection, setActiveSection] = useState("operacionais");
+const SettingsPage = () => {
+  const [activeSection, setActiveSection] = useState("operational");
 
   const menuSections = [
     {
-      id: "operacionais",
+      id: "operational",
       title: "Configurações Operacionais",
       icon: Settings,
       description: "Serviços, produtos e equipamentos"
     },
     {
-      id: "sistema",
+      id: "system",
       title: "Configurações do Sistema",
       icon: Settings,
       description: "Configurações gerais do sistema"
     },
     {
-      id: "usuarios",
+      id: "users",
       title: "Usuários e Permissões",
       icon: Users,
       description: "Gerenciar usuários e acessos"
@@ -39,11 +39,11 @@ const ConfiguracoesPage = () => {
 
   const renderActiveSection = () => {
     switch (activeSection) {
-      case "operacionais":
+      case "operational":
         return <OperationalSection />;
-      case "sistema":
+      case "system":
         return <SystemSection />;
-      case "usuarios":
+      case "users":
         return <UsersSection />;
       case "app":
         return <AppSection />;
@@ -98,4 +98,4 @@ const ConfiguracoesPage = () => {
   );
 };
 
-export default ConfiguracoesPage;
+export default SettingsPage;

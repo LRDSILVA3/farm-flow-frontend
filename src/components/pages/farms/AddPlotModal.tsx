@@ -1,47 +1,47 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Fazenda, Talhao } from "../FarmPage";
-import { TalhaoForm } from "./PlotForm";
-import { useTalhoesModal } from "./usePlotModal";
+import { Farm, Plot } from "../FarmPage";
+import { PlotForm } from "./PlotForm";
+import { usePlotsModal } from "./usePlotModal";
 
-interface AddTalhaoModalProps {
+interface AddPlotModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  fazenda: Fazenda | null;
-  talhaoForm: Talhao;
-  setTalhaoForm: (talhao: Talhao) => void;
-  onAddTalhao: (fazendaId: string) => void;
+  farm: Farm | null;
+  plotForm: Plot;
+  setPlotForm: (plot: Plot) => void;
+  onAddPlot: (farmId: string) => void;
 }
 
-export const AddTalhaoModal = ({
+export const AddPlotModal = ({
   open,
   onOpenChange,
-  fazenda,
-  talhaoForm,
-  setTalhaoForm,
-  onAddTalhao
-}: AddTalhaoModalProps) => {
+  farm,
+  plotForm,
+  setPlotForm,
+  onAddPlot
+}: AddPlotModalProps) => {
   const {
-    editingTalhao,
-    handleAddTalhao
-  } = useTalhoesModal(onAddTalhao, talhaoForm, setTalhaoForm, true);
+    editingPlot,
+    handleAddPlot
+  } = usePlotsModal(onAddPlot, plotForm, setPlotForm, true);
 
-  if (!fazenda) return null;
+  if (!farm) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>
-            Adicionar Talhão - {fazenda.nome}
+            Adicionar Talhão - {farm.name}
           </DialogTitle>
         </DialogHeader>
 
-        <TalhaoForm
-          talhaoForm={talhaoForm}
-          setTalhaoForm={setTalhaoForm}
-          editingTalhao={editingTalhao}
-          onSubmit={(e) => handleAddTalhao(e, fazenda.id)}
+        <PlotForm
+          plotForm={plotForm}
+          setPlotForm={setPlotForm}
+          editingPlot={editingPlot}
+          onSubmit={(e) => handleAddPlot(e, farm.id)}
           onCancel={() => onOpenChange(false)}
         />
       </DialogContent>

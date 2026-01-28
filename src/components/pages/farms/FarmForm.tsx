@@ -6,66 +6,67 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Trash2, Plus } from "lucide-react";
-import { Fazenda } from "../FarmPage";
-import { useState, useEffect } from "react";
-import { ClienteSelect } from "./CustomerSelect";
-import { CidadeEstadoSelect } from "./CityStateSelect";
 
-interface Cliente {
+import { useState, useEffect } from "react";
+import { CustomerSelect } from "./CustomerSelect";
+import { CityStateSelect } from "./CityStateSelect";
+import { Farm } from "@/hooks/useFarms";
+
+interface Customer {
   id: string;
   cpf: string;
-  nome: string;
+  name: string;
   email: string;
 }
 
-interface FazendaFormProps {
+interface FarmFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editingFazenda: Fazenda | null;
-  formData: Fazenda;
-  onInputChange: (field: keyof Fazenda, value: string) => void;
+  editingFarm: Farm | null;
+  formData: Farm;
+  onInputChange: (field: keyof Farm, value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
-  onDeleteTalhao?: (fazendaId: string, talhaoId: string) => void;
-  onAddTalhao?: (fazendaId: string) => void;
+  onDeletePlot?: (farmId: string, plotId: string) => void;
+  onAddPlot?: (farmId: string) => void;
 }
 
-export const FazendaForm = ({
+export const FarmForm = ({
   open,
   onOpenChange,
-  editingFazenda,
+  editingFarm,
   formData,
   onInputChange,
   onSubmit,
   onCancel,
-  onDeleteTalhao,
-  onAddTalhao
-}: FazendaFormProps) => {
-  const [clientes, setClientes] = useState<Cliente[]>([]);
+  onDeletePlot,
+  onAddPlot
+}: FarmFormProps) => {
+  const [customers, setCustomers] = useState<Customer[]>([]);
 
   // Simular busca de clientes - em um app real, isso viria de uma API
   useEffect(() => {
-    const clientesMock: Cliente[] = [
+    const mockCustomers: Customer[] = [
       {
         id: "1",
         cpf: "123.456.789-00",
-        nome: "João Silva",
+        name: "João Silva",
         email: "joao@email.com"
       },
       {
         id: "2", 
         cpf: "987.654.321-00",
-        nome: "Maria Santos",
+        name: "Maria Santos",
         email: "maria@email.com"
       },
       {
         id: "3",
         cpf: "456.789.123-00", 
-        nome: "Pedro Oliveira",
+        name: "Pedro Oliveira",
         email: "pedro@email.com"
       }
     ];
-    setClientes(clientesMock);
+    setCustomers(mockCustomers);
   }, []);
 
   const getStatusColor = (status: string) => {
@@ -79,10 +80,10 @@ export const FazendaForm = ({
     }
   };
 
-  const handleAddTalhaoClick = () => {
-    if (onAddTalhao) {
-      const fazendaId = editingFazenda ? editingFazenda.id : formData.id || 'temp';
-      onAddTalhao(fazendaId);
+  const handleAddPlotClick = () => {
+    if (onAddPlot) {
+      const farmId = editingFarm ? editingFarm.id : formData.id || 'temp';
+      onAddPlot(farmId);
     }
   };
 
@@ -91,26 +92,26 @@ export const FazendaForm = ({
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {editingFazenda ? "Editar Fazenda" : "Nova Fazenda"}
+            {editingFarm ? "Editar Fazenda" : "Nova Fazenda"}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="nome">Nome da Fazenda</Label>
+              <Label htmlFor="name">Nome da Fazenda</Label>
               <Input
-                id="nome"
-                value={formData.nome}
-                onChange={(e) => onInputChange("nome", e.target.value)}
+                id="name"
+                value={formData.name}
+                onChange={(e) => onInputChange("name", e.target.value)}
                 required
               />
             </div>
             <div>
-              <Label htmlFor="proprietario">Proprietário</Label>
-              <ClienteSelect
-                value={formData.proprietario}
-                onValueChange={(value) => onInputChange("proprietario", value)}
-                clientes={clientes}
+              <Label htmlFor="owner">Proprietário</Label>
+              <CustomerSelect
+                value={formData.owner}
+                onValueChange={(value) => onInputChange("owner", value)}
+                customers={customers}
               />
             </div>
           </div>
@@ -128,22 +129,22 @@ export const FazendaForm = ({
               />
             </div>
             <div>
-              <Label htmlFor="contato">Contato</Label>
+              <Label htmlFor="contact">Contato</Label>
               <Input
-                id="contato"
-                value={formData.contato}
-                onChange={(e) => onInputChange("contato", e.target.value)}
+                id="contact"
+                value={formData.contact}
+                onChange={(e) => onInputChange("contact", e.target.value)}
                 required
               />
             </div>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
-            <CidadeEstadoSelect
-              cidade={formData.cidade}
-              estado={formData.estado}
-              onCidadeChange={(value) => onInputChange("cidade", value)}
-              onEstadoChange={(value) => onInputChange("estado", value)}
+            <CityStateSelect
+              city={formData.city}
+              state={formData.state}
+              onCityChange={(value) => onInputChange("city", value)}
+              onStateChange={(value) => onInputChange("state", value)}
             />
           </div>
 
@@ -161,33 +162,33 @@ export const FazendaForm = ({
               </Select>
             </div>
             <div>
-              <Label htmlFor="lote">Lote</Label>
+              <Label htmlFor="lot">Lote</Label>
               <Input
-                id="lote"
-                value={formData.lote}
-                onChange={(e) => onInputChange("lote", e.target.value)}
+                id="lot"
+                value={formData.lot}
+                onChange={(e) => onInputChange("lot", e.target.value)}
                 required
               />
             </div>
           </div>
 
           <div>
-            <Label htmlFor="matricula">Matrícula</Label>
+            <Label htmlFor="registration">Matrícula</Label>
             <Input
-              id="matricula"
-              value={formData.matricula}
-              onChange={(e) => onInputChange("matricula", e.target.value)}
+              id="registration"
+              value={formData.registration}
+              onChange={(e) => onInputChange("registration", e.target.value)}
               required
             />
           </div>
 
-          {editingFazenda && (
+          {editingFarm && (
             <div className="mt-6">
               <div className="flex justify-between items-center mb-4">
                 <h4 className="text-lg font-medium">Talhões da Fazenda</h4>
                 <Button
                   type="button"
-                  onClick={handleAddTalhaoClick}
+                  onClick={handleAddPlotClick}
                   className="bg-green-600 hover:bg-green-700"
                   size="sm"
                 >
@@ -196,7 +197,7 @@ export const FazendaForm = ({
                 </Button>
               </div>
               
-              {formData.talhoes.length > 0 ? (
+              {formData.plots.length > 0 ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -211,26 +212,26 @@ export const FazendaForm = ({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {formData.talhoes.map((talhao) => (
-                      <TableRow key={talhao.id}>
-                        <TableCell className="font-medium">{talhao.nome}</TableCell>
-                        <TableCell>{talhao.area}</TableCell>
-                        <TableCell>{talhao.cidade}</TableCell>
-                        <TableCell>{talhao.estado}</TableCell>
-                        <TableCell>{talhao.matricula}</TableCell>
-                        <TableCell>{talhao.lote}</TableCell>
+                    {formData.plots.map((plot) => (
+                      <TableRow key={plot.id}>
+                        <TableCell className="font-medium">{plot.name}</TableCell>
+                        <TableCell>{plot.area}</TableCell>
+                        <TableCell>{plot.city}</TableCell>
+                        <TableCell>{plot.state}</TableCell>
+                        <TableCell>{plot.registration}</TableCell>
+                        <TableCell>{plot.lot}</TableCell>
                         <TableCell>
-                          <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(talhao.status)}`}>
-                            {talhao.status}
+                          <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(plot.status)}`}>
+                            {plot.status}
                           </span>
                         </TableCell>
                         <TableCell>
-                          {onDeleteTalhao && (
+                          {onDeletePlot && (
                             <Button
                               type="button"
                               variant="outline"
                               size="sm"
-                              onClick={() => onDeleteTalhao(formData.id, talhao.id)}
+                              onClick={() => onDeletePlot(formData.id, plot.id)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -253,7 +254,7 @@ export const FazendaForm = ({
               Cancelar
             </Button>
             <Button type="submit" className="bg-green-600 hover:bg-green-700">
-              {editingFazenda ? "Atualizar" : "Criar"}
+              {editingFarm ? "Atualizar" : "Criar"}
             </Button>
           </div>
         </form>

@@ -8,10 +8,10 @@ import { CustomersFilters } from "./customers/CustomersFilters";
 import { CustomersTable } from "./customers/CustomersTable";
 
 interface CustomersPageProps {
-  onNavigateToFazendas: (clienteCpf: string) => void;
+  onNavigateToFarms: (customerCpf: string) => void;
 }
 
-const CustomersPage = ({ onNavigateToFazendas }: CustomersPageProps) => {
+const CustomersPage = ({ onNavigateToFarms }: CustomersPageProps) => {
   const {
     clients,
     editingClient,
@@ -55,9 +55,9 @@ const CustomersPage = ({ onNavigateToFazendas }: CustomersPageProps) => {
     stopEditing();
   };
 
-  const handleNavigateToFazendas = (cpf: string) => {
+  const handleNavigateToFarms = (cpf: string) => {
     console.log("Navegando para fazendas do cliente:", cpf);
-    onNavigateToFazendas(cpf);
+    onNavigateToFarms(cpf);
   };
 
   const cidadesEstados = Array.from(new Set(clients.map(c => `${c.state}/${c.city}`))).sort();
@@ -110,17 +110,17 @@ const CustomersPage = ({ onNavigateToFazendas }: CustomersPageProps) => {
             <CustomersFilters
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
-              cidadeEstadoFilter={cidadeEstadoFilter}
-              onCidadeEstadoFilterChange={setCidadeEstadoFilter}
-              cidadesEstados={cidadesEstados}
+              cityStateFilter={cidadeEstadoFilter}
+              onCityStateFilterChange={setCidadeEstadoFilter}
+              cityStates={cidadesEstados}
             />
           </div>
         </CardHeader>
         <CardContent>
           <CustomersTable
-            clientes={filteredClients}
+            clients={filteredClients}
             onEdit={handleEdit}
-            onNavigateToFazendas={handleNavigateToFazendas}
+            onNavigateToFarms={handleNavigateToFarms}
             currentPage={currentPage}
             itemsPerPage={itemsPerPage}
             onPageChange={handlePageChange}

@@ -3,88 +3,88 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Talhao } from "../FarmPage";
+import { Plot } from "../FarmPage";
 
-interface TalhaoFormProps {
-  talhaoForm: Talhao;
-  setTalhaoForm: (talhao: Talhao) => void;
-  editingTalhao: Talhao | null;
+interface PlotFormProps {
+  plotForm: Plot;
+  setPlotForm: (plot: Plot) => void;
+  editingPlot: Plot | null;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
 }
 
-export const TalhaoForm = ({
-  talhaoForm,
-  setTalhaoForm,
-  editingTalhao,
+export const PlotForm = ({
+  plotForm,
+  setPlotForm,
+  editingPlot,
   onSubmit,
   onCancel
-}: TalhaoFormProps) => {
+}: PlotFormProps) => {
   return (
     <form onSubmit={onSubmit} className="bg-gray-50 p-4 rounded-lg border">
       <h5 className="font-medium mb-4">
-        {editingTalhao ? "Editar Talhão" : "Adicionar Novo Talhão"}
+        {editingPlot ? "Editar Talhão" : "Adicionar Novo Talhão"}
       </h5>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="talhaoNome">Nome do Talhão</Label>
+          <Label htmlFor="plotName">Nome do Talhão</Label>
           <Input
-            id="talhaoNome"
-            value={talhaoForm.nome}
-            onChange={(e) => setTalhaoForm({ ...talhaoForm, nome: e.target.value })}
+            id="plotName"
+            value={plotForm.name}
+            onChange={(e) => setPlotForm({ ...plotForm, name: e.target.value })}
             required
           />
         </div>
         <div>
-          <Label htmlFor="talhaoArea">Área (ha)</Label>
+          <Label htmlFor="plotArea">Área (ha)</Label>
           <Input
-            id="talhaoArea"
+            id="plotArea"
             type="number"
             step="0.1"
-            value={talhaoForm.area}
-            onChange={(e) => setTalhaoForm({ ...talhaoForm, area: e.target.value })}
+            value={plotForm.area}
+            onChange={(e) => setPlotForm({ ...plotForm, area: e.target.value })}
             required
           />
         </div>
         <div>
-          <Label htmlFor="talhaoCidade">Cidade</Label>
+          <Label htmlFor="plotCity">Cidade</Label>
           <Input
-            id="talhaoCidade"
-            value={talhaoForm.cidade}
-            onChange={(e) => setTalhaoForm({ ...talhaoForm, cidade: e.target.value })}
+            id="plotCity"
+            value={plotForm.city}
+            onChange={(e) => setPlotForm({ ...plotForm, city: e.target.value })}
             required
           />
         </div>
         <div>
-          <Label htmlFor="talhaoEstado">Estado</Label>
+          <Label htmlFor="plotState">Estado</Label>
           <Input
-            id="talhaoEstado"
-            value={talhaoForm.estado}
-            onChange={(e) => setTalhaoForm({ ...talhaoForm, estado: e.target.value })}
+            id="plotState"
+            value={plotForm.state}
+            onChange={(e) => setPlotForm({ ...plotForm, state: e.target.value })}
             required
           />
         </div>
         <div>
-          <Label htmlFor="talhaoMatricula">Matrícula</Label>
+          <Label htmlFor="plotRegistration">Matrícula</Label>
           <Input
-            id="talhaoMatricula"
-            value={talhaoForm.matricula}
-            onChange={(e) => setTalhaoForm({ ...talhaoForm, matricula: e.target.value })}
+            id="plotRegistration"
+            value={plotForm.registration}
+            onChange={(e) => setPlotForm({ ...plotForm, registration: e.target.value })}
             required
           />
         </div>
         <div>
-          <Label htmlFor="talhaoLote">Lote</Label>
+          <Label htmlFor="plotLot">Lote</Label>
           <Input
-            id="talhaoLote"
-            value={talhaoForm.lote}
-            onChange={(e) => setTalhaoForm({ ...talhaoForm, lote: e.target.value })}
+            id="plotLot"
+            value={plotForm.lot}
+            onChange={(e) => setPlotForm({ ...plotForm, lot: e.target.value })}
             required
           />
         </div>
         <div>
-          <Label htmlFor="talhaoStatus">Status</Label>
-          <Select value={talhaoForm.status} onValueChange={(value) => setTalhaoForm({ ...talhaoForm, status: value })}>
+          <Label htmlFor="plotStatus">Status</Label>
+          <Select value={plotForm.status} onValueChange={(value) => setPlotForm({ ...plotForm, status: value })}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -100,7 +100,7 @@ export const TalhaoForm = ({
           Cancelar
         </Button>
         <Button type="submit" className="bg-green-600 hover:bg-green-700">
-          {editingTalhao ? "Atualizar" : "Adicionar"}
+          {editingPlot ? "Atualizar" : "Adicionar"}
         </Button>
       </div>
     </form>

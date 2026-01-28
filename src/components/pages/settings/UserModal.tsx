@@ -7,63 +7,63 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { User } from "./useUser";
 
 interface UserModalProps {
-  showUsuarioForm: boolean;
-  setShowUsuarioForm: (value: boolean) => void;
-  editingUsuario: User | null;
-  usuarioFormData: User;
-  handleUsuarioSubmit: (e: React.FormEvent) => void;
-  resetUsuarioForm: () => void;
-  handleUsuarioInputChange: (field: keyof User, value: string | string[]) => void;
-  handlePermissaoChange: (permissao: string, checked: boolean) => void;
+  showUserForm: boolean;
+  setShowUserForm: (value: boolean) => void;
+  editingUser: User | null;
+  userFormData: User;
+  handleUserSubmit: (e: React.FormEvent) => void;
+  resetUserForm: () => void;
+  handleUserInputChange: (field: keyof User, value: string | string[]) => void;
+  handlePermissionChange: (permission: string, checked: boolean) => void;
 }
 
-const permissoesDisponiveis = [
-  { id: "dashboard", nome: "Dashboard" },
-  { id: "fazendas", nome: "Fazendas" },
-  { id: "pedidos", nome: "Pedidos" },
-  { id: "agenda", nome: "Agenda" },
-  { id: "analises", nome: "Análises" },
-  { id: "financeiro", nome: "Financeiro" },
-  { id: "clientes", nome: "Clientes" },
-  { id: "configuracoes", nome: "Configurações" }
+const availablePermissions = [
+  { id: "dashboard", name: "Dashboard" },
+  { id: "farms", name: "Fazendas" },
+  { id: "orders", name: "Pedidos" },
+  { id: "schedule", name: "Agenda" },
+  { id: "analysis", name: "Análises" },
+  { id: "financial", name: "Financeiro" },
+  { id: "customers", name: "Clientes" },
+  { id: "settings", name: "Configurações" }
 ];
 
 export const UserModal: React.FC<UserModalProps> = ({
-  showUsuarioForm,
-  setShowUsuarioForm,
-  editingUsuario,
-  usuarioFormData,
-  handleUsuarioSubmit,
-  resetUsuarioForm,
-  handleUsuarioInputChange,
-  handlePermissaoChange
+  showUserForm,
+  setShowUserForm,
+  editingUser,
+  userFormData,
+  handleUserSubmit,
+  resetUserForm,
+  handleUserInputChange,
+  handlePermissionChange
 }) => {
   return (
-    <Dialog open={showUsuarioForm} onOpenChange={setShowUsuarioForm}>
+    <Dialog open={showUserForm} onOpenChange={setShowUserForm}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>
-            {editingUsuario ? "Editar Usuário" : "Novo Usuário"}
+            {editingUser ? "Editar Usuário" : "Novo Usuário"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleUsuarioSubmit} className="space-y-4">
+        <form onSubmit={handleUserSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="usuarioNome">Nome Completo</Label>
+              <Label htmlFor="userName">Nome Completo</Label>
               <Input
-                id="usuarioNome"
-                value={usuarioFormData.name}
-                onChange={(e) => handleUsuarioInputChange("name", e.target.value)}
+                id="userName"
+                value={userFormData.name}
+                onChange={(e) => handleUserInputChange("name", e.target.value)}
                 required
               />
             </div>
             <div>
-              <Label htmlFor="usuarioEmail">Email</Label>
+              <Label htmlFor="userEmail">Email</Label>
               <Input
-                id="usuarioEmail"
+                id="userEmail"
                 type="email"
-                value={usuarioFormData.email}
-                onChange={(e) => handleUsuarioInputChange("email", e.target.value)}
+                value={userFormData.email}
+                onChange={(e) => handleUserInputChange("email", e.target.value)}
                 required
               />
             </div>
@@ -71,17 +71,17 @@ export const UserModal: React.FC<UserModalProps> = ({
           
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="usuarioTelefone">Telefone</Label>
+              <Label htmlFor="userPhone">Telefone</Label>
               <Input
-                id="usuarioTelefone"
-                value={usuarioFormData.phone}
-                onChange={(e) => handleUsuarioInputChange("phone", e.target.value)}
+                id="userPhone"
+                value={userFormData.phone}
+                onChange={(e) => handleUserInputChange("phone", e.target.value)}
                 placeholder="(11) 99999-9999"
               />
             </div>
             <div>
-              <Label htmlFor="usuarioCargo">Cargo</Label>
-              <Select value={usuarioFormData.cargo} onValueChange={(value) => handleUsuarioInputChange("cargo", value)}>
+              <Label htmlFor="userRole">Cargo</Label>
+              <Select value={userFormData.role} onValueChange={(value) => handleUserInputChange("role", value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -96,8 +96,8 @@ export const UserModal: React.FC<UserModalProps> = ({
           </div>
 
           <div>
-            <Label htmlFor="usuarioStatus">Status</Label>
-            <Select value={usuarioFormData.status} onValueChange={(value) => handleUsuarioInputChange("status", value)}>
+            <Label htmlFor="userStatus">Status</Label>
+            <Select value={userFormData.status} onValueChange={(value) => handleUserInputChange("status", value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -111,17 +111,17 @@ export const UserModal: React.FC<UserModalProps> = ({
           <div>
             <Label>Permissões</Label>
             <div className="grid grid-cols-2 gap-4 mt-2">
-              {permissoesDisponiveis.map((permissao) => (
-                <div key={permissao.id} className="flex items-center space-x-2">
+              {availablePermissions.map((permission) => (
+                <div key={permission.id} className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    id={`permissao-${permissao.id}`}
-                    checked={usuarioFormData.permissoes.includes(permissao.id)}
-                    onChange={(e) => handlePermissaoChange(permissao.id, e.target.checked)}
+                    id={`permission-${permission.id}`}
+                    checked={userFormData.permissions.includes(permission.id)}
+                    onChange={(e) => handlePermissionChange(permission.id, e.target.checked)}
                     className="rounded border-gray-300"
                   />
-                  <Label htmlFor={`permissao-${permissao.id}`} className="text-sm font-normal">
-                    {permissao.nome}
+                  <Label htmlFor={`permission-${permission.id}`} className="text-sm font-normal">
+                    {permission.name}
                   </Label>
                 </div>
               ))}
@@ -129,11 +129,11 @@ export const UserModal: React.FC<UserModalProps> = ({
           </div>
           
           <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={resetUsuarioForm}>
+            <Button type="button" variant="outline" onClick={resetUserForm}>
               Cancelar
             </Button>
             <Button type="submit" className="bg-green-600 hover:bg-green-700">
-              {editingUsuario ? "Atualizar" : "Criar"}
+              {editingUser ? "Atualizar" : "Criar"}
             </Button>
           </div>
         </form>

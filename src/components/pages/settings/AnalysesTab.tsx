@@ -26,7 +26,7 @@ interface AnalysesTabProps {
   handleDeleteAnalysis: (id: string) => void;
 }
 
-export const AnalisesTab = ({
+export const AnalysesTab = ({
   analyses,
   analysesStartIndex,
   analysesEndIndex,

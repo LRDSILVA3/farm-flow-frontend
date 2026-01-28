@@ -3,254 +3,111 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from "lucide-react";
-import { FazendasTable } from "./farms/FarmTable";
-import { FazendaForm } from "./farms/FarmForm";
-import { TalhoesModal } from "./farms/PlotsModal";
-import { AddTalhaoModal } from "./farms/AddPlotModal";
-import { FazendasPageHeader } from "./farms/FarmPageHeader";
+import { FarmsTable } from "./farms/FarmTable";
+import { FarmForm } from "./farms/FarmForm";
+import { PlotsModal } from "./farms/PlotsModal";
+import { AddPlotModal } from "./farms/AddPlotModal";
+import { FarmPageHeader } from "./farms/FarmPageHeader";
 import { useFarms, Farm, Plot } from "@/hooks/useFarms";
-import { useFazendaHandlers } from "./farms/usePlotHandlers";
+import { useFarmHandlers } from "./farms/usePlotHandlers";
 
-export interface Talhao {
-  id: string;
-  nome: string;
-  area: string;
-  status: string;
-  cidade: string;
-  estado: string;
-  matricula: string;
-  lote: string;
-}
 
-export interface Fazenda {
-  id: string;
-  nome: string;
-  proprietario: string;
-  area: string;
-  cidade: string;
-  estado: string;
-  contato: string;
-  status: string;
-  matricula: string;
-  lote: string;
-  talhoes: Talhao[];
-}
 
-// Map between English and Portuguese interfaces
-const mapFarmToFazenda = (farm: Farm): Fazenda => ({
-  id: farm.id,
-  nome: farm.name,
-  proprietario: farm.owner,
-  area: farm.area,
-  cidade: farm.city,
-  estado: farm.state,
-  contato: farm.contact,
-  status: farm.status,
-  matricula: farm.registration,
-  lote: farm.lot,
-  talhoes: farm.plots.map(p => ({
-    id: p.id,
-    nome: p.name,
-    area: p.area,
-    status: p.status,
-    cidade: p.city,
-    estado: p.state,
-    matricula: p.registration,
-    lote: p.lot
-  }))
-});
 
-const mapFazendaToFarm = (fazenda: Fazenda): Farm => ({
-  id: fazenda.id,
-  name: fazenda.nome,
-  owner: fazenda.proprietario,
-  area: fazenda.area,
-  city: fazenda.cidade,
-  state: fazenda.estado,
-  contact: fazenda.contato,
-  status: fazenda.status,
-  registration: fazenda.matricula,
-  lot: fazenda.lote,
-  plots: fazenda.talhoes.map(t => ({
-    id: t.id,
-    name: t.nome,
-    area: t.area,
-    status: t.status,
-    city: t.cidade,
-    state: t.estado,
-    registration: t.matricula,
-    lot: t.lote
-  }))
-});
 
-const FazendasPage = () => {
-  const farmHook = useFarms();
-  
-  // Map to Portuguese interface for backwards compatibility
-  const fazendas = farmHook.farms.map(mapFarmToFazenda);
-  const setFazendas = (fazendasOrFn: Fazenda[] | ((prev: Fazenda[]) => Fazenda[])) => {
-    if (typeof fazendasOrFn === 'function') {
-      farmHook.setFarms(prev => {
-        const prevFazendas = prev.map(mapFarmToFazenda);
-        const newFazendas = fazendasOrFn(prevFazendas);
-        return newFazendas.map(mapFazendaToFarm);
-      });
-    } else {
-      farmHook.setFarms(fazendasOrFn.map(mapFazendaToFarm));
-    }
-  };
-  
-  const showFazendaForm = farmHook.showFarmForm;
-  const setShowFazendaForm = farmHook.setShowFarmForm;
-  const editingFazenda = farmHook.editingFarm ? mapFarmToFazenda(farmHook.editingFarm) : null;
-  const setEditingFazenda = (f: Fazenda | null) => farmHook.setEditingFarm(f ? mapFazendaToFarm(f) : null);
-  const showTalhoesModal = farmHook.showPlotsModal;
-  const setShowTalhoesModal = farmHook.setShowPlotsModal;
-  const selectedFazenda = farmHook.selectedFarm ? mapFarmToFazenda(farmHook.selectedFarm) : null;
-  const setSelectedFazenda = (f: Fazenda | null | ((prev: Fazenda | null) => Fazenda | null)) => {
-    if (typeof f === 'function') {
-      farmHook.setSelectedFarm(prev => {
-        const prevFazenda = prev ? mapFarmToFazenda(prev) : null;
-        const newFazenda = f(prevFazenda);
-        return newFazenda ? mapFazendaToFarm(newFazenda) : null;
-      });
-    } else {
-      farmHook.setSelectedFarm(f ? mapFazendaToFarm(f) : null);
-    }
-  };
-  const formData = mapFarmToFazenda(farmHook.formData);
-  const setFormData = (f: Fazenda | ((prev: Fazenda) => Fazenda)) => {
-    if (typeof f === 'function') {
-      farmHook.setFormData(prev => mapFazendaToFarm(f(mapFarmToFazenda(prev))));
-    } else {
-      farmHook.setFormData(mapFazendaToFarm(f));
-    }
-  };
-  
-  const talhaoForm: Talhao = {
-    id: farmHook.plotForm.id,
-    nome: farmHook.plotForm.name,
-    area: farmHook.plotForm.area,
-    status: farmHook.plotForm.status,
-    cidade: farmHook.plotForm.city,
-    estado: farmHook.plotForm.state,
-    matricula: farmHook.plotForm.registration,
-    lote: farmHook.plotForm.lot
-  };
-  const setTalhaoForm = (t: Talhao) => {
-    farmHook.setPlotForm({
-      id: t.id,
-      name: t.nome,
-      area: t.area,
-      status: t.status,
-      city: t.cidade,
-      state: t.estado,
-      registration: t.matricula,
-      lot: t.lote
-    });
-  };
+const FarmsPage = () => {
+  const {
+    farms,
+    setFarms,
+    showFarmForm,
+    setShowFarmForm,
+    editingFarm,
+    setEditingFarm,
+    showPlotsModal,
+    setShowPlotsModal,
+    selectedFarm,
+    setSelectedFarm,
+    formData,
+    setFormData,
+    plotForm,
+    setPlotForm,
+    addFarm,
+    updateFarm,
+    addPlot,
+    deletePlot,
+    currentPage,
+    setCurrentPage,
+    itemsPerPage,
+    setItemsPerPage
+  } = useFarms();
 
   useEffect(() => {
     return () => {
-      setShowFazendaForm(false);
-      setShowTalhoesModal(false);
-      farmHook.setEditingFarm(null);
-      farmHook.setSelectedFarm(null);
+      setShowFarmForm(false);
+      setShowPlotsModal(false);
+      setEditingFarm(null);
+      setSelectedFarm(null);
     };
-  }, []);
+  }, [setShowFarmForm, setShowPlotsModal, setEditingFarm, setSelectedFarm]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [cidadeEstadoFilter, setCidadeEstadoFilter] = useState("");
-  const [showAddTalhaoModal, setShowAddTalhaoModal] = useState(false);
-
-  const addFazenda = async (fazenda: Omit<Fazenda, 'id' | 'talhoes'>) => {
-    return farmHook.addFarm({
-      name: fazenda.nome,
-      owner: fazenda.proprietario,
-      area: fazenda.area,
-      city: fazenda.cidade,
-      state: fazenda.estado,
-      contact: fazenda.contato,
-      status: fazenda.status,
-      registration: fazenda.matricula,
-      lot: fazenda.lote
-    });
-  };
-  
-  const updateFazenda = async (fazenda: Fazenda) => {
-    return farmHook.updateFarm(mapFazendaToFarm(fazenda));
-  };
-  
-  const addTalhao = async (fazendaId: string, talhao: Omit<Talhao, 'id'>) => {
-    return farmHook.addPlot(fazendaId, {
-      name: talhao.nome,
-      area: talhao.area,
-      status: talhao.status,
-      city: talhao.cidade,
-      state: talhao.estado,
-      registration: talhao.matricula,
-      lot: talhao.lote
-    });
-  };
-  
-  const deleteTalhao = async (fazendaId: string, talhaoId: string) => {
-    return farmHook.deletePlot(fazendaId, talhaoId);
-  };
+  const [showAddPlotModal, setShowAddPlotModal] = useState(false);
 
   const {
     handleEdit,
-    handleViewTalhoes,
+    handleViewPlots,
     handleSubmit,
     resetForm,
     handleInputChange,
-    handleAddTalhao,
-    handleDeleteTalhao
-  } = useFazendaHandlers(
-    fazendas,
-    setFazendas,
-    setEditingFazenda,
+    handleAddPlot,
+    handleDeletePlot
+  } = useFarmHandlers(
+    farms,
+    setFarms,
+    setEditingFarm,
     setFormData,
-    setShowFazendaForm,
-    setSelectedFazenda,
-    setShowTalhoesModal,
-    editingFazenda,
+    setShowFarmForm,
+    setSelectedFarm,
+    setShowPlotsModal,
+    editingFarm,
     formData,
-    setTalhaoForm,
-    addFazenda,
-    updateFazenda,
-    addTalhao,
-    deleteTalhao
+    setPlotForm,
+    addFarm,
+    updateFarm,
+    addPlot,
+    deletePlot
   );
 
-  const handleAddTalhaoWrapper = (fazendaId: string) => {
-    handleAddTalhao(fazendaId, talhaoForm);
+  const handleAddPlotWrapper = (farmId: string) => {
+    handleAddPlot(farmId, plotForm);
   };
 
-  const handleAddTalhaoFromForm = (fazendaId: string) => {
-    const fazenda = fazendas.find(f => f.id === fazendaId);
-    if (fazenda) {
-      setSelectedFazenda(fazenda);
-      setShowAddTalhaoModal(true);
+  const handleAddPlotFromForm = (farmId: string) => {
+    const farm = farms.find(f => f.id === farmId);
+    if (farm) {
+      setSelectedFarm(farm);
+      setShowAddPlotModal(true);
     }
   };
 
-  const localizacoes = Array.from(new Set(fazendas.map(f => `${f.cidade} - ${f.estado}`))).sort();
+  const locations = Array.from(new Set(farms.map(f => `${f.city} - ${f.state}`))).sort();
 
-  const filteredFazendas = fazendas.filter(fazenda => {
-    const matchesSearch = fazenda.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      fazenda.proprietario.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      fazenda.cidade.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      fazenda.estado.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredFarms = farms.filter(farm => {
+    const matchesSearch = farm.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      farm.owner.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      farm.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      farm.state.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const fazendaLocation = `${fazenda.cidade} - ${fazenda.estado}`;
-    const matchesCidadeEstado = !cidadeEstadoFilter || cidadeEstadoFilter === "all" || fazendaLocation === cidadeEstadoFilter;
+    const farmLocation = `${farm.city} - ${farm.state}`;
+    const matchesCidadeEstado = !cidadeEstadoFilter || cidadeEstadoFilter === "all" || farmLocation === cidadeEstadoFilter;
     
     return matchesSearch && matchesCidadeEstado;
   });
 
   return (
     <div className="space-y-6">
-      <FazendasPageHeader onNewFazenda={() => setShowFazendaForm(true)} />
+      <FarmPageHeader onNewFarm={() => setShowFarmForm(true)} />
 
       <Card>
         <CardHeader>
@@ -272,9 +129,9 @@ const FazendasPage = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as localizações</SelectItem>
-                  {localizacoes.map((localizacao) => (
-                    <SelectItem key={localizacao} value={localizacao}>
-                      {localizacao}
+                  {locations.map((location) => (
+                    <SelectItem key={location} value={location}>
+                      {location}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -283,50 +140,50 @@ const FazendasPage = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <FazendasTable
-            fazendas={filteredFazendas}
-            currentPage={farmHook.currentPage}
-            itemsPerPage={farmHook.itemsPerPage}
-            onPageChange={farmHook.setCurrentPage}
-            onItemsPerPageChange={farmHook.setItemsPerPage}
+          <FarmsTable
+            farms={filteredFarms}
+            currentPage={currentPage}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={setItemsPerPage}
             onEdit={handleEdit}
-            onViewTalhoes={handleViewTalhoes}
+            onViewPlots={handleViewPlots}
           />
         </CardContent>
       </Card>
 
-      <FazendaForm
-        open={showFazendaForm}
-        onOpenChange={setShowFazendaForm}
-        editingFazenda={editingFazenda}
+      <FarmForm
+        open={showFarmForm}
+        onOpenChange={setShowFarmForm}
+        editingFarm={editingFarm}
         formData={formData}
         onInputChange={handleInputChange}
         onSubmit={handleSubmit}
         onCancel={resetForm}
-        onDeleteTalhao={handleDeleteTalhao}
-        onAddTalhao={handleAddTalhaoFromForm}
+        onDeletePlot={handleDeletePlot}
+        onAddPlot={handleAddPlotFromForm}
       />
 
-      <TalhoesModal
-        open={showTalhoesModal}
-        onOpenChange={setShowTalhoesModal}
-        fazenda={selectedFazenda}
-        talhaoForm={talhaoForm}
-        setTalhaoForm={setTalhaoForm}
-        onAddTalhao={handleAddTalhaoWrapper}
-        onDeleteTalhao={handleDeleteTalhao}
+      <PlotsModal
+        open={showPlotsModal}
+        onOpenChange={setShowPlotsModal}
+        farm={selectedFarm}
+        plotForm={plotForm}
+        setPlotForm={setPlotForm}
+        onAddPlot={handleAddPlotWrapper}
+        onDeletePlot={handleDeletePlot}
       />
 
-      <AddTalhaoModal
-        open={showAddTalhaoModal}
-        onOpenChange={setShowAddTalhaoModal}
-        fazenda={selectedFazenda}
-        talhaoForm={talhaoForm}
-        setTalhaoForm={setTalhaoForm}
-        onAddTalhao={handleAddTalhaoWrapper}
+      <AddPlotModal
+        open={showAddPlotModal}
+        onOpenChange={setShowAddPlotModal}
+        farm={selectedFarm}
+        plotForm={plotForm}
+        setPlotForm={setPlotForm}
+        onAddPlot={handleAddPlotWrapper}
       />
     </div>
   );
 };
 
-export default FazendasPage;
+export default FarmsPage;

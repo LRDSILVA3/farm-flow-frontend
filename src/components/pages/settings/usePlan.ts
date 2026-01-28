@@ -3,130 +3,130 @@ import { useState, FormEvent } from "react";
 
 export interface Plan {
   id: number;
-  nome: string;
-  descricao: string;
-  recorrencia: "mensal" | "unico";
+  name: string;
+  description: string;
+  recurrence: "mensal" | "unico";
   status: "Ativo" | "Inativo";
-  valor: number;
-  servicosIds: number[];
-  dataCriacao: string;
+  value: number;
+  servicesIds: number[];
+  creationDate: string;
 }
 
 export const usePlan = () => {
-  const [planos] = useState<Plan[]>([
+  const [plans] = useState<Plan[]>([
     {
       id: 1,
-      nome: "Plano Básico",
-      descricao: "Pacote básico de serviços agrícolas",
-      recorrencia: "mensal",
+      name: "Plano Básico",
+      description: "Pacote básico de serviços agrícolas",
+      recurrence: "mensal",
       status: "Ativo",
-      valor: 299.90,
-      servicosIds: [1, 2],
-      dataCriacao: "15/01/2024"
+      value: 299.90,
+      servicesIds: [1, 2],
+      creationDate: "15/01/2024"
     },
     {
       id: 2,
-      nome: "Plano Completo",
-      descricao: "Pacote completo com todos os serviços",
-      recorrencia: "mensal",
+      name: "Plano Completo",
+      description: "Pacote completo com todos os serviços",
+      recurrence: "mensal",
       status: "Ativo",
-      valor: 599.90,
-      servicosIds: [1, 2, 3, 4],
-      dataCriacao: "10/01/2024"
+      value: 599.90,
+      servicesIds: [1, 2, 3, 4],
+      creationDate: "10/01/2024"
     }
   ]);
 
   // Mock services for selection
-  const [servicos] = useState([
-    { id: 1, nome: "Pulverização" },
-    { id: 2, nome: "Plantio" },
-    { id: 3, nome: "Colheita" },
-    { id: 4, nome: "Análise de Solo" },
-    { id: 5, nome: "Irrigação" }
+  const [services] = useState([
+    { id: 1, name: "Pulverização" },
+    { id: 2, name: "Plantio" },
+    { id: 3, name: "Colheita" },
+    { id: 4, name: "Análise de Solo" },
+    { id: 5, name: "Irrigação" }
   ]);
 
-  const [planosPage, setPlanosPage] = useState(1);
-  const [planosPerPage, setPlanosPerPage] = useState(10);
-  const [showPlanoForm, setShowPlanoForm] = useState(false);
-  const [editingPlano, setEditingPlano] = useState<Plan | null>(null);
-  const [planoFormData, setPlanoFormData] = useState<Plan>({
+  const [plansPage, setPlansPage] = useState(1);
+  const [plansPerPage, setPlansPerPage] = useState(10);
+  const [showPlanForm, setShowPlanForm] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [planFormData, setPlanFormData] = useState<Plan>({
     id: 0,
-    nome: "",
-    descricao: "",
-    recorrencia: "mensal",
+    name: "",
+    description: "",
+    recurrence: "mensal",
     status: "Ativo",
-    valor: 0,
-    servicosIds: [],
-    dataCriacao: ""
+    value: 0,
+    servicesIds: [],
+    creationDate: ""
   });
 
   // Pagination calculations
-  const planosStartIndex = (planosPage - 1) * planosPerPage;
-  const planosEndIndex = planosStartIndex + planosPerPage;
-  const currentPlanos = planos.slice(planosStartIndex, planosEndIndex);
-  const totalPlanos = planos.length;
-  const totalPlanosPages = Math.ceil(totalPlanos / planosPerPage);
+  const plansStartIndex = (plansPage - 1) * plansPerPage;
+  const plansEndIndex = plansStartIndex + plansPerPage;
+  const currentPlans = plans.slice(plansStartIndex, plansEndIndex);
+  const totalPlans = plans.length;
+  const totalPlansPages = Math.ceil(totalPlans / plansPerPage);
 
-  const handleEditPlano = (plano: Plan) => {
-    setEditingPlano(plano);
-    setPlanoFormData(plano);
-    setShowPlanoForm(true);
+  const handleEditPlan = (plan: Plan) => {
+    setEditingPlan(plan);
+    setPlanFormData(plan);
+    setShowPlanForm(true);
   };
 
-  const handlePlanoSubmit = (e: FormEvent) => {
+  const handlePlanSubmit = (e: FormEvent) => {
     e.preventDefault();
-    console.log("Plano saved:", planoFormData);
-    resetPlanoForm();
+    console.log("Plan saved:", planFormData);
+    resetPlanForm();
   };
 
-  const resetPlanoForm = () => {
-    setShowPlanoForm(false);
-    setEditingPlano(null);
-    setPlanoFormData({
+  const resetPlanForm = () => {
+    setShowPlanForm(false);
+    setEditingPlan(null);
+    setPlanFormData({
       id: 0,
-      nome: "",
-      descricao: "",
-      recorrencia: "mensal",
+      name: "",
+      description: "",
+      recurrence: "mensal",
       status: "Ativo",
-      valor: 0,
-      servicosIds: [],
-      dataCriacao: ""
+      value: 0,
+      servicesIds: [],
+      creationDate: ""
     });
   };
 
-  const handlePlanoInputChange = (field: keyof Plan, value: string | number | number[]) => {
-    setPlanoFormData(prev => ({ ...prev, [field]: value }));
+  const handlePlanInputChange = (field: keyof Plan, value: string | number | number[]) => {
+    setPlanFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleServicoToggle = (servicoId: number) => {
-    setPlanoFormData(prev => ({
+  const handleServiceToggle = (serviceId: number) => {
+    setPlanFormData(prev => ({
       ...prev,
-      servicosIds: prev.servicosIds.includes(servicoId)
-        ? prev.servicosIds.filter(id => id !== servicoId)
-        : [...prev.servicosIds, servicoId]
+      servicesIds: prev.servicesIds.includes(serviceId)
+        ? prev.servicesIds.filter(id => id !== serviceId)
+        : [...prev.servicesIds, serviceId]
     }));
   };
 
   return {
-    planos,
-    servicos,
-    currentPlanos,
-    planosStartIndex,
-    planosEndIndex,
-    totalPlanos,
-    planosPerPage,
-    setPlanosPerPage,
-    planosPage,
-    setPlanosPage,
-    totalPlanosPages,
-    handleEditPlano,
-    showPlanoForm,
-    setShowPlanoForm,
-    editingPlano,
-    planoFormData,
-    handlePlanoSubmit,
-    resetPlanoForm,
-    handlePlanoInputChange,
-    handleServicoToggle
+    plans,
+    services,
+    currentPlans,
+    plansStartIndex,
+    plansEndIndex,
+    totalPlans,
+    plansPerPage,
+    setPlansPerPage,
+    plansPage,
+    setPlansPage,
+    totalPlansPages,
+    handleEditPlan,
+    showPlanForm,
+    setShowPlanForm,
+    editingPlan,
+    planFormData,
+    handlePlanSubmit,
+    resetPlanForm,
+    handlePlanInputChange,
+    handleServiceToggle
   };
 };

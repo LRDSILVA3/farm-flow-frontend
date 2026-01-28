@@ -7,9 +7,9 @@ import { Edit, MapPin } from "lucide-react";
 import { Client } from "../../../hooks/useClients";
 
 interface CustomersTableProps {
-  clientes: Client[];
-  onEdit: (cliente: Client) => void;
-  onNavigateToFazendas: (cpf: string) => void;
+  clients: Client[];
+  onEdit: (client: Client) => void;
+  onNavigateToFarms: (cpf: string) => void;
   currentPage: number;
   itemsPerPage: number;
   onPageChange: (page: number) => void;
@@ -17,19 +17,19 @@ interface CustomersTableProps {
 }
 
 export const CustomersTable = ({
-  clientes,
+  clients,
   onEdit,
-  onNavigateToFazendas,
+  onNavigateToFarms,
   currentPage,
   itemsPerPage,
   onPageChange,
   onItemsPerPageChange
 }: CustomersTableProps) => {
-  const totalItems = clientes.length;
+  const totalItems = clients.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentClientes = clientes.slice(startIndex, endIndex);
+  const currentClients = clients.slice(startIndex, endIndex);
 
   return (
     <div className="space-y-4">
@@ -45,26 +45,26 @@ export const CustomersTable = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {currentClientes.map((cliente) => (
-            <TableRow key={cliente.id}>
-              <TableCell className="font-medium">{cliente.name}</TableCell>
-              <TableCell>{cliente.cpf}</TableCell>
-              <TableCell>{cliente.email}</TableCell>
-              <TableCell>{cliente.phone}</TableCell>
-              <TableCell>{cliente.state}/{cliente.city}</TableCell>
+          {currentClients.map((client) => (
+            <TableRow key={client.id}>
+              <TableCell className="font-medium">{client.name}</TableCell>
+              <TableCell>{client.cpf}</TableCell>
+              <TableCell>{client.email}</TableCell>
+              <TableCell>{client.phone}</TableCell>
+              <TableCell>{client.state}/{client.city}</TableCell>
               <TableCell>
                 <div className="flex space-x-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => onEdit(cliente)}
+                    onClick={() => onEdit(client)}
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => onNavigateToFazendas(cliente.cpf)}
+                    onClick={() => onNavigateToFarms(client.cpf)}
                     title="Ver fazendas do cliente"
                   >
                     <MapPin className="h-4 w-4" />

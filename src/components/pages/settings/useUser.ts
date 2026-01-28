@@ -6,144 +6,144 @@ export interface User {
   name: string;
   email: string;
   phone: string;
-  cargo: string;
+  role: string;
   status: string;
-  permissoes: string[];
-  dataCriacao: string;
+  permissions: string[];
+  creationDate: string;
 }
 
 export const useUser = () => {
   const { toast } = useToast();
   
-  const [usuarios, setUsuarios] = useState<User[]>([
+  const [users, setUsers] = useState<User[]>([
     { 
       id: "1", 
       name: "João Silva", 
       email: "joao@email.com", 
       phone: "(11) 99999-9999",
-      cargo: "Administrador", 
+      role: "Administrador", 
       status: "Ativo", 
-      permissoes: ["dashboard", "fazendas", "pedidos", "analises", "financeiro", "configuracoes"],
-      dataCriacao: "2024-01-15"
+      permissions: ["dashboard", "farms", "orders", "analysis", "financial", "settings"],
+      creationDate: "2024-01-15"
     },
     { 
       id: "2", 
       name: "Maria Santos", 
       email: "maria@email.com", 
       phone: "(11) 88888-8888",
-      cargo: "Operador", 
+      role: "Operador", 
       status: "Ativo", 
-      permissoes: ["dashboard", "fazendas", "pedidos", "analises"],
-      dataCriacao: "2024-02-20"
+      permissions: ["dashboard", "farms", "orders", "analysis"],
+      creationDate: "2024-02-20"
     }
   ]);
 
-  const [usuariosPage, setUsuariosPage] = useState(1);
-  const [usuariosPerPage, setUsuariosPerPage] = useState(10);
-  const [showUsuarioForm, setShowUsuarioForm] = useState(false);
-  const [editingUsuario, setEditingUsuario] = useState<User | null>(null);
-  const [usuarioFormData, setUsuarioFormData] = useState<User>({
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersPerPage, setUsersPerPage] = useState(10);
+  const [showUserForm, setShowUserForm] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [userFormData, setUserFormData] = useState<User>({
     id: "",
     name: "",
     email: "",
     phone: "",
-    cargo: "Operador",
+    role: "Operador",
     status: "Ativo",
-    permissoes: [],
-    dataCriacao: ""
+    permissions: [],
+    creationDate: ""
   });
 
-  const handleEditUsuario = (usuario: User) => {
-    console.log("Editando usuário:", usuario);
-    setEditingUsuario(usuario);
-    setUsuarioFormData(usuario);
-    setShowUsuarioForm(true);
+  const handleEditUser = (user: User) => {
+    console.log("Editing user:", user);
+    setEditingUser(user);
+    setUserFormData(user);
+    setShowUserForm(true);
   };
 
-  const handleUsuarioSubmit = (e: React.FormEvent) => {
+  const handleUserSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (editingUsuario) {
-      setUsuarios(prev => prev.map(u => u.id === editingUsuario.id ? usuarioFormData : u));
+    if (editingUser) {
+      setUsers(prev => prev.map(u => u.id === editingUser.id ? userFormData : u));
       toast({
         title: "Usuário atualizado",
         description: "O usuário foi atualizado com sucesso.",
       });
     } else {
-      const newUsuario = { 
-        ...usuarioFormData, 
+      const newUser = { 
+        ...userFormData, 
         id: Date.now().toString(),
-        dataCriacao: new Date().toISOString().split('T')[0]
+        creationDate: new Date().toISOString().split('T')[0]
       };
-      setUsuarios(prev => [...prev, newUsuario]);
+      setUsers(prev => [...prev, newUser]);
       toast({
         title: "Usuário criado",
         description: "O usuário foi criado com sucesso.",
       });
     }
     
-    resetUsuarioForm();
+    resetUserForm();
   };
 
-  const resetUsuarioForm = () => {
-    setUsuarioFormData({
+  const resetUserForm = () => {
+    setUserFormData({
       id: "",
       name: "",
       email: "",
       phone: "",
-      cargo: "Operador",
+      role: "Operador",
       status: "Ativo",
-      permissoes: [],
-      dataCriacao: ""
+      permissions: [],
+      creationDate: ""
     });
-    setEditingUsuario(null);
-    setShowUsuarioForm(false);
+    setEditingUser(null);
+    setShowUserForm(false);
   };
 
-  const handleUsuarioInputChange = (field: keyof User, value: string | string[]) => {
-    setUsuarioFormData(prev => ({ ...prev, [field]: value }));
+  const handleUserInputChange = (field: keyof User, value: string | string[]) => {
+    setUserFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handlePermissaoChange = (permissao: string, checked: boolean) => {
+  const handlePermissionChange = (permission: string, checked: boolean) => {
     if (checked) {
-      setUsuarioFormData(prev => ({ 
+      setUserFormData(prev => ({ 
         ...prev, 
-        permissoes: [...prev.permissoes, permissao] 
+        permissions: [...prev.permissions, permission] 
       }));
     } else {
-      setUsuarioFormData(prev => ({ 
+      setUserFormData(prev => ({ 
         ...prev, 
-        permissoes: prev.permissoes.filter(p => p !== permissao) 
+        permissions: prev.permissions.filter(p => p !== permission) 
       }));
     }
   };
 
   // Pagination logic
-  const totalUsuarios = usuarios.length;
-  const totalUsuariosPages = Math.ceil(totalUsuarios / usuariosPerPage);
-  const usuariosStartIndex = (usuariosPage - 1) * usuariosPerPage;
-  const usuariosEndIndex = usuariosStartIndex + usuariosPerPage;
-  const currentUsuarios = usuarios.slice(usuariosStartIndex, usuariosEndIndex);
+  const totalUsers = users.length;
+  const totalUsersPages = Math.ceil(totalUsers / usersPerPage);
+  const usersStartIndex = (usersPage - 1) * usersPerPage;
+  const usersEndIndex = usersStartIndex + usersPerPage;
+  const currentUsers = users.slice(usersStartIndex, usersEndIndex);
 
   return {
-    usuarios,
-    usuariosPage,
-    setUsuariosPage,
-    usuariosPerPage,
-    setUsuariosPerPage,
-    showUsuarioForm,
-    setShowUsuarioForm,
-    editingUsuario,
-    usuarioFormData,
-    handleEditUsuario,
-    handleUsuarioSubmit,
-    resetUsuarioForm,
-    handleUsuarioInputChange,
-    handlePermissaoChange,
-    totalUsuarios,
-    totalUsuariosPages,
-    usuariosStartIndex,
-    usuariosEndIndex,
-    currentUsuarios
+    users,
+    usersPage,
+    setUsersPage,
+    usersPerPage,
+    setUsersPerPage,
+    showUserForm,
+    setShowUserForm,
+    editingUser,
+    userFormData,
+    handleEditUser,
+    handleUserSubmit,
+    resetUserForm,
+    handleUserInputChange,
+    handlePermissionChange,
+    totalUsers,
+    totalUsersPages,
+    usersStartIndex,
+    usersEndIndex,
+    currentUsers
   };
 };

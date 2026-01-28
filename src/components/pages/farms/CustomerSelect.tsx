@@ -4,24 +4,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
-interface Cliente {
+interface Customer {
   id: string;
   cpf: string;
-  nome: string;
+  name: string;
   email: string;
 }
 
-interface ClienteSelectProps {
+interface CustomerSelectProps {
   value: string;
   onValueChange: (value: string) => void;
-  clientes: Cliente[];
+  customers: Customer[];
 }
 
-export const ClienteSelect = ({ value, onValueChange, clientes }: ClienteSelectProps) => {
+export const CustomerSelect = ({ value, onValueChange, customers }: CustomerSelectProps) => {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredClientes = clientes.filter(cliente =>
-    cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredcustomers = customers.filter(cliente =>
+    cliente.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cliente.cpf.includes(searchTerm)
   );
 
@@ -40,12 +40,12 @@ export const ClienteSelect = ({ value, onValueChange, clientes }: ClienteSelectP
             className="h-8 w-full border-0 p-0 focus-visible:ring-0"
           />
         </div>
-        {filteredClientes.map((cliente) => (
-          <SelectItem key={cliente.id} value={cliente.nome}>
-            {cliente.nome} - {cliente.cpf}
+        {filteredcustomers.map((cliente) => (
+          <SelectItem key={cliente.id} value={cliente.name}>
+            {cliente.name} - {cliente.cpf}
           </SelectItem>
         ))}
-        {filteredClientes.length === 0 && (
+        {filteredcustomers.length === 0 && (
           <div className="px-3 py-2 text-sm text-gray-500">
             Nenhum cliente encontrado
           </div>

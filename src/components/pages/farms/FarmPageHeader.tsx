@@ -2,11 +2,11 @@
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
-interface FazendasPageHeaderProps {
-  onNewFazenda: () => void;
+interface FarmPageHeaderProps {
+  onNewFarm: () => void;
 }
 
-export const FazendasPageHeader = ({ onNewFazenda }: FazendasPageHeaderProps) => {
+export const FarmPageHeader = ({ onNewFarm }: FarmPageHeaderProps) => {
   return (
     <div className="flex justify-between items-center">
       <div>
@@ -15,7 +15,7 @@ export const FazendasPageHeader = ({ onNewFazenda }: FazendasPageHeaderProps) =>
       </div>
       <Button 
         className="bg-green-600 hover:bg-green-700"
-        onClick={onNewFazenda}
+        onClick={onNewFarm}
       >
         <Plus className="h-4 w-4 mr-2" />
         Nova Fazenda

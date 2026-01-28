@@ -9,79 +9,44 @@ import { OrdersTable } from "./orders/OrdersTable";
 import { OrderForm } from "./orders/OrderForm";
 import { useOrders, Order } from "@/hooks/useOrders";
 
-export interface Pedido {
-  id: string;
-  cliente: string;
-  fazenda: string;
-  tipo: string;
-  servico: string;
-  produtos: { id: string; nome: string; quantidade: number }[];
-  grupoServico: string;
-  area: string;
-  valor: string;
-  status: string;
-  pagamento: string;
-}
 
-// Map between English and Portuguese
-const mapOrderToPedido = (order: Order): Pedido => ({
-  id: order.id,
-  cliente: order.clientId,
-  fazenda: order.farmId,
-  tipo: order.type,
-  servico: order.serviceName,
-  produtos: order.productsData,
-  grupoServico: order.serviceGroup,
-  area: order.area,
-  valor: order.value,
-  status: order.status,
-  pagamento: order.payment
-});
 
-const mapPedidoToOrder = (pedido: Pedido): Order => ({
-  id: pedido.id,
-  clientId: pedido.cliente,
-  farmId: pedido.fazenda,
-  type: pedido.tipo,
-  serviceName: pedido.servico,
-  productsData: pedido.produtos,
-  serviceGroup: pedido.grupoServico,
-  area: pedido.area,
-  value: pedido.valor,
-  status: pedido.status,
-  payment: pedido.pagamento
-});
-
-const PedidosPage = () => {
+const OrdersPage = () => {
   const { toast } = useToast();
-  const orderHook = useOrders();
-  
-  const pedidos = orderHook.orders.map(mapOrderToPedido);
-  const showPedidoForm = orderHook.showOrderForm;
-  const setShowPedidoForm = orderHook.setShowOrderForm;
-  const editingPedido = orderHook.editingOrder ? mapOrderToPedido(orderHook.editingOrder) : null;
-  const setEditingPedido = (p: Pedido | null) => orderHook.setEditingOrder(p ? mapPedidoToOrder(p) : null);
-  const formData = mapOrderToPedido(orderHook.formData);
-  const setFormData = (p: Pedido) => orderHook.setFormData(mapPedidoToOrder(p));
+  const {
+    orders,
+    showOrderForm,
+    setShowOrderForm,
+    editingOrder,
+    setEditingOrder,
+    formData,
+    setFormData,
+    addOrder,
+    updateOrder,
+    currentPage,
+    setCurrentPage,
+    itemsPerPage,
+    setItemsPerPage
+  } = useOrders();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [servicoFilter, setServicoFilter] = useState("");
+  const [serviceFilter, setServiceFilter] = useState("");
   const [cidadeEstadoFilter, setCidadeEstadoFilter] = useState("");
 
-  const handleEdit = (pedido: Pedido) => {
-    console.log("Editando pedido:", pedido);
-    setEditingPedido(pedido);
-    setFormData(pedido);
-    setShowPedidoForm(true);
+  const handleEdit = (order: Order) => {
+    console.log("Editing order:", order);
+    setEditingOrder(order);
+    setFormData(order);
+    setShowOrderForm(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (editingPedido) {
-      await orderHook.updateOrder(mapPedidoToOrder(formData));
+    if (editingOrder) {
+      await updateOrder(formData);
     } else {
-      await orderHook.addOrder(mapPedidoToOrder(formData));
+      await addOrder(formData);
     }
     
     resetForm();
@@ -90,36 +55,36 @@ const PedidosPage = () => {
   const resetForm = () => {
     setFormData({
       id: "",
-      cliente: "",
-      fazenda: "",
-      tipo: "Serviço",
-      servico: "",
-      produtos: [],
-      grupoServico: "",
+      clientId: "",
+      farmId: "",
+      type: "Serviço",
+      serviceName: "",
+      productsData: [],
+      serviceGroup: "",
       area: "",
-      valor: "",
+      value: "",
       status: "Pendente",
-      pagamento: "Aguardando"
+      payment: "Aguardando"
     });
-    setEditingPedido(null);
-    setShowPedidoForm(false);
+    setEditingOrder(null);
+    setShowOrderForm(false);
   };
 
-  const handleInputChange = (field: keyof Pedido, value: string) => {
+  const handleInputChange = (field: keyof Order, value: any) => {
     setFormData({ ...formData, [field]: value });
   };
 
-  const servicosDisponiveis = ["Pulverização", "Plantio", "Colheita", "Adubação"];
+  const availableServices = ["Pulverização", "Plantio", "Colheita", "Adubação"];
   const cidadesEstados = ["Interior SP", "Interior MG", "Interior GO"];
 
-  const filteredPedidos = pedidos.filter(pedido => {
-    const matchesSearch = pedido.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      pedido.fazenda.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch = order.clientId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.farmId.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesServico = !servicoFilter || servicoFilter === "all" || pedido.servico === servicoFilter || pedido.grupoServico === servicoFilter;
+    const matchesService = !serviceFilter || serviceFilter === "all" || order.serviceName === serviceFilter || order.serviceGroup === serviceFilter;
     const matchesCidadeEstado = !cidadeEstadoFilter || cidadeEstadoFilter === "all";
     
-    return matchesSearch && matchesServico && matchesCidadeEstado;
+    return matchesSearch && matchesService && matchesCidadeEstado;
   });
 
   return (
@@ -131,7 +96,7 @@ const PedidosPage = () => {
         </div>
         <Button 
           className="bg-green-600 hover:bg-green-700"
-          onClick={() => setShowPedidoForm(true)}
+          onClick={() => setShowOrderForm(true)}
         >
           <Plus className="h-4 w-4 mr-2" />
           Novo Pedido
@@ -152,15 +117,15 @@ const PedidosPage = () => {
                   className="w-64"
                 />
               </div>
-              <Select value={servicoFilter} onValueChange={setServicoFilter}>
+              <Select value={serviceFilter} onValueChange={setServiceFilter}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="Serviço" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os serviços</SelectItem>
-                  {servicosDisponiveis.map((servico) => (
-                    <SelectItem key={servico} value={servico}>
-                      {servico}
+                  {availableServices.map((service) => (
+                    <SelectItem key={service} value={service}>
+                      {service}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -183,20 +148,20 @@ const PedidosPage = () => {
         </CardHeader>
         <CardContent>
           <OrdersTable
-            pedidos={filteredPedidos}
-            currentPage={orderHook.currentPage}
-            itemsPerPage={orderHook.itemsPerPage}
-            onPageChange={orderHook.setCurrentPage}
-            onItemsPerPageChange={orderHook.setItemsPerPage}
+            orders={filteredOrders}
+            currentPage={currentPage}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={setItemsPerPage}
             onEdit={handleEdit}
           />
         </CardContent>
       </Card>
 
       <OrderForm
-        open={showPedidoForm}
-        onOpenChange={setShowPedidoForm}
-        editingPedido={editingPedido}
+        open={showOrderForm}
+        onOpenChange={setShowOrderForm}
+        editingOrder={editingOrder}
         formData={formData}
         onInputChange={handleInputChange}
         onSubmit={handleSubmit}
@@ -206,4 +171,4 @@ const PedidosPage = () => {
   );
 };
 
-export default PedidosPage;
+export default OrdersPage;

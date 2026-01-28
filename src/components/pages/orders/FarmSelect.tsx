@@ -6,10 +6,10 @@ import { Search } from "lucide-react";
 
 interface Farm {
   id: string;
-  nome: string;
-  proprietario: string;
+  name: string;
+  owner: string;
   area: string;
-  localizacao: string;
+  location: string;
 }
 
 interface FarmSelectProps {
@@ -21,9 +21,9 @@ interface FarmSelectProps {
 export const FarmSelect = ({ value, onValueChange, farms }: FarmSelectProps) => {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredfarms = farms.filter(fazenda =>
-    fazenda.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    fazenda.proprietario.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredFarms = farms.filter(farm =>
+    farm.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    farm.owner.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -41,12 +41,12 @@ export const FarmSelect = ({ value, onValueChange, farms }: FarmSelectProps) => 
             className="h-8 w-full border-0 p-0 focus-visible:ring-0"
           />
         </div>
-        {filteredfarms.map((fazenda) => (
-          <SelectItem key={fazenda.id} value={fazenda.nome}>
-            {fazenda.nome} - {fazenda.proprietario}
+        {filteredFarms.map((farm) => (
+          <SelectItem key={farm.id} value={farm.name}>
+            {farm.name} - {farm.owner}
           </SelectItem>
         ))}
-        {filteredfarms.length === 0 && (
+        {filteredFarms.length === 0 && (
           <div className="px-3 py-2 text-sm text-gray-500">
             Nenhuma fazenda encontrada
           </div>

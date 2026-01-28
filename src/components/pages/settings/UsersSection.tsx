@@ -10,25 +10,25 @@ import { useUser } from "./useUser";
 
 export const UsersSection = () => {
   const {
-    currentUsuarios,
-    usuariosStartIndex,
-    usuariosEndIndex,
-    totalUsuarios,
-    usuariosPerPage,
-    setUsuariosPerPage,
-    usuariosPage,
-    setUsuariosPage,
-    totalUsuariosPages,
-    handleEditUsuario,
-    // Include all modal props including setShowUsuarioForm
-    showUsuarioForm,
-    setShowUsuarioForm,
-    editingUsuario,
-    usuarioFormData,
-    handleUsuarioSubmit,
-    resetUsuarioForm,
-    handleUsuarioInputChange,
-    handlePermissaoChange
+    currentUsers,
+    usersStartIndex,
+    usersEndIndex,
+    totalUsers,
+    usersPerPage,
+    setUsersPerPage,
+    usersPage,
+    setUsersPage,
+    totalUsersPages,
+    handleEditUser,
+    // Include all modal props including setShowUserForm
+    showUserForm,
+    setShowUserForm,
+    editingUser,
+    userFormData,
+    handleUserSubmit,
+    resetUserForm,
+    handleUserInputChange,
+    handlePermissionChange
   } = useUser();
 
   return (
@@ -38,7 +38,7 @@ export const UsersSection = () => {
           <CardTitle>Usuários e Permissões</CardTitle>
           <Button 
             className="bg-green-600 hover:bg-green-700"
-            onClick={() => setShowUsuarioForm(true)}
+            onClick={() => setShowUserForm(true)}
           >
             <Plus className="h-4 w-4 mr-2" />
             Novo Usuário
@@ -59,38 +59,38 @@ export const UsersSection = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {currentUsuarios.map((usuario) => (
-                  <TableRow key={usuario.id}>
-                    <TableCell className="font-medium">{usuario.name}</TableCell>
-                    <TableCell>{usuario.email}</TableCell>
-                    <TableCell>{usuario.cargo}</TableCell>
+                {currentUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.role}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs ${
-                        usuario.status === "Ativo" 
+                        user.status === "Ativo" 
                           ? "bg-green-100 text-green-800" 
                           : "bg-red-100 text-red-800"
                       }`}>
-                        {usuario.status}
+                        {user.status}
                       </span>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        {usuario.permissoes.slice(0, 3).map((permissao) => (
-                          <span key={permissao} className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
-                            {permissao}
+                        {user.permissions.slice(0, 3).map((permission) => (
+                          <span key={permission} className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
+                            {permission}
                           </span>
                         ))}
-                        {usuario.permissoes.length > 3 && (
-                          <span className="text-xs text-gray-500">+{usuario.permissoes.length - 3}</span>
+                        {user.permissions.length > 3 && (
+                          <span className="text-xs text-gray-500">+{user.permissions.length - 3}</span>
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>{usuario.dataCriacao}</TableCell>
+                    <TableCell>{user.creationDate}</TableCell>
                     <TableCell>
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => handleEditUsuario(usuario)}
+                        onClick={() => handleEditUser(user)}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -103,11 +103,11 @@ export const UsersSection = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600">
-                  Mostrando {usuariosStartIndex + 1} a {Math.min(usuariosEndIndex, totalUsuarios)} de {totalUsuarios} usuários
+                  Mostrando {usersStartIndex + 1} a {Math.min(usersEndIndex, totalUsers)} de {totalUsers} usuários
                 </span>
-                <Select value={usuariosPerPage.toString()} onValueChange={(value) => {
-                  setUsuariosPerPage(Number(value));
-                  setUsuariosPage(1);
+                <Select value={usersPerPage.toString()} onValueChange={(value) => {
+                  setUsersPerPage(Number(value));
+                  setUsersPage(1);
                 }}>
                   <SelectTrigger className="w-20">
                     <SelectValue />
@@ -122,21 +122,21 @@ export const UsersSection = () => {
                 <span className="text-sm text-gray-600">por página</span>
               </div>
               
-              {totalUsuariosPages > 1 && (
+              {totalUsersPages > 1 && (
                 <Pagination>
                   <PaginationContent>
                     <PaginationItem>
                       <PaginationPrevious 
-                        onClick={() => setUsuariosPage(Math.max(1, usuariosPage - 1))}
-                        className={usuariosPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        onClick={() => setUsersPage(Math.max(1, usersPage - 1))}
+                        className={usersPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                       />
                     </PaginationItem>
                     
-                    {Array.from({ length: totalUsuariosPages }, (_, i) => i + 1).map((page) => (
+                    {Array.from({ length: totalUsersPages }, (_, i) => i + 1).map((page) => (
                       <PaginationItem key={page}>
                         <PaginationLink
-                          onClick={() => setUsuariosPage(page)}
-                          isActive={usuariosPage === page}
+                          onClick={() => setUsersPage(page)}
+                          isActive={usersPage === page}
                           className="cursor-pointer"
                         >
                           {page}
@@ -146,8 +146,8 @@ export const UsersSection = () => {
                     
                     <PaginationItem>
                       <PaginationNext 
-                        onClick={() => setUsuariosPage(Math.min(totalUsuariosPages, usuariosPage + 1))}
-                        className={usuariosPage === totalUsuariosPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        onClick={() => setUsersPage(Math.min(totalUsersPages, usersPage + 1))}
+                        className={usersPage === totalUsersPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                       />
                     </PaginationItem>
                   </PaginationContent>
@@ -159,14 +159,14 @@ export const UsersSection = () => {
       </Card>
 
       <UserModal 
-        showUsuarioForm={showUsuarioForm}
-        setShowUsuarioForm={setShowUsuarioForm}
-        editingUsuario={editingUsuario}
-        usuarioFormData={usuarioFormData}
-        handleUsuarioSubmit={handleUsuarioSubmit}
-        resetUsuarioForm={resetUsuarioForm}
-        handleUsuarioInputChange={handleUsuarioInputChange}
-        handlePermissaoChange={handlePermissaoChange}
+        showUserForm={showUserForm}
+        setShowUserForm={setShowUserForm}
+        editingUser={editingUser}
+        userFormData={userFormData}
+        handleUserSubmit={handleUserSubmit}
+        resetUserForm={resetUserForm}
+        handleUserInputChange={handleUserInputChange}
+        handlePermissionChange={handlePermissionChange}
       />
     </>
   );

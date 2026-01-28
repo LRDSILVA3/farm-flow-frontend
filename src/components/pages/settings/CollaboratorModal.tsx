@@ -16,7 +16,7 @@ interface CollaboratorModalProps {
   resetCollaboratorForm: () => void;
 }
 
-export const ColaboradorModal = ({
+export const CollaboratorModal = ({
   showCollaboratorForm,
   setShowCollaboratorForm,
   editingCollaborator,

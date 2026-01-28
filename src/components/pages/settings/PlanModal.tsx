@@ -10,55 +10,55 @@ import { Plan } from "./usePlan";
 import { FormEvent } from "react";
 
 interface PlanModalProps {
-  servicos: { id: number; nome: string }[];
-  showPlanoForm: boolean;
-  setShowPlanoForm: (show: boolean) => void;
-  editingPlano: Plan | null;
-  planoFormData: Plan;
-  handlePlanoSubmit: (e: FormEvent) => void;
-  resetPlanoForm: () => void;
-  handlePlanoInputChange: (field: keyof Plan, value: string | number | number[]) => void;
-  handleServicoToggle: (servicoId: number) => void;
+  services: { id: number; name: string }[];
+  showPlanForm: boolean;
+  setShowPlanForm: (show: boolean) => void;
+  editingPlan: Plan | null;
+  planFormData: Plan;
+  handlePlanSubmit: (e: FormEvent) => void;
+  resetPlanForm: () => void;
+  handlePlanInputChange: (field: keyof Plan, value: string | number | number[]) => void;
+  handleServiceToggle: (serviceId: number) => void;
 }
 
 export const PlanModal = ({
-  servicos,
-  showPlanoForm,
-  setShowPlanoForm,
-  editingPlano,
-  planoFormData,
-  handlePlanoSubmit,
-  resetPlanoForm,
-  handlePlanoInputChange,
-  handleServicoToggle
+  services,
+  showPlanForm,
+  setShowPlanForm,
+  editingPlan,
+  planFormData,
+  handlePlanSubmit,
+  resetPlanForm,
+  handlePlanInputChange,
+  handleServiceToggle
 }: PlanModalProps) => {
   return (
-    <Dialog open={showPlanoForm} onOpenChange={setShowPlanoForm}>
+    <Dialog open={showPlanForm} onOpenChange={setShowPlanForm}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {editingPlano ? "Editar Plano" : "Novo Plano"}
+            {editingPlan ? "Editar Plano" : "Novo Plano"}
           </DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handlePlanoSubmit} className="space-y-4">
+        <form onSubmit={handlePlanSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="nome">Nome do Plano</Label>
+            <Label htmlFor="name">Nome do Plano</Label>
             <Input
-              id="nome"
-              value={planoFormData.nome}
-              onChange={(e) => handlePlanoInputChange("nome", e.target.value)}
+              id="name"
+              value={planFormData.name}
+              onChange={(e) => handlePlanInputChange("name", e.target.value)}
               placeholder="Digite o nome do plano"
               required
             />
           </div>
 
           <div>
-            <Label htmlFor="descricao">Descrição</Label>
+            <Label htmlFor="description">Descrição</Label>
             <Textarea
-              id="descricao"
-              value={planoFormData.descricao}
-              onChange={(e) => handlePlanoInputChange("descricao", e.target.value)}
+              id="description"
+              value={planFormData.description}
+              onChange={(e) => handlePlanInputChange("description", e.target.value)}
               placeholder="Digite a descrição do plano"
               rows={3}
               required
@@ -66,10 +66,10 @@ export const PlanModal = ({
           </div>
 
           <div>
-            <Label htmlFor="recorrencia">Recorrência</Label>
+            <Label htmlFor="recurrence">Recorrência</Label>
             <Select 
-              value={planoFormData.recorrencia} 
-              onValueChange={(value: "mensal" | "unico") => handlePlanoInputChange("recorrencia", value)}
+              value={planFormData.recurrence} 
+              onValueChange={(value: "mensal" | "unico") => handlePlanInputChange("recurrence", value)}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -82,13 +82,13 @@ export const PlanModal = ({
           </div>
 
           <div>
-            <Label htmlFor="valor">Valor (R$)</Label>
+            <Label htmlFor="value">Valor (R$)</Label>
             <Input
-              id="valor"
+              id="value"
               type="number"
               step="0.01"
-              value={planoFormData.valor}
-              onChange={(e) => handlePlanoInputChange("valor", Number(e.target.value))}
+              value={planFormData.value}
+              onChange={(e) => handlePlanInputChange("value", Number(e.target.value))}
               placeholder="0.00"
               min="0"
               required
@@ -98,8 +98,8 @@ export const PlanModal = ({
           <div>
             <Label htmlFor="status">Status</Label>
             <Select 
-              value={planoFormData.status} 
-              onValueChange={(value: "Ativo" | "Inativo") => handlePlanoInputChange("status", value)}
+              value={planFormData.status} 
+              onValueChange={(value: "Ativo" | "Inativo") => handlePlanInputChange("status", value)}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -114,18 +114,18 @@ export const PlanModal = ({
           <div>
             <Label>Serviços Inclusos</Label>
             <div className="space-y-2 max-h-40 overflow-y-auto border rounded p-3 mt-2">
-              {servicos.map((servico) => (
-                <div key={servico.id} className="flex items-center space-x-2">
+              {services.map((service) => (
+                <div key={service.id} className="flex items-center space-x-2">
                   <Checkbox
-                    id={`servico-${servico.id}`}
-                    checked={planoFormData.servicosIds.includes(servico.id)}
-                    onCheckedChange={() => handleServicoToggle(servico.id)}
+                    id={`service-${service.id}`}
+                    checked={planFormData.servicesIds.includes(service.id)}
+                    onCheckedChange={() => handleServiceToggle(service.id)}
                   />
                   <Label 
-                    htmlFor={`servico-${servico.id}`}
+                    htmlFor={`service-${service.id}`}
                     className="text-sm font-normal cursor-pointer"
                   >
-                    {servico.nome}
+                    {service.name}
                   </Label>
                 </div>
               ))}
@@ -136,11 +136,11 @@ export const PlanModal = ({
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={resetPlanoForm}>
+            <Button type="button" variant="outline" onClick={resetPlanForm}>
               Cancelar
             </Button>
             <Button type="submit" className="bg-green-600 hover:bg-green-700">
-              {editingPlano ? "Atualizar" : "Criar"} Plano
+              {editingPlan ? "Atualizar" : "Criar"} Plano
             </Button>
           </div>
         </form>

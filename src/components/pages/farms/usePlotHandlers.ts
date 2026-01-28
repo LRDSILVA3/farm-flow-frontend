@@ -1,21 +1,21 @@
 import { useRef, useEffect } from "react";
-import { Fazenda, Talhao } from "../FarmPage";
+import { Farm, Plot } from "../FarmPage";
 
-export const useFazendaHandlers = (
-  fazendas: Fazenda[],
-  setFazendas: (fazendas: Fazenda[] | ((prev: Fazenda[]) => Fazenda[])) => void,
-  setEditingFazenda: (fazenda: Fazenda | null) => void,
-  setFormData: (fazenda: Fazenda | ((prev: Fazenda) => Fazenda)) => void,
-  setShowFazendaForm: (show: boolean) => void,
-  setSelectedFazenda: (fazenda: Fazenda | null | ((prev: Fazenda | null) => Fazenda | null)) => void,
-  setShowTalhoesModal: (show: boolean) => void,
-  editingFazenda: Fazenda | null,
-  formData: Fazenda,
-  setTalhaoForm: (talhao: Talhao) => void,
-  addFazenda?: (fazenda: Omit<Fazenda, 'id' | 'talhoes'>) => Promise<any>,
-  updateFazenda?: (fazenda: Fazenda) => Promise<void>,
-  addTalhao?: (fazendaId: string, talhao: Omit<Talhao, 'id'>) => Promise<void>,
-  deleteTalhao?: (fazendaId: string, talhaoId: string) => Promise<void>
+export const useFarmHandlers = (
+  farms: Farm[],
+  setFarms: (farms: Farm[] | ((prev: Farm[]) => Farm[])) => void,
+  setEditingFarm: (farm: Farm | null) => void,
+  setFormData: (farm: Farm | ((prev: Farm) => Farm)) => void,
+  setShowFarmForm: (show: boolean) => void,
+  setSelectedFarm: (farm: Farm | null | ((prev: Farm | null) => Farm | null)) => void,
+  setShowPlotsModal: (show: boolean) => void,
+  editingFarm: Farm | null,
+  formData: Farm,
+  setPlotForm: (plot: Plot) => void,
+  addFarm?: (farm: Omit<Farm, 'id' | 'plots'>) => Promise<any>,
+  updateFarm?: (farm: Farm) => Promise<void>,
+  addPlot?: (farmId: string, plot: Omit<Plot, 'id'>) => Promise<void>,
+  deletePlot?: (farmId: string, plotId: string) => Promise<void>
 ) => {
   const isMountedRef = useRef(true);
   
@@ -25,27 +25,27 @@ export const useFazendaHandlers = (
     };
   }, []);
 
-  const handleEdit = (fazenda: Fazenda) => {
-    setEditingFazenda(fazenda);
-    setFormData(fazenda);
-    setShowFazendaForm(true);
+  const handleEdit = (farm: Farm) => {
+    setEditingFarm(farm);
+    setFormData(farm);
+    setShowFarmForm(true);
   };
 
-  const handleViewTalhoes = (fazenda: Fazenda) => {
-    setSelectedFazenda(fazenda);
-    setShowTalhoesModal(true);
+  const handleViewPlots = (farm: Farm) => {
+    setSelectedFarm(farm);
+    setShowPlotsModal(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (editingFazenda) {
-      if (updateFazenda) {
-        await updateFazenda(formData);
+    if (editingFarm) {
+      if (updateFarm) {
+        await updateFarm(formData);
       }
     } else {
-      if (addFazenda) {
-        await addFazenda(formData);
+      if (addFarm) {
+        await addFarm(formData);
       }
     }
     
@@ -55,62 +55,62 @@ export const useFazendaHandlers = (
   const resetForm = () => {
     setFormData({
       id: "",
-      nome: "",
-      proprietario: "",
+      name: "",
+      owner: "",
       area: "",
-      cidade: "",
-      estado: "",
-      contato: "",
+      city: "",
+      state: "",
+      contact: "",
       status: "Ativo",
-      matricula: "",
-      lote: "",
-      talhoes: []
+      registration: "",
+      lot: "",
+      plots: []
     });
-    setEditingFazenda(null);
-    setShowFazendaForm(false);
+    setEditingFarm(null);
+    setShowFarmForm(false);
   };
 
-  const handleInputChange = (field: keyof Fazenda, value: string) => {
+  const handleInputChange = (field: keyof Farm, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleAddTalhao = async (fazendaId: string, talhaoForm: Talhao) => {
-    if (addTalhao) {
-      await addTalhao(fazendaId, talhaoForm);
+  const handleAddPlot = async (farmId: string, plotForm: Plot) => {
+    if (addPlot) {
+      await addPlot(farmId, plotForm);
     }
 
-    setTalhaoForm({
+    setPlotForm({
       id: "",
-      nome: "",
+      name: "",
       area: "",
       status: "Ativo",
-      cidade: "",
-      estado: "",
-      matricula: "",
-      lote: ""
+      city: "",
+      state: "",
+      registration: "",
+      lot: ""
     });
   };
 
-  const handleDeleteTalhao = async (fazendaId: string, talhaoId: string) => {
-    if (deleteTalhao) {
-      await deleteTalhao(fazendaId, talhaoId);
+  const handleDeletePlot = async (farmId: string, plotId: string) => {
+    if (deletePlot) {
+      await deletePlot(farmId, plotId);
     }
 
-    if (editingFazenda && editingFazenda.id === fazendaId) {
+    if (editingFarm && editingFarm.id === farmId) {
       setFormData(prev => ({
         ...prev,
-        talhoes: prev.talhoes.filter(t => t.id !== talhaoId)
+        plots: prev.plots.filter(t => t.id !== plotId)
       }));
     }
   };
 
   return {
     handleEdit,
-    handleViewTalhoes,
+    handleViewPlots,
     handleSubmit,
     resetForm,
     handleInputChange,
-    handleAddTalhao,
-    handleDeleteTalhao
+    handleAddPlot,
+    handleDeletePlot
   };
 };

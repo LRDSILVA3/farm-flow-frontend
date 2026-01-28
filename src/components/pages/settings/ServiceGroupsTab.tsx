@@ -139,13 +139,13 @@ export const ServiceGroupsTab = () => {
       )}
 
       <ServiceGroupModal
-        showGrupoServicoForm={showServiceGroupForm}
-        setShowGrupoServicoForm={setShowServiceGroupForm}
-        editingGrupoServico={editingServiceGroup}
-        grupoServicoFormData={serviceGroupFormData}
-        handleGrupoServicoSubmit={handleServiceGroupSubmit}
-        resetGrupoServicoForm={resetServiceGroupForm}
-        handleGrupoServicoInputChange={handleServiceGroupInputChange}
+        showServiceGroupForm={showServiceGroupForm}
+        setShowServiceGroupForm={setShowServiceGroupForm}
+        editingServiceGroup={editingServiceGroup}
+        serviceGroupFormData={serviceGroupFormData}
+        handleServiceGroupSubmit={handleServiceGroupSubmit}
+        resetServiceGroupForm={resetServiceGroupForm}
+        handleServiceGroupInputChange={handleServiceGroupInputChange}
       />
 
       <DeleteConfirmDialog

@@ -26,7 +26,7 @@ interface CollaboratorsTabProps {
   handleDeleteCollaborator: (id: string) => void;
 }
 
-export const ColaboradoresTab = ({
+export const CollaboratorsTab = ({
   collaborators,
   collaboratorsStartIndex,
   collaboratorsEndIndex,

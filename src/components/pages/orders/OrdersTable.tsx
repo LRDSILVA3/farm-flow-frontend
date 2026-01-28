@@ -4,30 +4,30 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Edit } from "lucide-react";
-import { Pedido } from "../OrdersPage";
+import { Order } from "../OrdersPage";
 
 interface OrdersTableProps {
-  pedidos: Pedido[];
+  orders: Order[];
   currentPage: number;
   itemsPerPage: number;
   onPageChange: (page: number) => void;
   onItemsPerPageChange: (items: number) => void;
-  onEdit: (pedido: Pedido) => void;
+  onEdit: (order: Order) => void;
 }
 
 export const OrdersTable = ({
-  pedidos,
+  orders,
   currentPage,
   itemsPerPage,
   onPageChange,
   onItemsPerPageChange,
   onEdit
 }: OrdersTableProps) => {
-  const totalItems = pedidos.length;
+  const totalItems = orders.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentPedidos = pedidos.slice(startIndex, endIndex);
+  const currentOrders = orders.slice(startIndex, endIndex);
 
   const handleItemsPerPageChange = (value: string) => {
     onItemsPerPageChange(parseInt(value));
@@ -49,8 +49,8 @@ export const OrdersTable = ({
     }
   };
 
-  const getPagamentoColor = (pagamento: string) => {
-    switch (pagamento) {
+  const getPaymentColor = (payment: string) => {
+    switch (payment) {
       case "Pago":
         return "bg-green-100 text-green-800";
       case "Parcial":
@@ -78,28 +78,28 @@ export const OrdersTable = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {currentPedidos.map((pedido) => (
-            <TableRow key={pedido.id}>
-              <TableCell>{pedido.cliente}</TableCell>
-              <TableCell>{pedido.fazenda}</TableCell>
-              <TableCell>{pedido.servico}</TableCell>
-              <TableCell>{pedido.area}</TableCell>
-              <TableCell>{pedido.valor}</TableCell>
+          {currentOrders.map((order) => (
+            <TableRow key={order.id}>
+              <TableCell>{order.customer}</TableCell>
+              <TableCell>{order.farm}</TableCell>
+              <TableCell>{order.service}</TableCell>
+              <TableCell>{order.area}</TableCell>
+              <TableCell>{order.value}</TableCell>
               <TableCell>
-                <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(pedido.status)}`}>
-                  {pedido.status}
+                <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(order.status)}`}>
+                  {order.status}
                 </span>
               </TableCell>
               <TableCell>
-                <span className={`px-2 py-1 rounded-full text-xs ${getPagamentoColor(pedido.pagamento)}`}>
-                  {pedido.pagamento}
+                <span className={`px-2 py-1 rounded-full text-xs ${getPaymentColor(order.payment)}`}>
+                  {order.payment}
                 </span>
               </TableCell>
               <TableCell>
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => onEdit(pedido)}
+                  onClick={() => onEdit(order)}
                 >
                   <Edit className="h-4 w-4" />
                 </Button>

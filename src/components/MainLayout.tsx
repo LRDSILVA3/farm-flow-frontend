@@ -5,13 +5,13 @@ import { Home, Users, MapPin, FileText, Calendar, DollarSign, Settings, LogOut, 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import CustomersPage from "./pages/CustomersPage";
-import FazendasPage from "./pages/FarmPage";
-import PedidosPage from "./pages/OrdersPage";
-import AgendaPage from "./pages/SchedulePage";
-import FinanceiroPage from "./pages/FinancialPage";
-import ConfiguracoesPage from "./pages/SettingsPage";
+import FarmsPage from "./pages/FarmPage";
+import OrdersPage from "./pages/OrdersPage";
+import SchedulePage from "./pages/SchedulePage";
+import FinancialPage from "./pages/FinancialPage";
+import SettingsPage from "./pages/SettingsPage";
 import DashboardHome from "./pages/DashboardHome";
-import AnalisesPrincipalPage from "./pages/AnalysisPage";
+import AnalysisPage from "./pages/AnalysisPage";
 
 const MainLayoutContent = () => {
   const [currentPage, setCurrentPage] = useState("dashboard");
@@ -30,17 +30,17 @@ const MainLayoutContent = () => {
 
   const menuItems = [
     { id: "dashboard", title: "Dashboard", icon: Home },
-    { id: "clientes", title: "Clientes", icon: Users },
-    { id: "fazendas", title: "Fazendas", icon: MapPin },
-    { id: "pedidos", title: "Pedidos", icon: FileText },
-    { id: "agenda", title: "Agenda", icon: Calendar },
-    { id: "analises", title: "Análises", icon: FlaskConical },
-    { id: "financeiro", title: "Financeiro", icon: DollarSign },
-    { id: "configuracoes", title: "Configurações", icon: Settings },
+    { id: "customers", title: "Clientes", icon: Users },
+    { id: "farms", title: "Fazendas", icon: MapPin },
+    { id: "orders", title: "Pedidos", icon: FileText },
+    { id: "schedule", title: "Agenda", icon: Calendar },
+    { id: "analysis", title: "Análises", icon: FlaskConical },
+    { id: "financial", title: "Financeiro", icon: DollarSign },
+    { id: "settings", title: "Configurações", icon: Settings },
   ];
 
-  const handleNavigateToFazendas = useCallback((clienteCpf: string) => {
-    setCurrentPage("fazendas");
+  const handleNavigateToFarms = useCallback((customerCpf: string) => {
+    setCurrentPage("farms");
   }, []);
 
   const handleMenuClick = useCallback((pageId: string) => {
@@ -49,24 +49,24 @@ const MainLayoutContent = () => {
 
   const currentPageComponent = useMemo(() => {
     switch (currentPage) {
-      case "clientes":
-        return <CustomersPage onNavigateToFazendas={handleNavigateToFazendas} />;
-      case "fazendas":
-        return <FazendasPage />;
-      case "pedidos":
-        return <PedidosPage />;
-      case "agenda":
-        return <AgendaPage />;
-      case "financeiro":
-        return <FinanceiroPage />;
-      case "configuracoes":
-        return <ConfiguracoesPage />;
-      case "analises":
-        return <AnalisesPrincipalPage />;
+      case "customers":
+        return <CustomersPage onNavigateToFarms={handleNavigateToFarms} />;
+      case "farms":
+        return <FarmsPage />;
+      case "orders":
+        return <OrdersPage />;
+      case "schedule":
+        return <SchedulePage />;
+      case "financial":
+        return <FinancialPage />;
+      case "settings":
+        return <SettingsPage />;
+      case "analysis":
+        return <AnalysisPage />;
       default:
         return <DashboardHome />;
     }
-  }, [currentPage, handleNavigateToFazendas]);
+  }, [currentPage, handleNavigateToFarms]);
 
   return (
     <div className="min-h-screen flex w-full">

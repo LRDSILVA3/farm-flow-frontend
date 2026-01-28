@@ -16,7 +16,7 @@ interface EquipmentModalProps {
   handleEquipmentInputChange: (field: keyof Equipment, value: string) => void;
 }
 
-export const EquipamentoModal: React.FC<EquipmentModalProps> = ({
+export const EquipmentModal: React.FC<EquipmentModalProps> = ({
   showEquipmentForm,
   setShowEquipmentForm,
   editingEquipment,

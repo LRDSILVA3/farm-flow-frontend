@@ -1,35 +1,35 @@
 
 import { useState, useEffect } from "react";
-import { Talhao } from "../FarmPage";
+import { Plot } from "../FarmPage";
 import { useToast } from "@/hooks/use-toast";
 
-export const useTalhoesModal = (
-  onAddTalhao: (fazendaId: string) => void,
-  talhaoForm: Talhao,
-  setTalhaoForm: (talhao: Talhao) => void,
+export const usePlotsModal = (
+  onAddPlot: (farmId: string) => void,
+  plotForm: Plot,
+  setPlotForm: (plot: Plot) => void,
   autoOpenForm?: boolean
 ) => {
-  const [showTalhaoForm, setShowTalhaoForm] = useState(false);
-  const [editingTalhao, setEditingTalhao] = useState<Talhao | null>(null);
+  const [showPlotForm, setShowPlotForm] = useState(false);
+  const [editingPlot, setEditingPlot] = useState<Plot | null>(null);
   const { toast } = useToast();
 
   // Abre automaticamente o formulário se solicitado
   useEffect(() => {
     if (autoOpenForm) {
-      setShowTalhaoForm(true);
+      setShowPlotForm(true);
     }
   }, [autoOpenForm]);
 
-  const handleAddTalhao = (e: React.FormEvent, fazendaId: string) => {
+  const handleAddPlot = (e: React.FormEvent, farmId: string) => {
     e.preventDefault();
-    onAddTalhao(fazendaId);
+    onAddPlot(farmId);
     resetForm();
   };
 
-  const handleEditTalhao = (talhao: Talhao) => {
-    setEditingTalhao(talhao);
-    setTalhaoForm(talhao);
-    setShowTalhaoForm(true);
+  const handleEditPlot = (plot: Plot) => {
+    setEditingPlot(plot);
+    setPlotForm(plot);
+    setShowPlotForm(true);
   };
 
   const handleCancel = () => {
@@ -37,26 +37,26 @@ export const useTalhoesModal = (
   };
 
   const resetForm = () => {
-    setTalhaoForm({
+    setPlotForm({
       id: "",
-      nome: "",
+      name: "",
       area: "",
       status: "Ativo",
-      cidade: "",
-      estado: "",
-      matricula: "",
-      lote: ""
+      city: "",
+      state: "",
+      registration: "",
+      lot: ""
     });
-    setShowTalhaoForm(false);
-    setEditingTalhao(null);
+    setShowPlotForm(false);
+    setEditingPlot(null);
   };
 
   return {
-    showTalhaoForm,
-    setShowTalhaoForm,
-    editingTalhao,
-    handleAddTalhao,
-    handleEditTalhao,
+    showPlotForm,
+    setShowPlotForm,
+    editingPlot,
+    handleAddPlot,
+    handleEditPlot,
     handleCancel
   };
 };

@@ -6,11 +6,11 @@ import { useAuth } from "@/hooks/useAuth";
 export interface Analysis {
   id: string;
   name: string;
-  type: "Solo" | "Folha";
+  type: "Soil" | "Leaf";
   collaborator: string;
   deadline: number;
   value: string;
-  status: "Ativo" | "Inativo";
+  status: "Active" | "Inactive";
 }
 
 export const useAnalyses = () => {
@@ -26,11 +26,11 @@ export const useAnalyses = () => {
   const [analysisFormData, setAnalysisFormData] = useState<Analysis>({
     id: "",
     name: "",
-    type: "Solo",
+    type: "Soil",
     collaborator: "",
     deadline: 0,
     value: "",
-    status: "Ativo"
+    status: "Active"
   });
 
   const fetchAnalyses = async () => {
@@ -48,11 +48,11 @@ export const useAnalyses = () => {
       setAnalyses(data?.map(a => ({
         id: a.id,
         name: a.name,
-        type: (a.type as "Solo" | "Folha") || "Solo",
+        type: (a.type as "Soil" | "Leaf") || "Soil",
         collaborator: a.collaborator || "",
         deadline: a.deadline || 0,
         value: a.value || "",
-        status: (a.status as "Ativo" | "Inativo") || "Ativo"
+        status: (a.status as "Active" | "Inactive") || "Active"
       })) || []);
     }
     setLoading(false);

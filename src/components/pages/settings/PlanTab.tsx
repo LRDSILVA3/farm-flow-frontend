@@ -8,39 +8,39 @@ import { Plus, Edit } from "lucide-react";
 import { Plan } from "./usePlan";
 
 interface PlanTabProps {
-  planos: Plan[];
-  servicos: { id: number; nome: string }[];
-  currentPlanos: Plan[];
-  planosStartIndex: number;
-  planosEndIndex: number;
-  totalPlanos: number;
-  planosPerPage: number;
-  setPlanosPerPage: (value: number) => void;
-  planosPage: number;
-  setPlanosPage: (value: number) => void;
-  totalPlanosPages: number;
-  handleEditPlano: (plano: Plan) => void;
-  setShowPlanoForm: (show: boolean) => void;
+  plans: Plan[];
+  services: { id: number; name: string }[];
+  currentPlans: Plan[];
+  plansStartIndex: number;
+  plansEndIndex: number;
+  totalPlans: number;
+  plansPerPage: number;
+  setPlansPerPage: (value: number) => void;
+  plansPage: number;
+  setPlansPage: (value: number) => void;
+  totalPlansPages: number;
+  handleEditPlan: (plan: Plan) => void;
+  setShowPlanForm: (show: boolean) => void;
 }
 
 export const PlanTab = ({
-  servicos,
-  currentPlanos,
-  planosStartIndex,
-  planosEndIndex,
-  totalPlanos,
-  planosPerPage,
-  setPlanosPerPage,
-  planosPage,
-  setPlanosPage,
-  totalPlanosPages,
-  handleEditPlano,
-  setShowPlanoForm
+  services,
+  currentPlans,
+  plansStartIndex,
+  plansEndIndex,
+  totalPlans,
+  plansPerPage,
+  setPlansPerPage,
+  plansPage,
+  setPlansPage,
+  totalPlansPages,
+  handleEditPlan,
+  setShowPlanForm
 }: PlanTabProps) => {
-  const getServicosNames = (servicosIds: number[]) => {
-    return servicos
-      .filter(servico => servicosIds.includes(servico.id))
-      .map(servico => servico.nome);
+  const getServiceNames = (servicesIds: number[]) => {
+    return services
+      .filter(service => servicesIds.includes(service.id))
+      .map(service => service.name);
   };
 
   return (
@@ -49,7 +49,7 @@ export const PlanTab = ({
         <CardTitle>Planos do App</CardTitle>
         <Button 
           className="bg-green-600 hover:bg-green-700"
-          onClick={() => setShowPlanoForm(true)}
+          onClick={() => setShowPlanForm(true)}
         >
           <Plus className="h-4 w-4 mr-2" />
           Novo Plano
@@ -71,47 +71,47 @@ export const PlanTab = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentPlanos.map((plano) => (
-                <TableRow key={plano.id}>
-                  <TableCell className="font-medium">{plano.nome}</TableCell>
-                  <TableCell className="max-w-xs truncate">{plano.descricao}</TableCell>
+              {currentPlans.map((plan) => (
+                <TableRow key={plan.id}>
+                  <TableCell className="font-medium">{plan.name}</TableCell>
+                  <TableCell className="max-w-xs truncate">{plan.description}</TableCell>
                   <TableCell>
                     <span className={`px-2 py-1 rounded-full text-xs ${
-                      plano.recorrencia === "mensal" 
+                      plan.recurrence === "mensal" 
                         ? "bg-blue-100 text-blue-800" 
                         : "bg-orange-100 text-orange-800"
                     }`}>
-                      {plano.recorrencia === "mensal" ? "Mensal" : "Único"}
+                      {plan.recurrence === "mensal" ? "Mensal" : "Único"}
                     </span>
                   </TableCell>
-                  <TableCell>R$ {plano.valor.toFixed(2)}</TableCell>
+                  <TableCell>R$ {plan.value.toFixed(2)}</TableCell>
                   <TableCell>
                     <span className={`px-2 py-1 rounded-full text-xs ${
-                      plano.status === "Ativo" 
+                      plan.status === "Ativo" 
                         ? "bg-green-100 text-green-800" 
                         : "bg-red-100 text-red-800"
                     }`}>
-                      {plano.status}
+                      {plan.status}
                     </span>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {getServicosNames(plano.servicosIds).slice(0, 2).map((nome) => (
-                        <span key={nome} className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-800">
-                          {nome}
+                      {getServiceNames(plan.servicesIds).slice(0, 2).map((name) => (
+                        <span key={name} className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-800">
+                          {name}
                         </span>
                       ))}
-                      {plano.servicosIds.length > 2 && (
-                        <span className="text-xs text-gray-500">+{plano.servicosIds.length - 2}</span>
+                      {plan.servicesIds.length > 2 && (
+                        <span className="text-xs text-gray-500">+{plan.servicesIds.length - 2}</span>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>{plano.dataCriacao}</TableCell>
+                  <TableCell>{plan.creationDate}</TableCell>
                   <TableCell>
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => handleEditPlano(plano)}
+                      onClick={() => handleEditPlan(plan)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -124,11 +124,11 @@ export const PlanTab = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-600">
-                Mostrando {planosStartIndex + 1} a {Math.min(planosEndIndex, totalPlanos)} de {totalPlanos} planos
+                Mostrando {plansStartIndex + 1} a {Math.min(plansEndIndex, totalPlans)} de {totalPlans} planos
               </span>
-              <Select value={planosPerPage.toString()} onValueChange={(value) => {
-                setPlanosPerPage(Number(value));
-                setPlanosPage(1);
+              <Select value={plansPerPage.toString()} onValueChange={(value) => {
+                setPlansPerPage(Number(value));
+                setPlansPage(1);
               }}>
                 <SelectTrigger className="w-20">
                   <SelectValue />
@@ -143,21 +143,21 @@ export const PlanTab = ({
               <span className="text-sm text-gray-600">por página</span>
             </div>
             
-            {totalPlanosPages > 1 && (
+            {totalPlansPages > 1 && (
               <Pagination>
                 <PaginationContent>
                   <PaginationItem>
                     <PaginationPrevious 
-                      onClick={() => setPlanosPage(Math.max(1, planosPage - 1))}
-                      className={planosPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      onClick={() => setPlansPage(Math.max(1, plansPage - 1))}
+                      className={plansPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                     />
                   </PaginationItem>
                   
-                  {Array.from({ length: totalPlanosPages }, (_, i) => i + 1).map((page) => (
+                  {Array.from({ length: totalPlansPages }, (_, i) => i + 1).map((page) => (
                     <PaginationItem key={page}>
                       <PaginationLink
-                        onClick={() => setPlanosPage(page)}
-                        isActive={planosPage === page}
+                        onClick={() => setPlansPage(page)}
+                        isActive={plansPage === page}
                         className="cursor-pointer"
                       >
                         {page}
@@ -167,8 +167,8 @@ export const PlanTab = ({
                   
                   <PaginationItem>
                     <PaginationNext 
-                      onClick={() => setPlanosPage(Math.min(totalPlanosPages, planosPage + 1))}
-                      className={planosPage === totalPlanosPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      onClick={() => setPlansPage(Math.min(totalPlansPages, plansPage + 1))}
+                      className={plansPage === totalPlansPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                     />
                   </PaginationItem>
                 </PaginationContent>

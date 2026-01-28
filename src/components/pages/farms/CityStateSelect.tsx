@@ -2,74 +2,74 @@
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-interface CidadeEstadoSelectProps {
-  cidade: string;
-  estado: string;
-  onCidadeChange: (cidade: string) => void;
-  onEstadoChange: (estado: string) => void;
+interface CityStateSelectProps {
+  city: string;
+  state: string;
+  onCityChange: (city: string) => void;
+  onStateChange: (state: string) => void;
 }
 
 const estadosComCidades = {
   "SP": {
     label: "São Paulo",
-    cidades: ["São Paulo", "Campinas", "Santos", "Ribeirão Preto", "Sorocaba"]
+    cities: ["São Paulo", "Campinas", "Santos", "Ribeirão Preto", "Sorocaba"]
   },
   "RJ": {
     label: "Rio de Janeiro", 
-    cidades: ["Rio de Janeiro", "Niterói", "Petrópolis", "Nova Iguaçu", "Duque de Caxias"]
+    cities: ["Rio de Janeiro", "Niterói", "Petrópolis", "Nova Iguaçu", "Duque de Caxias"]
   },
   "MG": {
     label: "Minas Gerais",
-    cidades: ["Belo Horizonte", "Uberlândia", "Contagem", "Juiz de Fora", "Betim"]
+    cities: ["Belo Horizonte", "Uberlândia", "Contagem", "Juiz de Fora", "Betim"]
   },
   "DF": {
     label: "Distrito Federal",
-    cidades: ["Brasília", "Taguatinga", "Ceilândia", "Samambaia", "Planaltina"]
+    cities: ["Brasília", "Taguatinga", "Ceilândia", "Samambaia", "Planaltina"]
   },
   "BA": {
     label: "Bahia",
-    cidades: ["Salvador", "Feira de Santana", "Vitória da Conquista", "Camaçari", "Juazeiro"]
+    cities: ["Salvador", "Feira de Santana", "Vitória da Conquista", "Camaçari", "Juazeiro"]
   },
   "PR": {
     label: "Paraná",
-    cidades: ["Curitiba", "Londrina", "Maringá", "Ponta Grossa", "Cascavel"]
+    cities: ["Curitiba", "Londrina", "Maringá", "Ponta Grossa", "Cascavel"]
   },
   "RS": {
     label: "Rio Grande do Sul",
-    cidades: ["Porto Alegre", "Caxias do Sul", "Pelotas", "Canoas", "Santa Maria"]
+    cities: ["Porto Alegre", "Caxias do Sul", "Pelotas", "Canoas", "Santa Maria"]
   },
   "GO": {
     label: "Goiás",
-    cidades: ["Goiânia", "Aparecida de Goiânia", "Anápolis", "Rio Verde", "Luziânia"]
+    cities: ["Goiânia", "Aparecida de Goiânia", "Anápolis", "Rio Verde", "Luziânia"]
   },
   "MS": {
     label: "Mato Grosso do Sul",
-    cidades: ["Campo Grande", "Dourados", "Três Lagoas", "Corumbá", "Ponta Porã"]
+    cities: ["Campo Grande", "Dourados", "Três Lagoas", "Corumbá", "Ponta Porã"]
   },
   "MT": {
     label: "Mato Grosso",
-    cidades: ["Cuiabá", "Várzea Grande", "Rondonópolis", "Sinop", "Tangará da Serra"]
+    cities: ["Cuiabá", "Várzea Grande", "Rondonópolis", "Sinop", "Tangará da Serra"]
   }
 };
 
-export const CidadeEstadoSelect = ({ cidade, estado, onCidadeChange, onEstadoChange }: CidadeEstadoSelectProps) => {
+export const CityStateSelect = ({ city, state, onCityChange, onStateChange }: CityStateSelectProps) => {
   const handleEstadoChange = (novoEstado: string) => {
-    onEstadoChange(novoEstado);
-    // Limpar cidade quando estado mudar
-    onCidadeChange("");
+    onStateChange(novoEstado);
+    // Limpar city quando state mudar
+    onCityChange("");
   };
 
-  const cidadesDisponiveis = estado && estadosComCidades[estado as keyof typeof estadosComCidades] 
-    ? estadosComCidades[estado as keyof typeof estadosComCidades].cidades 
+  const cidadesDisponiveis = state && estadosComCidades[state as keyof typeof estadosComCidades] 
+    ? estadosComCidades[state as keyof typeof estadosComCidades].cities 
     : [];
 
   return (
     <>
       <div>
-        <Label htmlFor="estado">Estado</Label>
-        <Select value={estado} onValueChange={handleEstadoChange}>
+        <Label htmlFor="state">Estado</Label>
+        <Select value={state} onValueChange={handleEstadoChange}>
           <SelectTrigger>
-            <SelectValue placeholder="Selecione o estado" />
+            <SelectValue placeholder="Selecione o state" />
           </SelectTrigger>
           <SelectContent>
             {Object.entries(estadosComCidades).map(([value, { label }]) => (
@@ -81,10 +81,10 @@ export const CidadeEstadoSelect = ({ cidade, estado, onCidadeChange, onEstadoCha
         </Select>
       </div>
       <div>
-        <Label htmlFor="cidade">Cidade</Label>
-        <Select value={cidade} onValueChange={onCidadeChange} disabled={!estado}>
+        <Label htmlFor="city">Cidade</Label>
+        <Select value={city} onValueChange={onCityChange} disabled={!state}>
           <SelectTrigger>
-            <SelectValue placeholder={estado ? "Selecione a cidade" : "Primeiro selecione o estado"} />
+            <SelectValue placeholder={state ? "Selecione a city" : "Primeiro selecione o state"} />
           </SelectTrigger>
           <SelectContent>
             {cidadesDisponiveis.map((cidadeOption) => (

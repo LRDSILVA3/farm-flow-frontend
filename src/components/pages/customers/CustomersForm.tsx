@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CidadeEstadoSelect } from "@/components/pages/farms/CityStateSelect";
+import { CityStateSelect } from "@/components/pages/farms/CityStateSelect";
 import { useToast } from "@/hooks/use-toast";
 import { Client } from "../../../hooks/useClients";
 
@@ -59,12 +59,12 @@ export const CustomersForm = ({ editingClient, onSave, onUpdate, onCancel }: Cus
     onCancel();
   };
 
-  const handleEstadoChange = (estado: string) => {
-    setFormData(prev => ({ ...prev, estado }));
+  const handleStateChange = (state: string) => {
+    setFormData(prev => ({ ...prev, state }));
   };
 
-  const handleCidadeChange = (cidade: string) => {
-    setFormData(prev => ({ ...prev, cidade }));
+  const handleCityChange = (city: string) => {
+    setFormData(prev => ({ ...prev, city }));
   };
 
   return (
@@ -144,11 +144,11 @@ export const CustomersForm = ({ editingClient, onSave, onUpdate, onCancel }: Cus
               placeholder="Número do CAD/PRO"
             />
           </div>
-          <CidadeEstadoSelect
-            estado={formData.state}
-            cidade={formData.city}
-            onEstadoChange={handleEstadoChange}
-            onCidadeChange={handleCidadeChange}
+          <CityStateSelect
+            state={formData.state}
+            city={formData.city}
+            onStateChange={handleStateChange}
+            onCityChange={handleCityChange}
           />
           <div className="md:col-span-2 flex gap-2">
             <Button type="submit" className="bg-green-600 hover:bg-green-700">

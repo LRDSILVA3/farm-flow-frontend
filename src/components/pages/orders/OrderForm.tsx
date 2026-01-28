@@ -4,16 +4,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Plus, Minus } from "lucide-react";
-import { Pedido } from "../OrdersPage";
-import { ClienteSelect } from "../farms/CustomerSelect";
+import { Order } from "../OrdersPage";
+import { CustomerSelect } from "../farms/CustomerSelect";
 import { FarmSelect } from "./FarmSelect";
 
 interface OrderFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editingPedido: Pedido | null;
-  formData: Pedido;
-  onInputChange: (field: keyof Pedido, value: string | { id: string; nome: string; quantidade: number }[]) => void;
+  editingOrder: Order | null;
+  formData: Order;
+  onInputChange: (field: keyof Order, value: string | { id: string; name: string; quantity: number }[]) => void;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
 }
@@ -21,110 +21,110 @@ interface OrderFormProps {
 export const OrderForm = ({
   open,
   onOpenChange,
-  editingPedido,
+  editingOrder,
   formData,
   onInputChange,
   onSubmit,
   onCancel
 }: OrderFormProps) => {
   // Lista de clientes (mock - em produção viria de uma API)
-  const clientesDisponiveis = [
-    { id: "1", cpf: "123.456.789-00", nome: "João Silva", email: "joao@email.com" },
-    { id: "2", cpf: "987.654.321-00", nome: "Maria Santos", email: "maria@email.com" },
-    { id: "3", cpf: "456.789.123-00", nome: "Pedro Oliveira", email: "pedro@email.com" }
+  const availableCustomers = [
+    { id: "1", cpf: "123.456.789-00", name: "João Silva", email: "joao@email.com" },
+    { id: "2", cpf: "987.654.321-00", name: "Maria Santos", email: "maria@email.com" },
+    { id: "3", cpf: "456.789.123-00", name: "Pedro Oliveira", email: "pedro@email.com" }
   ];
 
   // Lista de fazendas (mock - em produção viria de uma API)
-  const todasFazendas = [
-    { id: "1", nome: "Fazenda São João", proprietario: "João Silva", area: "100", localizacao: "Interior SP" },
-    { id: "2", nome: "Fazenda Santa Maria", proprietario: "Maria Santos", area: "200", localizacao: "Interior MG" },
-    { id: "3", nome: "Fazenda Boa Vista", proprietario: "Pedro Oliveira", area: "150", localizacao: "Interior GO" },
-    { id: "4", nome: "Fazenda Esperança", proprietario: "João Silva", area: "80", localizacao: "Interior SP" },
-    { id: "5", nome: "Fazenda Progresso", proprietario: "Maria Santos", area: "120", localizacao: "Interior MG" }
+  const allFarms = [
+    { id: "1", name: "Fazenda São João", owner: "João Silva", area: "100", location: "Interior SP" },
+    { id: "2", name: "Fazenda Santa Maria", owner: "Maria Santos", area: "200", location: "Interior MG" },
+    { id: "3", name: "Fazenda Boa Vista", owner: "Pedro Oliveira", area: "150", location: "Interior GO" },
+    { id: "4", name: "Fazenda Esperança", owner: "João Silva", area: "80", location: "Interior SP" },
+    { id: "5", name: "Fazenda Progresso", owner: "Maria Santos", area: "120", location: "Interior MG" }
   ];
 
   // Filtrar fazendas baseado no cliente selecionado
-  const fazendasDisponiveis = formData.cliente 
-    ? todasFazendas.filter(fazenda => fazenda.proprietario === formData.cliente)
-    : todasFazendas;
+  const availableFarms = formData.customer 
+    ? allFarms.filter(farm => farm.owner === formData.customer)
+    : allFarms;
 
   // Lista de serviços disponíveis
-  const servicosDisponiveis = [
-    { id: "1", nome: "Pulverização", valorAlqueire: "200.00", status: "Ativo" },
-    { id: "2", nome: "Plantio", valorAlqueire: "150.00", status: "Ativo" },
-    { id: "3", nome: "Colheita", valorAlqueire: "180.00", status: "Ativo" },
-    { id: "4", nome: "Adubação", valorAlqueire: "120.00", status: "Ativo" }
+  const availableServices = [
+    { id: "1", name: "Pulverização", valorAlqueire: "200.00", status: "Ativo" },
+    { id: "2", name: "Plantio", valorAlqueire: "150.00", status: "Ativo" },
+    { id: "3", name: "Colheita", valorAlqueire: "180.00", status: "Ativo" },
+    { id: "4", name: "Adubação", valorAlqueire: "120.00", status: "Ativo" }
   ];
 
   // Lista de produtos disponíveis
-  const produtosDisponiveis = [
-    { id: "1", nome: "Defensivo A", valorUn: "45.00" },
-    { id: "2", nome: "Sementes Milho", valorUn: "120.00" },
-    { id: "3", nome: "Fertilizante NPK", valorUn: "80.00" },
-    { id: "4", nome: "Herbicida", valorUn: "65.00" }
+  const availableProducts = [
+    { id: "1", name: "Defensivo A", valorUn: "45.00" },
+    { id: "2", name: "Sementes Milho", valorUn: "120.00" },
+    { id: "3", name: "Fertilizante NPK", valorUn: "80.00" },
+    { id: "4", name: "Herbicida", valorUn: "65.00" }
   ];
 
   // Lista de grupos de serviços disponíveis
-  const gruposServicosDisponiveis = [
-    { id: "1", nome: "Pacote Completo", descricao: "Pulverização + Plantio + Colheita" },
-    { id: "2", nome: "Pacote Básico", descricao: "Pulverização + Adubação" }
+  const availableServiceGroups = [
+    { id: "1", name: "Pacote Completo", description: "Pulverização + Plantio + Colheita" },
+    { id: "2", name: "Pacote Básico", description: "Pulverização + Adubação" }
   ];
 
-  const adicionarProduto = () => {
-    const novosProdutos = [...formData.produtos, { id: "", nome: "", quantidade: 1 }];
-    onInputChange("produtos", novosProdutos);
+  const addProduct = () => {
+    const newProducts = [...formData.products, { id: "", name: "", quantity: 1 }];
+    onInputChange("products", newProducts);
   };
 
-  const removerProduto = (index: number) => {
-    const novosProdutos = formData.produtos.filter((_, i) => i !== index);
-    onInputChange("produtos", novosProdutos);
+  const removeProduct = (index: number) => {
+    const newProducts = formData.products.filter((_, i) => i !== index);
+    onInputChange("products", newProducts);
   };
 
-  const atualizarProduto = (index: number, campo: string, valor: string | number) => {
-    const novosProdutos = [...formData.produtos];
-    novosProdutos[index] = { ...novosProdutos[index], [campo]: valor };
-    onInputChange("produtos", novosProdutos);
+  const updateProduct = (index: number, field: string, value: string | number) => {
+    const newProducts = [...formData.products];
+    newProducts[index] = { ...newProducts[index], [field]: value };
+    onInputChange("products", newProducts);
   };
 
-  const handleClienteChange = (value: string) => {
-    onInputChange("cliente", value);
+  const handleCustomerChange = (value: string) => {
+    onInputChange("customer", value);
     // Limpar fazenda selecionada quando cliente mudar
-    if (formData.fazenda) {
-      onInputChange("fazenda", "");
+    if (formData.farm) {
+      onInputChange("farm", "");
     }
   };
 
-  const renderCamposPorTipo = () => {
-    switch (formData.tipo) {
+  const renderFieldsByType = () => {
+    switch (formData.type) {
       case "Produto":
         return (
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <Label>Produtos</Label>
-              <Button type="button" size="sm" onClick={adicionarProduto}>
+              <Button type="button" size="sm" onClick={addProduct}>
                 <Plus className="h-4 w-4 mr-1" />
                 Adicionar
               </Button>
             </div>
-            {formData.produtos.map((produto, index) => (
+            {formData.products.map((product, index) => (
               <div key={index} className="grid grid-cols-4 gap-2 items-end">
                 <div>
                   <Label>Produto</Label>
                   <Select 
-                    value={produto.id} 
+                    value={product.id} 
                     onValueChange={(value) => {
-                      const produtoSelecionado = produtosDisponiveis.find(p => p.id === value);
-                      atualizarProduto(index, "id", value);
-                      atualizarProduto(index, "nome", produtoSelecionado?.nome || "");
+                      const selectedProduct = availableProducts.find(p => p.id === value);
+                      updateProduct(index, "id", value);
+                      updateProduct(index, "name", selectedProduct?.name || "");
                     }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
-                      {produtosDisponiveis.map((produto) => (
-                        <SelectItem key={produto.id} value={produto.id}>
-                          {produto.nome} - R$ {produto.valorUn}
+                      {availableProducts.map((product) => (
+                        <SelectItem key={product.id} value={product.id}>
+                          {product.name} - R$ {product.valorUn}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -135,8 +135,8 @@ export const OrderForm = ({
                   <Input
                     type="number"
                     min="1"
-                    value={produto.quantidade}
-                    onChange={(e) => atualizarProduto(index, "quantidade", parseInt(e.target.value) || 1)}
+                    value={product.quantity}
+                    onChange={(e) => updateProduct(index, "quantity", parseInt(e.target.value) || 1)}
                   />
                 </div>
                 <div></div>
@@ -144,7 +144,7 @@ export const OrderForm = ({
                   type="button"
                   variant="destructive"
                   size="sm"
-                  onClick={() => removerProduto(index)}
+                  onClick={() => removeProduct(index)}
                 >
                   <Minus className="h-4 w-4" />
                 </Button>
@@ -156,17 +156,17 @@ export const OrderForm = ({
       case "Serviço":
         return (
           <div>
-            <Label htmlFor="servico">Serviço</Label>
-            <Select value={formData.servico} onValueChange={(value) => onInputChange("servico", value)}>
+            <Label htmlFor="service">Serviço</Label>
+            <Select value={formData.service} onValueChange={(value) => onInputChange("service", value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um serviço" />
               </SelectTrigger>
               <SelectContent>
-                {servicosDisponiveis
-                  .filter(servico => servico.status === "Ativo")
-                  .map((servico) => (
-                    <SelectItem key={servico.id} value={servico.nome}>
-                      {servico.nome} - R$ {servico.valorAlqueire}/alqueire
+                {availableServices
+                  .filter(service => service.status === "Ativo")
+                  .map((service) => (
+                    <SelectItem key={service.id} value={service.name}>
+                      {service.name} - R$ {service.valorAlqueire}/alqueire
                     </SelectItem>
                   ))}
               </SelectContent>
@@ -177,15 +177,15 @@ export const OrderForm = ({
       case "Grupo de Serviços":
         return (
           <div>
-            <Label htmlFor="grupoServico">Grupo de Serviços</Label>
-            <Select value={formData.grupoServico} onValueChange={(value) => onInputChange("grupoServico", value)}>
+            <Label htmlFor="serviceGroup">Grupo de Serviços</Label>
+            <Select value={formData.serviceGroup} onValueChange={(value) => onInputChange("serviceGroup", value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um grupo" />
               </SelectTrigger>
               <SelectContent>
-                {gruposServicosDisponiveis.map((grupo) => (
-                  <SelectItem key={grupo.id} value={grupo.nome}>
-                    {grupo.nome} - {grupo.descricao}
+                {availableServiceGroups.map((group) => (
+                  <SelectItem key={group.id} value={group.name}>
+                    {group.name} - {group.description}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -203,32 +203,32 @@ export const OrderForm = ({
       <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {editingPedido ? "Editar Pedido" : "Novo Pedido"}
+            {editingOrder ? "Editar Pedido" : "Novo Pedido"}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="cliente">Cliente</Label>
-              <ClienteSelect
-                value={formData.cliente}
-                onValueChange={handleClienteChange}
-                clientes={clientesDisponiveis}
+              <Label htmlFor="customer">Cliente</Label>
+              <CustomerSelect
+                value={formData.customer}
+                onValueChange={handleCustomerChange}
+                clientes={availableCustomers}
               />
             </div>
             <div>
-              <Label htmlFor="fazenda">Fazenda</Label>
+              <Label htmlFor="farm">Fazenda</Label>
               <FarmSelect
-                value={formData.fazenda}
-                onValueChange={(value) => onInputChange("fazenda", value)}
-                farms={fazendasDisponiveis}
+                value={formData.farm}
+                onValueChange={(value) => onInputChange("farm", value)}
+                farms={availableFarms}
               />
             </div>
           </div>
           
           <div>
-            <Label htmlFor="tipo">Tipo</Label>
-            <Select value={formData.tipo} onValueChange={(value) => onInputChange("tipo", value)}>
+            <Label htmlFor="type">Tipo</Label>
+            <Select value={formData.type} onValueChange={(value) => onInputChange("type", value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -240,7 +240,7 @@ export const OrderForm = ({
             </Select>
           </div>
 
-          {renderCamposPorTipo()}
+          {renderFieldsByType()}
           
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -255,11 +255,11 @@ export const OrderForm = ({
               />
             </div>
             <div>
-              <Label htmlFor="valor">Valor</Label>
+              <Label htmlFor="value">Valor</Label>
               <Input
-                id="valor"
-                value={formData.valor}
-                onChange={(e) => onInputChange("valor", e.target.value)}
+                id="value"
+                value={formData.value}
+                onChange={(e) => onInputChange("value", e.target.value)}
                 placeholder="R$ 0,00"
                 required
               />
@@ -282,8 +282,8 @@ export const OrderForm = ({
               </Select>
             </div>
             <div>
-              <Label htmlFor="pagamento">Pagamento</Label>
-              <Select value={formData.pagamento} onValueChange={(value) => onInputChange("pagamento", value)}>
+              <Label htmlFor="payment">Pagamento</Label>
+              <Select value={formData.payment} onValueChange={(value) => onInputChange("payment", value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -301,7 +301,7 @@ export const OrderForm = ({
               Cancelar
             </Button>
             <Button type="submit" className="bg-green-600 hover:bg-green-700">
-              {editingPedido ? "Atualizar" : "Criar"}
+              {editingOrder ? "Atualizar" : "Criar"}
             </Button>
           </div>
         </form>

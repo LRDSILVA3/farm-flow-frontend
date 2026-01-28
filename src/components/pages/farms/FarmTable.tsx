@@ -4,32 +4,33 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Edit, Eye } from "lucide-react";
-import { Fazenda } from "../FarmPage";
+import { Farm } from "@/hooks/useFarms";
 
-interface FazendasTableProps {
-  fazendas: Fazenda[];
+
+interface FarmsTableProps {
+  farms: Farm[];
   currentPage: number;
   itemsPerPage: number;
   onPageChange: (page: number) => void;
   onItemsPerPageChange: (items: number) => void;
-  onEdit: (fazenda: Fazenda) => void;
-  onViewTalhoes: (fazenda: Fazenda) => void;
+  onEdit: (farm: Farm) => void;
+  onViewPlots: (farm: Farm) => void;
 }
 
-export const FazendasTable = ({
-  fazendas,
+export const FarmsTable = ({
+  farms,
   currentPage,
   itemsPerPage,
   onPageChange,
   onItemsPerPageChange,
   onEdit,
-  onViewTalhoes
-}: FazendasTableProps) => {
-  const totalItems = fazendas.length;
+  onViewPlots
+}: FarmsTableProps) => {
+  const totalItems = farms.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentFazendas = fazendas.slice(startIndex, endIndex);
+  const currentFarms = farms.slice(startIndex, endIndex);
 
   const handleItemsPerPageChange = (value: string) => {
     onItemsPerPageChange(parseInt(value));
@@ -63,21 +64,21 @@ export const FazendasTable = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {currentFazendas.map((fazenda) => (
-            <TableRow key={fazenda.id}>
-              <TableCell className="font-medium">{fazenda.nome}</TableCell>
-              <TableCell>{fazenda.proprietario}</TableCell>
-              <TableCell>{fazenda.area}</TableCell>
-              <TableCell>{fazenda.cidade} - {fazenda.estado}</TableCell>
-              <TableCell>{fazenda.contato}</TableCell>
+          {currentFarms.map((farm) => (
+            <TableRow key={farm.id}>
+              <TableCell className="font-medium">{farm.name}</TableCell>
+              <TableCell>{farm.owner}</TableCell>
+              <TableCell>{farm.area}</TableCell>
+              <TableCell>{farm.city} - {farm.state}</TableCell>
+              <TableCell>{farm.contact}</TableCell>
               <TableCell>
-                <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(fazenda.status)}`}>
-                  {fazenda.status}
+                <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(farm.status)}`}>
+                  {farm.status}
                 </span>
               </TableCell>
               <TableCell>
                 <span className="text-sm text-gray-600">
-                  {fazenda.talhoes.length}
+                  {farm.plots.length}
                 </span>
               </TableCell>
               <TableCell>
@@ -85,7 +86,7 @@ export const FazendasTable = ({
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => onEdit(fazenda)}
+                    onClick={() => onEdit(farm)}
                   >
                     <Edit className="h-4 w-4 mr-1" />
                     Editar
@@ -93,7 +94,7 @@ export const FazendasTable = ({
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => onViewTalhoes(fazenda)}
+                    onClick={() => onViewPlots(farm)}
                   >
                     <Eye className="h-4 w-4 mr-1" />
                     Ver Talhões

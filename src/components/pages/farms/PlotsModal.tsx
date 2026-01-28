@@ -2,57 +2,57 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { Fazenda, Talhao } from "../FarmPage";
-import { TalhaoForm } from "./PlotForm";
-import { TalhoesTable } from "./PlotsTable";
-import { useTalhoesModal } from "./usePlotModal";
+import { Farm, Plot } from "../FarmPage";
+import { PlotForm } from "./PlotForm";
+import { PlotsTable } from "./PlotsTable";
+import { usePlotsModal } from "./usePlotModal";
 
-interface TalhoesModalProps {
+interface PlotsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  fazenda: Fazenda | null;
-  talhaoForm: Talhao;
-  setTalhaoForm: (talhao: Talhao) => void;
-  onAddTalhao: (fazendaId: string) => void;
-  onDeleteTalhao: (fazendaId: string, talhaoId: string) => void;
+  farm: Farm | null;
+  plotForm: Plot;
+  setPlotForm: (plot: Plot) => void;
+  onAddPlot: (farmId: string) => void;
+  onDeletePlot: (farmId: string, plotId: string) => void;
 }
 
-export const TalhoesModal = ({
+export const PlotsModal = ({
   open,
   onOpenChange,
-  fazenda,
-  talhaoForm,
-  setTalhaoForm,
-  onAddTalhao,
-  onDeleteTalhao
-}: TalhoesModalProps) => {
+  farm,
+  plotForm,
+  setPlotForm,
+  onAddPlot,
+  onDeletePlot
+}: PlotsModalProps) => {
   const {
-    showTalhaoForm,
-    setShowTalhaoForm,
-    editingTalhao,
-    handleAddTalhao,
-    handleEditTalhao,
+    showPlotForm,
+    setShowPlotForm,
+    editingPlot,
+    handleAddPlot,
+    handleEditPlot,
     handleCancel
-  } = useTalhoesModal(onAddTalhao, talhaoForm, setTalhaoForm);
+  } = usePlotsModal(onAddPlot, plotForm, setPlotForm);
 
-  if (!fazenda) return null;
+  if (!farm) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl">
         <DialogHeader>
           <DialogTitle>
-            Talhões de {fazenda.nome}
+            Talhões de {farm.name}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <p className="text-sm text-gray-600">
-              {fazenda.talhoes.length} talhão{fazenda.talhoes.length !== 1 ? 'es' : ''} cadastrado{fazenda.talhoes.length !== 1 ? 's' : ''}
+              {farm.plots.length} talhão{farm.plots.length !== 1 ? 'es' : ''} cadastrado{farm.plots.length !== 1 ? 's' : ''}
             </p>
             <Button
-              onClick={() => setShowTalhaoForm(!showTalhaoForm)}
+              onClick={() => setShowPlotForm(!showPlotForm)}
               className="bg-green-600 hover:bg-green-700"
               size="sm"
             >
@@ -61,20 +61,20 @@ export const TalhoesModal = ({
             </Button>
           </div>
 
-          {showTalhaoForm && (
-            <TalhaoForm
-              talhaoForm={talhaoForm}
-              setTalhaoForm={setTalhaoForm}
-              editingTalhao={editingTalhao}
-              onSubmit={(e) => handleAddTalhao(e, fazenda.id)}
+          {showPlotForm && (
+            <PlotForm
+              plotForm={plotForm}
+              setPlotForm={setPlotForm}
+              editingPlot={editingPlot}
+              onSubmit={(e) => handleAddPlot(e, farm.id)}
               onCancel={handleCancel}
             />
           )}
 
-          <TalhoesTable
-            talhoes={fazenda.talhoes}
-            onEditTalhao={handleEditTalhao}
-            onDeleteTalhao={(talhaoId) => onDeleteTalhao(fazenda.id, talhaoId)}
+          <PlotsTable
+            plots={farm.plots}
+            onEditPlot={handleEditPlot}
+            onDeletePlot={(plotId) => onDeletePlot(farm.id, plotId)}
           />
         </div>
       </DialogContent>

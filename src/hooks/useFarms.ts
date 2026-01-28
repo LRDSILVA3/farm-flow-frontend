@@ -62,7 +62,7 @@ const mapPlotFromDB = (db: PlotDB): Plot => ({
   id: db.id,
   name: db.name,
   area: db.area?.toString() || "",
-  status: db.status || "Ativo",
+  status: db.status || "Active",
   city: db.city || "",
   state: db.state || "",
   registration: db.registration || "",
@@ -77,7 +77,7 @@ const mapFarmFromDB = (db: FarmDB, plots: PlotDB[] = []): Farm => ({
   city: db.city || "",
   state: db.state || "",
   contact: db.contact || "",
-  status: db.status || "Ativo",
+  status: db.status || "Active",
   registration: db.registration || "",
   lot: db.lot || "",
   plots: plots.filter(p => p.farm_id === db.id).map(mapPlotFromDB)
@@ -168,7 +168,7 @@ export const useFarms = () => {
           city: farm.city || null,
           state: farm.state || null,
           contact: farm.contact || null,
-          status: farm.status || "Ativo",
+          status: farm.status || "Active",
           registration: farm.registration || null,
           lot: farm.lot || null
         })
@@ -203,7 +203,7 @@ export const useFarms = () => {
           city: farm.city || null,
           state: farm.state || null,
           contact: farm.contact || null,
-          status: farm.status || "Ativo",
+          status: farm.status || "Active",
           registration: farm.registration || null,
           lot: farm.lot || null
         })
@@ -232,7 +232,7 @@ export const useFarms = () => {
           farm_id: farmId,
           name: plot.name,
           area: plot.area ? parseFloat(plot.area) : null,
-          status: plot.status || "Ativo",
+          status: plot.status || "Active",
           city: plot.city || null,
           state: plot.state || null,
           registration: plot.registration || null,

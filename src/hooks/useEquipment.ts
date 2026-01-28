@@ -22,7 +22,7 @@ export const useEquipment = () => {
   const [equipmentFormData, setEquipmentFormData] = useState<Equipment>({
     id: "",
     name: "",
-    status: "Disponível"
+    status: "Available"
   });
 
   const fetchEquipment = async () => {
@@ -40,7 +40,7 @@ export const useEquipment = () => {
       setEquipment(data?.map(e => ({
         id: e.id,
         name: e.name,
-        status: e.status || "Disponível"
+        status: e.status || "Available"
       })) || []);
     }
     setLoading(false);

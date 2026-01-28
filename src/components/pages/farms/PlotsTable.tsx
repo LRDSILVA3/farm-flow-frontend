@@ -2,15 +2,15 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from "lucide-react";
-import { Talhao } from "../FarmPage";
+import { Plot } from "../FarmPage";
 
-interface TalhoesTableProps {
-  talhoes: Talhao[];
-  onEditTalhao: (talhao: Talhao) => void;
-  onDeleteTalhao: (talhaoId: string) => void;
+interface PlotsTableProps {
+  plots: Plot[];
+  onEditPlot: (plot: Plot) => void;
+  onDeletePlot: (plotId: string) => void;
 }
 
-export const TalhoesTable = ({ talhoes, onEditTalhao, onDeleteTalhao }: TalhoesTableProps) => {
+export const PlotsTable = ({ plots, onEditPlot, onDeletePlot }: PlotsTableProps) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Ativo":
@@ -22,7 +22,7 @@ export const TalhoesTable = ({ talhoes, onEditTalhao, onDeleteTalhao }: TalhoesT
     }
   };
 
-  if (talhoes.length === 0) {
+  if (plots.length === 0) {
     return (
       <p className="text-gray-500 text-center py-8">
         Nenhum talhão cadastrado para esta fazenda
@@ -45,17 +45,17 @@ export const TalhoesTable = ({ talhoes, onEditTalhao, onDeleteTalhao }: TalhoesT
         </TableRow>
       </TableHeader>
       <TableBody>
-        {talhoes.map((talhao) => (
-          <TableRow key={talhao.id}>
-            <TableCell className="font-medium">{talhao.nome}</TableCell>
-            <TableCell>{talhao.area}</TableCell>
-            <TableCell>{talhao.cidade}</TableCell>
-            <TableCell>{talhao.estado}</TableCell>
-            <TableCell>{talhao.matricula}</TableCell>
-            <TableCell>{talhao.lote}</TableCell>
+        {plots.map((plot) => (
+          <TableRow key={plot.id}>
+            <TableCell className="font-medium">{plot.name}</TableCell>
+            <TableCell>{plot.area}</TableCell>
+            <TableCell>{plot.city}</TableCell>
+            <TableCell>{plot.state}</TableCell>
+            <TableCell>{plot.registration}</TableCell>
+            <TableCell>{plot.lot}</TableCell>
             <TableCell>
-              <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(talhao.status)}`}>
-                {talhao.status}
+              <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(plot.status)}`}>
+                {plot.status}
               </span>
             </TableCell>
             <TableCell>
@@ -63,14 +63,14 @@ export const TalhoesTable = ({ talhoes, onEditTalhao, onDeleteTalhao }: TalhoesT
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => onEditTalhao(talhao)}
+                  onClick={() => onEditPlot(plot)}
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => onDeleteTalhao(talhao.id)}
+                  onClick={() => onDeletePlot(plot.id)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
