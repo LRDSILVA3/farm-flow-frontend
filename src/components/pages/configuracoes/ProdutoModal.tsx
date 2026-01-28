@@ -4,54 +4,54 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Produto } from "./useProdutos";
+import { Product } from "./../../../hooks/useProducts";
 
-interface ProdutoModalProps {
-  showProdutoForm: boolean;
-  setShowProdutoForm: (value: boolean) => void;
-  editingProduto: Produto | null;
-  produtoFormData: Produto;
-  handleProdutoSubmit: (e: React.FormEvent) => void;
-  resetProdutoForm: () => void;
-  handleProdutoInputChange: (field: keyof Produto, value: string) => void;
+interface ProductModalProps {
+  showProductForm: boolean;
+  setShowProductForm: (value: boolean) => void;
+  editingProduct: Product | null;
+  productFormData: Product;
+  handleProductSubmit: (e: React.FormEvent) => void;
+  resetProductForm: () => void;
+  handleProductInputChange: (field: keyof Product, value: string) => void;
 }
 
-export const ProdutoModal: React.FC<ProdutoModalProps> = ({
-  showProdutoForm,
-  setShowProdutoForm,
-  editingProduto,
-  produtoFormData,
-  handleProdutoSubmit,
-  resetProdutoForm,
-  handleProdutoInputChange
+export const ProdutoModal: React.FC<ProductModalProps> = ({
+  showProductForm,
+  setShowProductForm,
+  editingProduct,
+  productFormData,
+  handleProductSubmit,
+  resetProductForm,
+  handleProductInputChange
 }) => {
   return (
-    <Dialog open={showProdutoForm} onOpenChange={setShowProdutoForm}>
+    <Dialog open={showProductForm} onOpenChange={setShowProductForm}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {editingProduto ? "Editar Produto" : "Novo Produto"}
+            {editingProduct ? "Editar Produto" : "Novo Produto"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleProdutoSubmit} className="space-y-4">
+        <form onSubmit={handleProductSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="produtoNome">Nome do Produto</Label>
+              <Label htmlFor="name">Nome do Produto</Label>
               <Input
-                id="produtoNome"
-                value={produtoFormData.nome}
-                onChange={(e) => handleProdutoInputChange("nome", e.target.value)}
+                id="name"
+                value={productFormData.name}
+                onChange={(e) => handleProductInputChange("name", e.target.value)}
                 required
               />
             </div>
             <div>
-              <Label htmlFor="valorUn">Valor Unitário</Label>
+              <Label htmlFor="unitValue">Valor Unitário</Label>
               <Input
-                id="valorUn"
+                id="unitValue"
                 type="number"
                 step="0.01"
-                value={produtoFormData.valorUn}
-                onChange={(e) => handleProdutoInputChange("valorUn", e.target.value)}
+                value={productFormData.unitValue}
+                onChange={(e) => handleProductInputChange("unitValue", e.target.value)}
                 placeholder="0.00"
                 required
               />
@@ -59,8 +59,8 @@ export const ProdutoModal: React.FC<ProdutoModalProps> = ({
           </div>
           
           <div>
-            <Label htmlFor="produtoStatus">Status</Label>
-            <Select value={produtoFormData.status} onValueChange={(value) => handleProdutoInputChange("status", value)}>
+            <Label htmlFor="status">Status</Label>
+            <Select value={productFormData.status} onValueChange={(value) => handleProductInputChange("status", value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -72,11 +72,11 @@ export const ProdutoModal: React.FC<ProdutoModalProps> = ({
           </div>
           
           <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={resetProdutoForm}>
+            <Button type="button" variant="outline" onClick={resetProductForm}>
               Cancelar
             </Button>
             <Button type="submit" className="bg-green-600 hover:bg-green-700">
-              {editingProduto ? "Atualizar" : "Criar"}
+              {editingProduct ? "Atualizar" : "Criar"}
             </Button>
           </div>
         </form>

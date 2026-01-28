@@ -4,49 +4,49 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Equipamento } from "./useEquipamentos";
+import { Equipment } from "./../../../hooks/useEquipment";
 
-interface EquipamentoModalProps {
-  showEquipamentoForm: boolean;
-  setShowEquipamentoForm: (value: boolean) => void;
-  editingEquipamento: Equipamento | null;
-  equipamentoFormData: Equipamento;
-  handleEquipamentoSubmit: (e: React.FormEvent) => void;
-  resetEquipamentoForm: () => void;
-  handleEquipamentoInputChange: (field: keyof Equipamento, value: string) => void;
+interface EquipmentModalProps {
+  showEquipmentForm: boolean;
+  setShowEquipmentForm: (value: boolean) => void;
+  editingEquipment: Equipment | null;
+  equipmentFormData: Equipment;
+  handleEquipmentSubmit: (e: React.FormEvent) => void;
+  resetEquipmentForm: () => void;
+  handleEquipmentInputChange: (field: keyof Equipment, value: string) => void;
 }
 
-export const EquipamentoModal: React.FC<EquipamentoModalProps> = ({
-  showEquipamentoForm,
-  setShowEquipamentoForm,
-  editingEquipamento,
-  equipamentoFormData,
-  handleEquipamentoSubmit,
-  resetEquipamentoForm,
-  handleEquipamentoInputChange
+export const EquipamentoModal: React.FC<EquipmentModalProps> = ({
+  showEquipmentForm,
+  setShowEquipmentForm,
+  editingEquipment,
+  equipmentFormData,
+  handleEquipmentSubmit,
+  resetEquipmentForm,
+  handleEquipmentInputChange
 }) => {
   return (
-    <Dialog open={showEquipamentoForm} onOpenChange={setShowEquipamentoForm}>
+    <Dialog open={showEquipmentForm} onOpenChange={setShowEquipmentForm}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {editingEquipamento ? "Editar Equipamento" : "Novo Equipamento"}
+            {editingEquipment ? "Editar Equipamento" : "Novo Equipamento"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleEquipamentoSubmit} className="space-y-4">
+        <form onSubmit={handleEquipmentSubmit} className="space-y-4">
           <div>
             <Label htmlFor="equipamentoNome">Nome do Equipamento</Label>
             <Input
               id="equipamentoNome"
-              value={equipamentoFormData.nome}
-              onChange={(e) => handleEquipamentoInputChange("nome", e.target.value)}
+              value={equipmentFormData.name}
+              onChange={(e) => handleEquipmentInputChange("name", e.target.value)}
               required
             />
           </div>
           
           <div>
             <Label htmlFor="equipamentoStatus">Status</Label>
-            <Select value={equipamentoFormData.status} onValueChange={(value) => handleEquipamentoInputChange("status", value)}>
+            <Select value={equipmentFormData.status} onValueChange={(value) => handleEquipmentInputChange("status", value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -60,11 +60,11 @@ export const EquipamentoModal: React.FC<EquipamentoModalProps> = ({
           </div>
           
           <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={resetEquipamentoForm}>
+            <Button type="button" variant="outline" onClick={resetEquipmentForm}>
               Cancelar
             </Button>
             <Button type="submit" className="bg-green-600 hover:bg-green-700">
-              {editingEquipamento ? "Atualizar" : "Criar"}
+              {editingEquipment ? "Atualizar" : "Criar"}
             </Button>
           </div>
         </form>

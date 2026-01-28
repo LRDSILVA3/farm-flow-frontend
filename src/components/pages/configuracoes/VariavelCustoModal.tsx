@@ -4,39 +4,39 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { VariavelCusto } from "./useVariaveisCusto";
+import { CostVariable } from "./../../../hooks/useCostVariables";
 
-interface VariavelCustoModalProps {
-  showVariavelForm: boolean;
-  resetVariavelForm: () => void;
-  editingVariavel: VariavelCusto | null;
-  variavelFormData: VariavelCusto;
-  handleVariavelInputChange: (field: keyof VariavelCusto, value: string | number) => void;
-  handleVariavelSubmit: (e: FormEvent) => void;
+interface CostVariableModalProps {
+  showCostVariableForm: boolean;
+  resetCostVariableForm: () => void;
+  editingCostVariable: CostVariable | null;
+  costVariableFormData: CostVariable;
+  handleCostVariableInputChange: (field: keyof CostVariable, value: string | number) => void;
+  handleCostVariableSubmit: (e: FormEvent) => void;
 }
 
-export const VariavelCustoModal: React.FC<VariavelCustoModalProps> = ({
-  showVariavelForm,
-  resetVariavelForm,
-  editingVariavel,
-  variavelFormData,
-  handleVariavelInputChange,
-  handleVariavelSubmit
+export const VariavelCustoModal: React.FC<CostVariableModalProps> = ({
+  showCostVariableForm,
+  resetCostVariableForm,
+  editingCostVariable,
+  costVariableFormData,
+  handleCostVariableInputChange,
+  handleCostVariableSubmit
 }) => {
   return (
-    <Dialog open={showVariavelForm} onOpenChange={(open) => !open && resetVariavelForm()}>
+    <Dialog open={showCostVariableForm} onOpenChange={(open) => !open && resetCostVariableForm()}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{editingVariavel ? "Editar Variável de Custo" : "Nova Variável de Custo"}</DialogTitle>
+          <DialogTitle>{editingCostVariable ? "Editar Variável de Custo" : "Nova Variável de Custo"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleVariavelSubmit}>
+        <form onSubmit={handleCostVariableSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="nome">Nome</Label>
               <Input
                 id="nome"
-                value={variavelFormData.nome}
-                onChange={(e) => handleVariavelInputChange("nome", e.target.value)}
+                value={costVariableFormData.name}
+                onChange={(e) => handleCostVariableInputChange("name", e.target.value)}
                 placeholder="Ex: Valor por Alqueire"
                 required
               />
@@ -45,8 +45,8 @@ export const VariavelCustoModal: React.FC<VariavelCustoModalProps> = ({
               <Label htmlFor="codigo">Código</Label>
               <Input
                 id="codigo"
-                value={variavelFormData.codigo}
-                onChange={(e) => handleVariavelInputChange("codigo", e.target.value.toLowerCase().replace(/\s+/g, '_'))}
+                value={costVariableFormData.code}
+                onChange={(e) => handleCostVariableInputChange("code", e.target.value.toLowerCase().replace(/\s+/g, '_'))}
                 placeholder="Ex: valor_alqueire"
                 required
               />
@@ -60,8 +60,8 @@ export const VariavelCustoModal: React.FC<VariavelCustoModalProps> = ({
                 id="valor"
                 type="number"
                 step="0.01"
-                value={variavelFormData.valor}
-                onChange={(e) => handleVariavelInputChange("valor", parseFloat(e.target.value) || 0)}
+                value={costVariableFormData.value}
+                onChange={(e) => handleCostVariableInputChange("value", parseFloat(e.target.value) || 0)}
                 placeholder="0.00"
               />
             </div>
@@ -69,19 +69,19 @@ export const VariavelCustoModal: React.FC<VariavelCustoModalProps> = ({
               <Label htmlFor="descricao">Descrição</Label>
               <Textarea
                 id="descricao"
-                value={variavelFormData.descricao}
-                onChange={(e) => handleVariavelInputChange("descricao", e.target.value)}
+                value={costVariableFormData.description}
+                onChange={(e) => handleCostVariableInputChange("description", e.target.value)}
                 placeholder="Descrição da variável e como ela é utilizada"
                 rows={3}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={resetVariavelForm}>
+            <Button type="button" variant="outline" onClick={resetCostVariableForm}>
               Cancelar
             </Button>
             <Button type="submit" className="bg-green-600 hover:bg-green-700">
-              {editingVariavel ? "Salvar" : "Criar"}
+              {editingCostVariable ? "Salvar" : "Criar"}
             </Button>
           </DialogFooter>
         </form>

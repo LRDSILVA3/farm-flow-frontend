@@ -4,44 +4,44 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2 } from "lucide-react";
-import { useGruposServicos } from "./useGruposServicos";
+import { useServiceGroups } from "./../../../hooks/useServiceGroups";
 import { GrupoServicoModal } from "./GrupoServicoModal";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 
 export const GruposServicosTab = () => {
   const {
-    currentGruposServicos,
-    gruposServicosStartIndex,
-    gruposServicosEndIndex,
-    totalGruposServicos,
-    gruposServicosPerPage,
-    setGruposServicosPerPage,
-    gruposServicosPage,
-    setGruposServicosPage,
-    totalGruposServicosPages,
-    handleEditGrupoServico,
-    showGrupoServicoForm,
-    setShowGrupoServicoForm,
-    editingGrupoServico,
-    grupoServicoFormData,
-    handleGrupoServicoSubmit,
-    resetGrupoServicoForm,
-    handleGrupoServicoInputChange,
-    handleDeleteGrupoServico
-  } = useGruposServicos();
+    currentServiceGroups,
+    serviceGroupsStartIndex,
+    serviceGroupsEndIndex,
+    totalServiceGroups,
+    serviceGroupsPerPage,
+    setServiceGroupsPerPage,
+    serviceGroupsPage,
+    setServiceGroupsPage,
+    totalServiceGroupsPages,
+    handleEditServiceGroup,
+    showServiceGroupForm,
+    setShowServiceGroupForm,
+    editingServiceGroup,
+    serviceGroupFormData,
+    handleServiceGroupSubmit,
+    resetServiceGroupForm,
+    handleServiceGroupInputChange,
+    handleDeleteServiceGroup
+  } = useServiceGroups();
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [grupoToDelete, setGrupoToDelete] = useState<string | null>(null);
+  const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
 
   const openDeleteDialog = (id: string) => {
-    setGrupoToDelete(id);
+    setGroupToDelete(id);
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = () => {
-    if (grupoToDelete) {
-      handleDeleteGrupoServico(grupoToDelete);
-      setGrupoToDelete(null);
+    if (groupToDelete) {
+      handleDeleteServiceGroup(groupToDelete);
+      setGroupToDelete(null);
     }
     setDeleteDialogOpen(false);
   };
@@ -55,7 +55,7 @@ export const GruposServicosTab = () => {
         </div>
         <Button 
           className="bg-green-600 hover:bg-green-700"
-          onClick={() => setShowGrupoServicoForm(true)}
+          onClick={() => setShowServiceGroupForm(true)}
         >
           <Plus className="h-4 w-4 mr-2" />
           Novo Grupo
@@ -74,14 +74,14 @@ export const GruposServicosTab = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentGruposServicos.map((grupo) => (
-              <TableRow key={grupo.id}>
-                <TableCell className="font-medium">{grupo.nome}</TableCell>
-                <TableCell>{grupo.descricao}</TableCell>
-                <TableCell>{grupo.servicosIds.length} serviços</TableCell>
+            {currentServiceGroups.map((group) => (
+              <TableRow key={group.id}>
+                <TableCell className="font-medium">{group.name}</TableCell>
+                <TableCell>{group.description}</TableCell>
+                <TableCell>{group.servicesIds.length} serviços</TableCell>
                 <TableCell>
-                  <Badge variant={grupo.status === "Ativo" ? "default" : "secondary"}>
-                    {grupo.status}
+                  <Badge variant={group.status === "Ativo" ? "default" : "secondary"}>
+                    {group.status}
                   </Badge>
                 </TableCell>
                 <TableCell>
@@ -89,14 +89,14 @@ export const GruposServicosTab = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleEditGrupoServico(grupo)}
+                      onClick={() => handleEditServiceGroup(group)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => openDeleteDialog(grupo.id)}
+                      onClick={() => openDeleteDialog(group.id)}
                       className="text-destructive hover:text-destructive"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -109,28 +109,28 @@ export const GruposServicosTab = () => {
         </Table>
       </div>
 
-      {totalGruposServicos > gruposServicosPerPage && (
+      {totalServiceGroups > serviceGroupsPerPage && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-600">
-            Mostrando {gruposServicosStartIndex + 1} a {Math.min(gruposServicosEndIndex, totalGruposServicos)} de {totalGruposServicos} grupos
+            Mostrando {serviceGroupsStartIndex + 1} a {Math.min(serviceGroupsEndIndex, totalServiceGroups)} de {totalServiceGroups} grupos
           </p>
           <div className="flex items-center space-x-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setGruposServicosPage(Math.max(1, gruposServicosPage - 1))}
-              disabled={gruposServicosPage === 1}
+              onClick={() => setServiceGroupsPage(Math.max(1, serviceGroupsPage - 1))}
+              disabled={serviceGroupsPage === 1}
             >
               Anterior
             </Button>
             <span className="text-sm">
-              Página {gruposServicosPage} de {totalGruposServicosPages}
+              Página {serviceGroupsPage} de {totalServiceGroupsPages}
             </span>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setGruposServicosPage(Math.min(totalGruposServicosPages, gruposServicosPage + 1))}
-              disabled={gruposServicosPage === totalGruposServicosPages}
+              onClick={() => setServiceGroupsPage(Math.min(totalServiceGroupsPages, serviceGroupsPage + 1))}
+              disabled={serviceGroupsPage === totalServiceGroupsPages}
             >
               Próxima
             </Button>
@@ -139,13 +139,13 @@ export const GruposServicosTab = () => {
       )}
 
       <GrupoServicoModal
-        showGrupoServicoForm={showGrupoServicoForm}
-        setShowGrupoServicoForm={setShowGrupoServicoForm}
-        editingGrupoServico={editingGrupoServico}
-        grupoServicoFormData={grupoServicoFormData}
-        handleGrupoServicoSubmit={handleGrupoServicoSubmit}
-        resetGrupoServicoForm={resetGrupoServicoForm}
-        handleGrupoServicoInputChange={handleGrupoServicoInputChange}
+        showGrupoServicoForm={showServiceGroupForm}
+        setShowGrupoServicoForm={setShowServiceGroupForm}
+        editingGrupoServico={editingServiceGroup}
+        grupoServicoFormData={serviceGroupFormData}
+        handleGrupoServicoSubmit={handleServiceGroupSubmit}
+        resetGrupoServicoForm={resetServiceGroupForm}
+        handleGrupoServicoInputChange={handleServiceGroupInputChange}
       />
 
       <DeleteConfirmDialog

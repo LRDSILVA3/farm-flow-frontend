@@ -4,44 +4,44 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AnaliseConfig } from "./useAnalises";
+import { Analysis } from "./../../../hooks/useAnalyses";
 
-interface AnaliseModalProps {
-  showAnaliseForm: boolean;
-  setShowAnaliseForm: (show: boolean) => void;
-  editingAnalise: AnaliseConfig | null;
-  analiseFormData: AnaliseConfig;
-  handleAnaliseInputChange: (field: keyof AnaliseConfig, value: string | number) => void;
-  handleAnaliseSubmit: (e: React.FormEvent) => void;
-  resetAnaliseForm: () => void;
+interface AnalysisModalProps {
+  showAnalysisForm: boolean;
+  setShowAnalysisForm: (show: boolean) => void;
+  editingAnalysis: Analysis | null;
+  analysisFormData: Analysis;
+  handleAnalysisInputChange: (field: keyof Analysis, value: string | number) => void;
+  handleAnalysisSubmit: (e: React.FormEvent) => void;
+  resetAnalysisForm: () => void;
 }
 
 const tiposAnalise = ["Macro", "Macro+S", "Macro+S+P_rem", "Foliar", "Compactação"];
 const colaboradoresDisponiveis = ["Laboratorio 1", "Laboratorio 2"];
 
 export const AnaliseModal = ({
-  showAnaliseForm,
-  setShowAnaliseForm,
-  editingAnalise,
-  analiseFormData,
-  handleAnaliseInputChange,
-  handleAnaliseSubmit,
-  resetAnaliseForm
-}: AnaliseModalProps) => {
+  showAnalysisForm,
+  setShowAnalysisForm,
+  editingAnalysis,
+  analysisFormData,
+  handleAnalysisInputChange,
+  handleAnalysisSubmit,
+  resetAnalysisForm
+}: AnalysisModalProps) => {
   return (
-    <Dialog open={showAnaliseForm} onOpenChange={setShowAnaliseForm}>
+    <Dialog open={showAnalysisForm} onOpenChange={setShowAnalysisForm}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
-            {editingAnalise ? "Editar Análise" : "Nova Análise"}
+            {editingAnalysis ? "Editar Análise" : "Nova Análise"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleAnaliseSubmit} className="space-y-4">
+        <form onSubmit={handleAnalysisSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="nome">Nome</Label>
             <Select
-              value={analiseFormData.nome}
-              onValueChange={(value) => handleAnaliseInputChange("nome", value)}
+              value={analysisFormData.name}
+              onValueChange={(value) => handleAnalysisInputChange("name", value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o tipo de análise" />
@@ -57,8 +57,8 @@ export const AnaliseModal = ({
           <div className="space-y-2">
             <Label htmlFor="tipo">Tipo</Label>
             <Select
-              value={analiseFormData.tipo}
-              onValueChange={(value) => handleAnaliseInputChange("tipo", value)}
+              value={analysisFormData.type}
+              onValueChange={(value) => handleAnalysisInputChange("type", value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o tipo" />
@@ -73,8 +73,8 @@ export const AnaliseModal = ({
           <div className="space-y-2">
             <Label htmlFor="colaborador">Colaborador</Label>
             <Select
-              value={analiseFormData.colaborador}
-              onValueChange={(value) => handleAnaliseInputChange("colaborador", value)}
+              value={analysisFormData.collaborator}
+              onValueChange={(value) => handleAnalysisInputChange("collaborator", value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o colaborador" />
@@ -92,8 +92,8 @@ export const AnaliseModal = ({
             <Input
               id="prazo"
               type="number"
-              value={analiseFormData.prazo}
-              onChange={(e) => handleAnaliseInputChange("prazo", parseInt(e.target.value))}
+              value={analysisFormData.deadline}
+              onChange={(e) => handleAnalysisInputChange("deadline", parseInt(e.target.value))}
               required
             />
           </div>
@@ -102,8 +102,8 @@ export const AnaliseModal = ({
             <Label htmlFor="valor">Valor</Label>
             <Input
               id="valor"
-              value={analiseFormData.valor}
-              onChange={(e) => handleAnaliseInputChange("valor", e.target.value)}
+              value={analysisFormData.value}
+              onChange={(e) => handleAnalysisInputChange("value", e.target.value)}
               placeholder="0.00"
               required
             />
@@ -112,8 +112,8 @@ export const AnaliseModal = ({
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
             <Select
-              value={analiseFormData.status}
-              onValueChange={(value) => handleAnaliseInputChange("status", value)}
+              value={analysisFormData.status}
+              onValueChange={(value) => handleAnalysisInputChange("status", value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o status" />
@@ -126,11 +126,11 @@ export const AnaliseModal = ({
           </div>
 
           <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={resetAnaliseForm}>
+            <Button type="button" variant="outline" onClick={resetAnalysisForm}>
               Cancelar
             </Button>
             <Button type="submit" className="bg-green-600 hover:bg-green-700">
-              {editingAnalise ? "Atualizar" : "Criar"}
+              {editingAnalysis ? "Atualizar" : "Criar"}
             </Button>
           </div>
         </form>

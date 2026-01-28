@@ -5,50 +5,50 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit, Trash2 } from "lucide-react";
-import { VariavelCusto } from "./useVariaveisCusto";
+import { CostVariable } from "./../../../hooks/useCostVariables";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 
-interface VariaveisCustoTabProps {
-  currentVariaveis: VariavelCusto[];
-  variaveisStartIndex: number;
-  variaveisEndIndex: number;
-  totalVariaveis: number;
-  variaveisPerPage: number;
-  setVariaveisPerPage: (value: number) => void;
-  variaveisPage: number;
-  setVariaveisPage: (value: number) => void;
-  totalVariaveisPages: number;
-  setShowVariavelForm: (value: boolean) => void;
-  handleEditVariavel: (variavel: VariavelCusto) => void;
-  handleDeleteVariavel: (id: string) => void;
+interface CostVariablesTabProps {
+  costVariables: CostVariable[];
+  costVariablesStartIndex: number;
+  costVariablesEndIndex: number;
+  totalCostVariables: number;
+  costVariablesPerPage: number;
+  setCostVariablesPerPage: (value: number) => void;
+  costVariablesPage: number;
+  setCostVariablesPage: (value: number) => void;
+  totalCostVariablesPages: number;
+  setShowCostVariableForm: (value: boolean) => void;
+  handleEditCostVariable: (variable: CostVariable) => void;
+  handleDeleteCostVariable: (id: string) => void;
 }
 
-export const VariaveisCustoTab: React.FC<VariaveisCustoTabProps> = ({
-  currentVariaveis,
-  variaveisStartIndex,
-  variaveisEndIndex,
-  totalVariaveis,
-  variaveisPerPage,
-  setVariaveisPerPage,
-  variaveisPage,
-  setVariaveisPage,
-  totalVariaveisPages,
-  setShowVariavelForm,
-  handleEditVariavel,
-  handleDeleteVariavel
+export const VariaveisCustoTab: React.FC<CostVariablesTabProps> = ({
+  costVariables,
+  costVariablesStartIndex,
+  costVariablesEndIndex,
+  totalCostVariables,
+  costVariablesPerPage,
+  setCostVariablesPerPage,
+  costVariablesPage,
+  setCostVariablesPage,
+  totalCostVariablesPages,
+  setShowCostVariableForm,
+  handleEditCostVariable,
+  handleDeleteCostVariable
 }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [variavelToDelete, setVariavelToDelete] = useState<string | null>(null);
+  const [variableToDelete, setVariableToDelete] = useState<string | null>(null);
 
   const openDeleteDialog = (id: string) => {
-    setVariavelToDelete(id);
+    setVariableToDelete(id);
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = () => {
-    if (variavelToDelete) {
-      handleDeleteVariavel(variavelToDelete);
-      setVariavelToDelete(null);
+    if (variableToDelete) {
+      handleDeleteCostVariable(variableToDelete);
+      setVariableToDelete(null);
     }
     setDeleteDialogOpen(false);
   };
@@ -67,7 +67,7 @@ export const VariaveisCustoTab: React.FC<VariaveisCustoTabProps> = ({
           <CardTitle>Variáveis de Custo</CardTitle>
           <Button 
             className="bg-green-600 hover:bg-green-700"
-            onClick={() => setShowVariavelForm(true)}
+            onClick={() => setShowCostVariableForm(true)}
           >
             <Plus className="h-4 w-4 mr-2" />
             Nova Variável
@@ -86,29 +86,29 @@ export const VariaveisCustoTab: React.FC<VariaveisCustoTabProps> = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {currentVariaveis.map((variavel) => (
-                  <TableRow key={variavel.id}>
-                    <TableCell className="font-medium">{variavel.nome}</TableCell>
+                {costVariables.map((variable) => (
+                  <TableRow key={variable.id}>
+                    <TableCell className="font-medium">{variable.name}</TableCell>
                     <TableCell>
                       <code className="px-2 py-1 rounded bg-muted text-xs">
-                        {variavel.codigo}
+                        {variable.code}
                       </code>
                     </TableCell>
-                    <TableCell>{formatCurrency(variavel.valor)}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{variavel.descricao}</TableCell>
+                    <TableCell>{formatCurrency(variable.value)}</TableCell>
+                    <TableCell className="max-w-[200px] truncate">{variable.description}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => handleEditVariavel(variavel)}
+                          onClick={() => handleEditCostVariable(variable)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => openDeleteDialog(variavel.id)}
+                          onClick={() => openDeleteDialog(variable.id)}
                           className="text-destructive hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -123,11 +123,11 @@ export const VariaveisCustoTab: React.FC<VariaveisCustoTabProps> = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-muted-foreground">
-                  Mostrando {variaveisStartIndex + 1} a {Math.min(variaveisEndIndex, totalVariaveis)} de {totalVariaveis} variáveis
+                  Mostrando {costVariablesStartIndex + 1} a {Math.min(costVariablesEndIndex, totalCostVariables)} de {totalCostVariables} variáveis
                 </span>
-                <Select value={variaveisPerPage.toString()} onValueChange={(value) => {
-                  setVariaveisPerPage(Number(value));
-                  setVariaveisPage(1);
+                <Select value={costVariablesPerPage.toString()} onValueChange={(value) => {
+                  setCostVariablesPerPage(Number(value));
+                  setCostVariablesPage(1);
                 }}>
                   <SelectTrigger className="w-20">
                     <SelectValue />
@@ -142,21 +142,21 @@ export const VariaveisCustoTab: React.FC<VariaveisCustoTabProps> = ({
                 <span className="text-sm text-muted-foreground">por página</span>
               </div>
               
-              {totalVariaveisPages > 1 && (
+              {totalCostVariablesPages > 1 && (
                 <Pagination>
                   <PaginationContent>
                     <PaginationItem>
                       <PaginationPrevious 
-                        onClick={() => setVariaveisPage(Math.max(1, variaveisPage - 1))}
-                        className={variaveisPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        onClick={() => setCostVariablesPage(Math.max(1, costVariablesPage - 1))}
+                        className={costVariablesPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                       />
                     </PaginationItem>
                     
-                    {Array.from({ length: totalVariaveisPages }, (_, i) => i + 1).map((page) => (
+                    {Array.from({ length: totalCostVariablesPages }, (_, i) => i + 1).map((page) => (
                       <PaginationItem key={page}>
                         <PaginationLink
-                          onClick={() => setVariaveisPage(page)}
-                          isActive={variaveisPage === page}
+                          onClick={() => setCostVariablesPage(page)}
+                          isActive={costVariablesPage === page}
                           className="cursor-pointer"
                         >
                           {page}
@@ -166,8 +166,8 @@ export const VariaveisCustoTab: React.FC<VariaveisCustoTabProps> = ({
                     
                     <PaginationItem>
                       <PaginationNext 
-                        onClick={() => setVariaveisPage(Math.min(totalVariaveisPages, variaveisPage + 1))}
-                        className={variaveisPage === totalVariaveisPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        onClick={() => setCostVariablesPage(Math.min(totalCostVariablesPages, costVariablesPage + 1))}
+                        className={costVariablesPage === totalCostVariablesPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                       />
                     </PaginationItem>
                   </PaginationContent>

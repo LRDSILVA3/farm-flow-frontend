@@ -5,16 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { GrupoServico } from "./useGruposServicos";
+import { ServiceGroup } from "./../../../hooks/useServiceGroups";
 
 interface GrupoServicoModalProps {
   showGrupoServicoForm: boolean;
   setShowGrupoServicoForm: (value: boolean) => void;
-  editingGrupoServico: GrupoServico | null;
-  grupoServicoFormData: GrupoServico;
+  editingGrupoServico: ServiceGroup | null;
+  grupoServicoFormData: ServiceGroup;
   handleGrupoServicoSubmit: (e: React.FormEvent) => void;
   resetGrupoServicoForm: () => void;
-  handleGrupoServicoInputChange: (field: keyof GrupoServico, value: string | string[]) => void;
+  handleGrupoServicoInputChange: (field: keyof ServiceGroup, value: string | string[]) => void;
 }
 
 export const GrupoServicoModal: React.FC<GrupoServicoModalProps> = ({
@@ -36,9 +36,9 @@ export const GrupoServicoModal: React.FC<GrupoServicoModalProps> = ({
 
   const handleServicoChange = (servicoId: string, checked: boolean) => {
     if (checked) {
-      handleGrupoServicoInputChange("servicosIds", [...grupoServicoFormData.servicosIds, servicoId]);
+      handleGrupoServicoInputChange("servicesIds", [...grupoServicoFormData.servicesIds, servicoId]);
     } else {
-      handleGrupoServicoInputChange("servicosIds", grupoServicoFormData.servicosIds.filter(id => id !== servicoId));
+      handleGrupoServicoInputChange("servicesIds", grupoServicoFormData.servicesIds.filter(id => id !== servicoId));
     }
   };
 
@@ -56,8 +56,8 @@ export const GrupoServicoModal: React.FC<GrupoServicoModalProps> = ({
               <Label htmlFor="nome">Nome do Grupo</Label>
               <Input
                 id="nome"
-                value={grupoServicoFormData.nome}
-                onChange={(e) => handleGrupoServicoInputChange("nome", e.target.value)}
+                value={grupoServicoFormData.name}
+                onChange={(e) => handleGrupoServicoInputChange("name", e.target.value)}
                 required
               />
             </div>
@@ -79,8 +79,8 @@ export const GrupoServicoModal: React.FC<GrupoServicoModalProps> = ({
             <Label htmlFor="descricao">Descrição</Label>
             <Input
               id="descricao"
-              value={grupoServicoFormData.descricao}
-              onChange={(e) => handleGrupoServicoInputChange("descricao", e.target.value)}
+              value={grupoServicoFormData.description}
+              onChange={(e) => handleGrupoServicoInputChange("description", e.target.value)}
               placeholder="Ex: Pacote completo de serviços"
             />
           </div>
@@ -92,7 +92,7 @@ export const GrupoServicoModal: React.FC<GrupoServicoModalProps> = ({
                 <div key={servico.id} className="flex items-center space-x-2">
                   <Checkbox
                     id={`servico-${servico.id}`}
-                    checked={grupoServicoFormData.servicosIds.includes(servico.id)}
+                    checked={grupoServicoFormData.servicesIds.includes(servico.id)}
                     onCheckedChange={(checked) => handleServicoChange(servico.id, checked as boolean)}
                   />
                   <Label htmlFor={`servico-${servico.id}`}>{servico.nome}</Label>

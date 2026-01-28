@@ -4,42 +4,42 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Colaborador } from "./useColaboradores";
+import { Collaborator } from "./../../../hooks/useCollaborators";
 
-interface ColaboradorModalProps {
-  showColaboradorForm: boolean;
-  setShowColaboradorForm: (show: boolean) => void;
-  editingColaborador: Colaborador | null;
-  colaboradorFormData: Colaborador;
-  handleColaboradorInputChange: (field: keyof Colaborador, value: string) => void;
-  handleColaboradorSubmit: (e: React.FormEvent) => void;
-  resetColaboradorForm: () => void;
+interface CollaboratorModalProps {
+  showCollaboratorForm: boolean;
+  setShowCollaboratorForm: (show: boolean) => void;
+  editingCollaborator: Collaborator | null;
+  collaboratorFormData: Collaborator;
+  handleCollaboratorInputChange: (field: keyof Collaborator, value: string) => void;
+  handleCollaboratorSubmit: (e: React.FormEvent) => void;
+  resetCollaboratorForm: () => void;
 }
 
 export const ColaboradorModal = ({
-  showColaboradorForm,
-  setShowColaboradorForm,
-  editingColaborador,
-  colaboradorFormData,
-  handleColaboradorInputChange,
-  handleColaboradorSubmit,
-  resetColaboradorForm
-}: ColaboradorModalProps) => {
+  showCollaboratorForm,
+  setShowCollaboratorForm,
+  editingCollaborator,
+  collaboratorFormData,
+  handleCollaboratorInputChange,
+  handleCollaboratorSubmit,
+  resetCollaboratorForm
+}: CollaboratorModalProps) => {
   return (
-    <Dialog open={showColaboradorForm} onOpenChange={setShowColaboradorForm}>
+    <Dialog open={showCollaboratorForm} onOpenChange={setShowCollaboratorForm}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
-            {editingColaborador ? "Editar Colaborador" : "Novo Colaborador"}
+            {editingCollaborator ? "Editar Colaborador" : "Novo Colaborador"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleColaboradorSubmit} className="space-y-4">
+        <form onSubmit={handleCollaboratorSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="nome">Nome</Label>
             <Input
               id="nome"
-              value={colaboradorFormData.nome}
-              onChange={(e) => handleColaboradorInputChange("nome", e.target.value)}
+              value={collaboratorFormData.name}
+              onChange={(e) => handleCollaboratorInputChange("name", e.target.value)}
               required
             />
           </div>
@@ -48,8 +48,8 @@ export const ColaboradorModal = ({
             <Label htmlFor="endereco">Endereço</Label>
             <Input
               id="endereco"
-              value={colaboradorFormData.endereco}
-              onChange={(e) => handleColaboradorInputChange("endereco", e.target.value)}
+              value={collaboratorFormData.address}
+              onChange={(e) => handleCollaboratorInputChange("address", e.target.value)}
               required
             />
           </div>
@@ -57,8 +57,8 @@ export const ColaboradorModal = ({
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
             <Select
-              value={colaboradorFormData.status}
-              onValueChange={(value) => handleColaboradorInputChange("status", value)}
+              value={collaboratorFormData.status}
+              onValueChange={(value) => handleCollaboratorInputChange("status", value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o status" />
@@ -71,11 +71,11 @@ export const ColaboradorModal = ({
           </div>
 
           <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={resetColaboradorForm}>
+            <Button type="button" variant="outline" onClick={resetCollaboratorForm}>
               Cancelar
             </Button>
             <Button type="submit" className="bg-green-600 hover:bg-green-700">
-              {editingColaborador ? "Atualizar" : "Criar"}
+              {editingCollaborator ? "Atualizar" : "Criar"}
             </Button>
           </div>
         </form>

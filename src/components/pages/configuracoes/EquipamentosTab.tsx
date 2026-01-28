@@ -6,50 +6,50 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit, Trash2 } from "lucide-react";
-import { Equipamento } from "./useEquipamentos";
+import { Equipment } from "./../../../hooks/useEquipment";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 
-interface EquipamentosTabProps {
-  currentEquipamentos: Equipamento[];
-  equipamentosStartIndex: number;
-  equipamentosEndIndex: number;
-  totalEquipamentos: number;
-  equipamentosPerPage: number;
-  setEquipamentosPerPage: (value: number) => void;
-  equipamentosPage: number;
-  setEquipamentosPage: (value: number) => void;
-  totalEquipamentosPages: number;
-  setShowEquipamentoForm: (value: boolean) => void;
-  handleEditEquipamento: (equipamento: Equipamento) => void;
-  handleDeleteEquipamento: (id: string) => void;
+interface EquipmentsTabProps {
+  equipment: Equipment[];
+  equipmentStartIndex: number;
+  equipmentEndIndex: number;
+  totalEquipment: number;
+  equipmentPerPage: number;
+  setEquipmentPerPage: (value: number) => void;
+  equipmentPage: number;
+  setEquipmentPage: (value: number) => void;
+  totalEquipmentPages: number;
+  setShowEquipmentForm: (value: boolean) => void;
+  handleEditEquipment: (equipment: Equipment) => void;
+  handleDeleteEquipment: (id: string) => void;
 }
 
-export const EquipamentosTab: React.FC<EquipamentosTabProps> = ({
-  currentEquipamentos,
-  equipamentosStartIndex,
-  equipamentosEndIndex,
-  totalEquipamentos,
-  equipamentosPerPage,
-  setEquipamentosPerPage,
-  equipamentosPage,
-  setEquipamentosPage,
-  totalEquipamentosPages,
-  setShowEquipamentoForm,
-  handleEditEquipamento,
-  handleDeleteEquipamento
+export const EquipamentosTab: React.FC<EquipmentsTabProps> = ({
+  equipment,
+  equipmentStartIndex,
+  equipmentEndIndex,
+  totalEquipment,
+  equipmentPerPage,
+  setEquipmentPerPage,
+  equipmentPage,
+  setEquipmentPage,
+  totalEquipmentPages,
+  setShowEquipmentForm,
+  handleEditEquipment,
+  handleDeleteEquipment
 }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [equipamentoToDelete, setEquipamentoToDelete] = useState<string | null>(null);
+  const [equipmentToDelete, setEquipmentToDelete] = useState<string | null>(null);
 
   const openDeleteDialog = (id: string) => {
-    setEquipamentoToDelete(id);
+    setEquipmentToDelete(id);
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = () => {
-    if (equipamentoToDelete) {
-      handleDeleteEquipamento(equipamentoToDelete);
-      setEquipamentoToDelete(null);
+    if (equipmentToDelete) {
+      handleDeleteEquipment(equipmentToDelete);
+      setEquipmentToDelete(null);
     }
     setDeleteDialogOpen(false);
   };
@@ -61,7 +61,7 @@ export const EquipamentosTab: React.FC<EquipamentosTabProps> = ({
           <CardTitle>Equipamentos</CardTitle>
           <Button 
             className="bg-green-600 hover:bg-green-700"
-            onClick={() => setShowEquipamentoForm(true)}
+            onClick={() => setShowEquipmentForm(true)}
           >
             <Plus className="h-4 w-4 mr-2" />
             Novo Equipamento
@@ -78,16 +78,16 @@ export const EquipamentosTab: React.FC<EquipamentosTabProps> = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {currentEquipamentos.map((equipamento) => (
-                  <TableRow key={equipamento.id}>
-                    <TableCell className="font-medium">{equipamento.nome}</TableCell>
+                {equipment.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs ${
-                        equipamento.status === "Disponível" 
+                        item.status === "Disponível" 
                           ? "bg-green-100 text-green-800" 
                           : "bg-orange-100 text-orange-800"
                       }`}>
-                        {equipamento.status}
+                        {item.status}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -95,14 +95,14 @@ export const EquipamentosTab: React.FC<EquipamentosTabProps> = ({
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => handleEditEquipamento(equipamento)}
+                          onClick={() => handleEditEquipment(item)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => openDeleteDialog(equipamento.id)}
+                          onClick={() => openDeleteDialog(item.id)}
                           className="text-destructive hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -117,11 +117,11 @@ export const EquipamentosTab: React.FC<EquipamentosTabProps> = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600">
-                  Mostrando {equipamentosStartIndex + 1} a {Math.min(equipamentosEndIndex, totalEquipamentos)} de {totalEquipamentos} equipamentos
+                  Mostrando {equipmentStartIndex + 1} a {Math.min(equipmentEndIndex, totalEquipment)} de {totalEquipment} equipamentos
                 </span>
-                <Select value={equipamentosPerPage.toString()} onValueChange={(value) => {
-                  setEquipamentosPerPage(Number(value));
-                  setEquipamentosPage(1);
+                <Select value={equipmentPerPage.toString()} onValueChange={(value) => {
+                  setEquipmentPerPage(Number(value));
+                  setEquipmentPage(1);
                 }}>
                   <SelectTrigger className="w-20">
                     <SelectValue />
@@ -136,21 +136,21 @@ export const EquipamentosTab: React.FC<EquipamentosTabProps> = ({
                 <span className="text-sm text-gray-600">por página</span>
               </div>
               
-              {totalEquipamentosPages > 1 && (
+              {totalEquipmentPages > 1 && (
                 <Pagination>
                   <PaginationContent>
                     <PaginationItem>
                       <PaginationPrevious 
-                        onClick={() => setEquipamentosPage(Math.max(1, equipamentosPage - 1))}
-                        className={equipamentosPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        onClick={() => setEquipmentPage(Math.max(1, equipmentPage - 1))}
+                        className={equipmentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                       />
                     </PaginationItem>
                     
-                    {Array.from({ length: totalEquipamentosPages }, (_, i) => i + 1).map((page) => (
+                    {Array.from({ length: totalEquipmentPages }, (_, i) => i + 1).map((page) => (
                       <PaginationItem key={page}>
                         <PaginationLink
-                          onClick={() => setEquipamentosPage(page)}
-                          isActive={equipamentosPage === page}
+                          onClick={() => setEquipmentPage(page)}
+                          isActive={equipmentPage === page}
                           className="cursor-pointer"
                         >
                           {page}
@@ -160,8 +160,8 @@ export const EquipamentosTab: React.FC<EquipamentosTabProps> = ({
                     
                     <PaginationItem>
                       <PaginationNext 
-                        onClick={() => setEquipamentosPage(Math.min(totalEquipamentosPages, equipamentosPage + 1))}
-                        className={equipamentosPage === totalEquipamentosPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        onClick={() => setEquipmentPage(Math.min(totalEquipmentPages, equipmentPage + 1))}
+                        className={equipmentPage === totalEquipmentPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                       />
                     </PaginationItem>
                   </PaginationContent>

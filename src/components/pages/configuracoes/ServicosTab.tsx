@@ -7,50 +7,50 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Plus, Edit, Trash2, Lock } from "lucide-react";
-import { Servico } from "./useServicos";
+import { Service } from "./../../../hooks/useServices";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 
-interface ServicosTabProps {
-  currentServicos: Servico[];
-  servicosStartIndex: number;
-  servicosEndIndex: number;
-  totalServicos: number;
-  servicosPerPage: number;
-  setServicosPerPage: (value: number) => void;
-  servicosPage: number;
-  setServicosPage: (value: number) => void;
-  totalServicosPages: number;
-  setShowServicoForm: (value: boolean) => void;
-  handleEditServico: (servico: Servico) => void;
-  handleDeleteServico: (id: string) => void;
+interface ServicesTabProps {
+  services: Service[];
+  servicesStartIndex: number;
+  servicesEndIndex: number;
+  totalServices: number;
+  servicesPerPage: number;
+  setServicesPerPage: (value: number) => void;
+  servicesPage: number;
+  setServicesPage: (value: number) => void;
+  totalServicesPages: number;
+  setShowServiceForm: (value: boolean) => void;
+  handleEditService: (service: Service) => void;
+  handleDeleteService: (id: string) => void;
 }
 
-export const ServicosTab: React.FC<ServicosTabProps> = ({
-  currentServicos,
-  servicosStartIndex,
-  servicosEndIndex,
-  totalServicos,
-  servicosPerPage,
-  setServicosPerPage,
-  servicosPage,
-  setServicosPage,
-  totalServicosPages,
-  setShowServicoForm,
-  handleEditServico,
-  handleDeleteServico
+export const ServicosTab: React.FC<ServicesTabProps> = ({
+  services,
+  servicesStartIndex,
+  servicesEndIndex,
+  totalServices,
+  servicesPerPage,
+  setServicesPerPage,
+  servicesPage,
+  setServicesPage,
+  totalServicesPages,
+  setShowServiceForm,
+  handleEditService,
+  handleDeleteService
 }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [servicoToDelete, setServicoToDelete] = useState<string | null>(null);
+  const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
 
   const openDeleteDialog = (id: string) => {
-    setServicoToDelete(id);
+    setServiceToDelete(id);
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = () => {
-    if (servicoToDelete) {
-      handleDeleteServico(servicoToDelete);
-      setServicoToDelete(null);
+    if (serviceToDelete) {
+      handleDeleteService(serviceToDelete);
+      setServiceToDelete(null);
     }
     setDeleteDialogOpen(false);
   };
@@ -62,7 +62,7 @@ export const ServicosTab: React.FC<ServicosTabProps> = ({
           <CardTitle>Serviços</CardTitle>
           <Button 
             className="bg-green-600 hover:bg-green-700"
-            onClick={() => setShowServicoForm(true)}
+            onClick={() => setShowServiceForm(true)}
           >
             <Plus className="h-4 w-4 mr-2" />
             Novo Serviço
@@ -81,12 +81,12 @@ export const ServicosTab: React.FC<ServicosTabProps> = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {currentServicos.map((servico) => (
-                  <TableRow key={servico.id}>
+                {services.map((service) => (
+                  <TableRow key={service.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
-                        {servico.nome}
-                        {servico.isFixed && (
+                        {service.name}
+                        {service.isFixed && (
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger>
@@ -100,23 +100,23 @@ export const ServicosTab: React.FC<ServicosTabProps> = ({
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>R$ {servico.valorAlqueire}</TableCell>
+                    <TableCell>R$ {service.valuePerAlqueire}</TableCell>
                     <TableCell>
                       <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                        {servico.status}
+                        {service.status}
                       </span>
                     </TableCell>
-                    <TableCell>{servico.produtos}</TableCell>
+                    <TableCell>{service.products}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => handleEditServico(servico)}
+                          onClick={() => handleEditService(service)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        {servico.isFixed ? (
+                        {service.isFixed ? (
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -138,7 +138,7 @@ export const ServicosTab: React.FC<ServicosTabProps> = ({
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => openDeleteDialog(servico.id)}
+                            onClick={() => openDeleteDialog(service.id)}
                             className="text-destructive hover:text-destructive"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -154,11 +154,11 @@ export const ServicosTab: React.FC<ServicosTabProps> = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600">
-                  Mostrando {servicosStartIndex + 1} a {Math.min(servicosEndIndex, totalServicos)} de {totalServicos} serviços
+                  Mostrando {servicesStartIndex + 1} a {Math.min(servicesEndIndex, totalServices)} de {totalServices} serviços
                 </span>
-                <Select value={servicosPerPage.toString()} onValueChange={(value) => {
-                  setServicosPerPage(Number(value));
-                  setServicosPage(1);
+                <Select value={servicesPerPage.toString()} onValueChange={(value) => {
+                  setServicesPerPage(Number(value));
+                  setServicesPage(1);
                 }}>
                   <SelectTrigger className="w-20">
                     <SelectValue />
@@ -173,21 +173,21 @@ export const ServicosTab: React.FC<ServicosTabProps> = ({
                 <span className="text-sm text-gray-600">por página</span>
               </div>
               
-              {totalServicosPages > 1 && (
+              {totalServicesPages > 1 && (
                 <Pagination>
                   <PaginationContent>
                     <PaginationItem>
                       <PaginationPrevious 
-                        onClick={() => setServicosPage(Math.max(1, servicosPage - 1))}
-                        className={servicosPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        onClick={() => setServicesPage(Math.max(1, servicesPage - 1))}
+                        className={servicesPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                       />
                     </PaginationItem>
                     
-                    {Array.from({ length: totalServicosPages }, (_, i) => i + 1).map((page) => (
+                    {Array.from({ length: totalServicesPages }, (_, i) => i + 1).map((page) => (
                       <PaginationItem key={page}>
                         <PaginationLink
-                          onClick={() => setServicosPage(page)}
-                          isActive={servicosPage === page}
+                          onClick={() => setServicesPage(page)}
+                          isActive={servicesPage === page}
                           className="cursor-pointer"
                         >
                           {page}
@@ -197,8 +197,8 @@ export const ServicosTab: React.FC<ServicosTabProps> = ({
                     
                     <PaginationItem>
                       <PaginationNext 
-                        onClick={() => setServicosPage(Math.min(totalServicosPages, servicosPage + 1))}
-                        className={servicosPage === totalServicosPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        onClick={() => setServicesPage(Math.min(totalServicesPages, servicesPage + 1))}
+                        className={servicesPage === totalServicesPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                       />
                     </PaginationItem>
                   </PaginationContent>

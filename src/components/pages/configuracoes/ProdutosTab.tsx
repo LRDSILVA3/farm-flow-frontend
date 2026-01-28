@@ -6,50 +6,50 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit, Trash2 } from "lucide-react";
-import { Produto } from "./useProdutos";
+import { Product } from "./../../../hooks/useProducts";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 
-interface ProdutosTabProps {
-  currentProdutos: Produto[];
-  produtosStartIndex: number;
-  produtosEndIndex: number;
-  totalProdutos: number;
-  produtosPerPage: number;
-  setProdutosPerPage: (value: number) => void;
-  produtosPage: number;
-  setProdutosPage: (value: number) => void;
-  totalProdutosPages: number;
-  setShowProdutoForm: (value: boolean) => void;
-  handleEditProduto: (produto: Produto) => void;
-  handleDeleteProduto: (id: string) => void;
+interface ProductsTabProps {
+  products: Product[];
+  productsStartIndex: number;
+  productsEndIndex: number;
+  totalProducts: number;
+  productsPerPage: number;
+  setProductsPerPage: (value: number) => void;
+  productsPage: number;
+  setProductsPage: (value: number) => void;
+  totalProductsPages: number;
+  setShowProductForm: (value: boolean) => void;
+  handleEditProduct: (product: Product) => void;
+  handleDeleteProduct: (id: string) => void;
 }
 
-export const ProdutosTab: React.FC<ProdutosTabProps> = ({
-  currentProdutos,
-  produtosStartIndex,
-  produtosEndIndex,
-  totalProdutos,
-  produtosPerPage,
-  setProdutosPerPage,
-  produtosPage,
-  setProdutosPage,
-  totalProdutosPages,
-  setShowProdutoForm,
-  handleEditProduto,
-  handleDeleteProduto
+export const ProdutosTab: React.FC<ProductsTabProps> = ({
+  products,
+  productsStartIndex,
+  productsEndIndex,
+  totalProducts,
+  productsPerPage,
+  setProductsPerPage,
+  productsPage,
+  setProductsPage,
+  totalProductsPages,
+  setShowProductForm,
+  handleEditProduct,
+  handleDeleteProduct
 }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [produtoToDelete, setProdutoToDelete] = useState<string | null>(null);
+  const [productToDelete, setProductToDelete] = useState<string | null>(null);
 
   const openDeleteDialog = (id: string) => {
-    setProdutoToDelete(id);
+    setProductToDelete(id);
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = () => {
-    if (produtoToDelete) {
-      handleDeleteProduto(produtoToDelete);
-      setProdutoToDelete(null);
+    if (productToDelete) {
+      handleDeleteProduct(productToDelete);
+      setProductToDelete(null);
     }
     setDeleteDialogOpen(false);
   };
@@ -61,7 +61,7 @@ export const ProdutosTab: React.FC<ProdutosTabProps> = ({
           <CardTitle>Produtos</CardTitle>
           <Button 
             className="bg-green-600 hover:bg-green-700"
-            onClick={() => setShowProdutoForm(true)}
+            onClick={() => setShowProductForm(true)}
           >
             <Plus className="h-4 w-4 mr-2" />
             Novo Produto
@@ -79,13 +79,13 @@ export const ProdutosTab: React.FC<ProdutosTabProps> = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {currentProdutos.map((produto) => (
-                  <TableRow key={produto.id}>
-                    <TableCell className="font-medium">{produto.nome}</TableCell>
-                    <TableCell>R$ {produto.valorUn}</TableCell>
+                {products.map((product) => (
+                  <TableRow key={product.id}>
+                    <TableCell className="font-medium">{product.name}</TableCell>
+                    <TableCell>R$ {product.unitValue}</TableCell>
                     <TableCell>
                       <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                        {produto.status}
+                        {product.status}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -93,14 +93,14 @@ export const ProdutosTab: React.FC<ProdutosTabProps> = ({
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => handleEditProduto(produto)}
+                          onClick={() => handleEditProduct(product)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => openDeleteDialog(produto.id)}
+                          onClick={() => openDeleteDialog(product.id)}
                           className="text-destructive hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -115,11 +115,11 @@ export const ProdutosTab: React.FC<ProdutosTabProps> = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600">
-                  Mostrando {produtosStartIndex + 1} a {Math.min(produtosEndIndex, totalProdutos)} de {totalProdutos} produtos
+                  Mostrando {productsStartIndex + 1} a {Math.min(productsEndIndex, totalProducts)} de {totalProducts} produtos
                 </span>
-                <Select value={produtosPerPage.toString()} onValueChange={(value) => {
-                  setProdutosPerPage(Number(value));
-                  setProdutosPage(1);
+                <Select value={productsPerPage.toString()} onValueChange={(value) => {
+                  setProductsPerPage(Number(value));
+                  setProductsPage(1);
                 }}>
                   <SelectTrigger className="w-20">
                     <SelectValue />
@@ -134,21 +134,21 @@ export const ProdutosTab: React.FC<ProdutosTabProps> = ({
                 <span className="text-sm text-gray-600">por página</span>
               </div>
               
-              {totalProdutosPages > 1 && (
+              {totalProductsPages > 1 && (
                 <Pagination>
                   <PaginationContent>
                     <PaginationItem>
                       <PaginationPrevious 
-                        onClick={() => setProdutosPage(Math.max(1, produtosPage - 1))}
-                        className={produtosPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        onClick={() => setProductsPage(Math.max(1, productsPage - 1))}
+                        className={productsPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                       />
                     </PaginationItem>
                     
-                    {Array.from({ length: totalProdutosPages }, (_, i) => i + 1).map((page) => (
+                    {Array.from({ length: totalProductsPages }, (_, i) => i + 1).map((page) => (
                       <PaginationItem key={page}>
                         <PaginationLink
-                          onClick={() => setProdutosPage(page)}
-                          isActive={produtosPage === page}
+                          onClick={() => setProductsPage(page)}
+                          isActive={productsPage === page}
                           className="cursor-pointer"
                         >
                           {page}
@@ -158,8 +158,8 @@ export const ProdutosTab: React.FC<ProdutosTabProps> = ({
                     
                     <PaginationItem>
                       <PaginationNext 
-                        onClick={() => setProdutosPage(Math.min(totalProdutosPages, produtosPage + 1))}
-                        className={produtosPage === totalProdutosPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        onClick={() => setProductsPage(Math.min(totalProductsPages, productsPage + 1))}
+                        className={productsPage === totalProductsPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                       />
                     </PaginationItem>
                   </PaginationContent>

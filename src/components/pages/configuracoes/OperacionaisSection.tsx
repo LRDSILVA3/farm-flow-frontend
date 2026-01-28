@@ -14,20 +14,20 @@ import { EquipamentoModal } from "./EquipamentoModal";
 import { ColaboradorModal } from "./ColaboradorModal";
 import { AnaliseModal } from "./AnaliseModal";
 import { VariavelCustoModal } from "./VariavelCustoModal";
-import { useServicos } from "./useServicos";
-import { useProdutos } from "./useProdutos";
-import { useEquipamentos } from "./useEquipamentos";
-import { useColaboradores } from "./useColaboradores";
-import { useAnalises } from "./useAnalises";
-import { useVariaveisCusto } from "./useVariaveisCusto";
+import { useServices } from "./../../../hooks/useServices";
+import { useProducts } from "./../../../hooks/useProducts";
+import { useEquipment } from "./../../../hooks/useEquipment";
+import { useCollaborators } from "./../../../hooks/useCollaborators";
+import { useAnalyses } from "./../../../hooks/useAnalyses";
+import { useCostVariables } from "./../../../hooks/useCostVariables";
 
 export const OperacionaisSection = () => {
-  const servicosData = useServicos();
-  const produtosData = useProdutos();
-  const equipamentosData = useEquipamentos();
-  const colaboradoresData = useColaboradores();
-  const analisesData = useAnalises();
-  const variaveisCustoData = useVariaveisCusto();
+  const servicosData = useServices();
+  const produtosData = useProducts();
+  const equipamentosData = useEquipment();
+  const colaboradoresData = useCollaborators();
+  const analisesData = useAnalyses();
+  const variaveisCustoData = useCostVariables();
 
   return (
     <>

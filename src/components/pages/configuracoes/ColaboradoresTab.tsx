@@ -7,59 +7,58 @@ import { Badge } from "@/components/ui/badge";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit, Trash2 } from "lucide-react";
-import { Colaborador } from "./useColaboradores";
+import { Collaborator } from "./../../../hooks/useCollaborators";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 
-interface ColaboradoresTabProps {
-  colaboradores: Colaborador[];
-  currentColaboradores: Colaborador[];
-  colaboradoresStartIndex: number;
-  colaboradoresEndIndex: number;
-  totalColaboradores: number;
-  colaboradoresPerPage: number;
-  setColaboradoresPerPage: (value: number) => void;
-  colaboradoresPage: number;
-  setColaboradoresPage: (value: number) => void;
-  totalColaboradoresPages: number;
-  setShowColaboradorForm: (show: boolean) => void;
-  setEditingColaborador: (colaborador: Colaborador | null) => void;
-  setColaboradorFormData: (data: Colaborador) => void;
-  handleDeleteColaborador: (id: string) => void;
+interface CollaboratorsTabProps {
+  collaborators: Collaborator[];
+  collaboratorsStartIndex: number;
+  collaboratorsEndIndex: number;
+  totalCollaborators: number;
+  collaboratorsPerPage: number;
+  setCollaboratorsPerPage: (value: number) => void;
+  collaboratorsPage: number;
+  setCollaboratorsPage: (value: number) => void;
+  totalCollaboratorsPages: number;
+  setShowCollaboratorForm: (show: boolean) => void;
+  setEditingCollaborator: (collaborator: Collaborator | null) => void;
+  setCollaboratorFormData: (data: Collaborator) => void;
+  handleDeleteCollaborator: (id: string) => void;
 }
 
 export const ColaboradoresTab = ({
-  currentColaboradores,
-  colaboradoresStartIndex,
-  colaboradoresEndIndex,
-  totalColaboradores,
-  colaboradoresPerPage,
-  setColaboradoresPerPage,
-  colaboradoresPage,
-  setColaboradoresPage,
-  totalColaboradoresPages,
-  setShowColaboradorForm,
-  setEditingColaborador,
-  setColaboradorFormData,
-  handleDeleteColaborador
-}: ColaboradoresTabProps) => {
+  collaborators,
+  collaboratorsStartIndex,
+  collaboratorsEndIndex,
+  totalCollaborators,
+  collaboratorsPerPage,
+  setCollaboratorsPerPage,
+  collaboratorsPage,
+  setCollaboratorsPage,
+  totalCollaboratorsPages,
+  setShowCollaboratorForm,
+  setEditingCollaborator,
+  setCollaboratorFormData,
+  handleDeleteCollaborator
+}: CollaboratorsTabProps) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [colaboradorToDelete, setColaboradorToDelete] = useState<string | null>(null);
+  const [collaboratorToDelete, setCollaboratorToDelete] = useState<string | null>(null);
 
-  const handleEdit = (colaborador: Colaborador) => {
-    setEditingColaborador(colaborador);
-    setColaboradorFormData(colaborador);
-    setShowColaboradorForm(true);
+  const handleEditCollaborator = (collaborator: Collaborator) => {
+    setEditingCollaborator(collaborator);
+    setCollaboratorFormData(collaborator);
+    setShowCollaboratorForm(true);
   };
 
   const openDeleteDialog = (id: string) => {
-    setColaboradorToDelete(id);
+    setCollaboratorToDelete(id);
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = () => {
-    if (colaboradorToDelete) {
-      handleDeleteColaborador(colaboradorToDelete);
-      setColaboradorToDelete(null);
+    if (collaboratorToDelete) {
+      handleDeleteCollaborator(collaboratorToDelete);
+      setCollaboratorToDelete(null);
     }
     setDeleteDialogOpen(false);
   };
@@ -71,7 +70,7 @@ export const ColaboradoresTab = ({
           <CardTitle>Colaboradores</CardTitle>
           <Button 
             className="bg-green-600 hover:bg-green-700"
-            onClick={() => setShowColaboradorForm(true)}
+            onClick={() => setShowCollaboratorForm(true)}
           >
             <Plus className="h-4 w-4 mr-2" />
             Novo Colaborador
@@ -89,13 +88,13 @@ export const ColaboradoresTab = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {currentColaboradores.map((colaborador) => (
-                  <TableRow key={colaborador.id}>
-                    <TableCell className="font-medium">{colaborador.nome}</TableCell>
-                    <TableCell>{colaborador.endereco}</TableCell>
+                {collaborators.map((collaborator) => (
+                  <TableRow key={collaborator.id}>
+                    <TableCell className="font-medium">{collaborator.name}</TableCell>
+                    <TableCell>{collaborator.address}</TableCell>
                     <TableCell>
-                      <Badge variant={colaborador.status === "Ativo" ? "default" : "secondary"}>
-                        {colaborador.status}
+                      <Badge variant={collaborator.status === "Ativo" ? "default" : "secondary"}>
+                        {collaborator.status}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -103,14 +102,14 @@ export const ColaboradoresTab = ({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleEdit(colaborador)}
+                          onClick={() => handleEditCollaborator(collaborator)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => openDeleteDialog(colaborador.id)}
+                          onClick={() => openDeleteDialog(collaborator.id)}
                           className="text-destructive hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -125,11 +124,11 @@ export const ColaboradoresTab = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600">
-                  Mostrando {colaboradoresStartIndex + 1} a {Math.min(colaboradoresEndIndex, totalColaboradores)} de {totalColaboradores} colaboradores
+                  Mostrando {collaboratorsStartIndex + 1} a {Math.min(collaboratorsEndIndex, totalCollaborators)} de {totalCollaborators} colaboradores
                 </span>
-                <Select value={colaboradoresPerPage.toString()} onValueChange={(value) => {
-                  setColaboradoresPerPage(Number(value));
-                  setColaboradoresPage(1);
+                <Select value={collaboratorsPerPage.toString()} onValueChange={(value) => {
+                  setCollaboratorsPerPage(Number(value));
+                  setCollaboratorsPage(1);
                 }}>
                   <SelectTrigger className="w-20">
                     <SelectValue />
@@ -144,21 +143,21 @@ export const ColaboradoresTab = ({
                 <span className="text-sm text-gray-600">por página</span>
               </div>
               
-              {totalColaboradoresPages > 1 && (
+              {totalCollaboratorsPages > 1 && (
                 <Pagination>
                   <PaginationContent>
                     <PaginationItem>
                       <PaginationPrevious 
-                        onClick={() => setColaboradoresPage(Math.max(1, colaboradoresPage - 1))}
-                        className={colaboradoresPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        onClick={() => setCollaboratorsPage(Math.max(1, collaboratorsPage - 1))}
+                        className={collaboratorsPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                       />
                     </PaginationItem>
                     
-                    {Array.from({ length: totalColaboradoresPages }, (_, i) => i + 1).map((page) => (
+                    {Array.from({ length: totalCollaboratorsPages }, (_, i) => i + 1).map((page) => (
                       <PaginationItem key={page}>
                         <PaginationLink
-                          onClick={() => setColaboradoresPage(page)}
-                          isActive={colaboradoresPage === page}
+                          onClick={() => setCollaboratorsPage(page)}
+                          isActive={collaboratorsPage === page}
                           className="cursor-pointer"
                         >
                           {page}
@@ -168,8 +167,8 @@ export const ColaboradoresTab = ({
                     
                     <PaginationItem>
                       <PaginationNext 
-                        onClick={() => setColaboradoresPage(Math.min(totalColaboradoresPages, colaboradoresPage + 1))}
-                        className={colaboradoresPage === totalColaboradoresPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        onClick={() => setCollaboratorsPage(Math.min(totalCollaboratorsPages, collaboratorsPage + 1))}
+                        className={collaboratorsPage === totalCollaboratorsPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                       />
                     </PaginationItem>
                   </PaginationContent>

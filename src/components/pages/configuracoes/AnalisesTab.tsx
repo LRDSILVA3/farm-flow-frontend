@@ -7,59 +7,58 @@ import { Badge } from "@/components/ui/badge";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit, Trash2 } from "lucide-react";
-import { AnaliseConfig } from "./useAnalises";
+import { Analysis } from "./../../../hooks/useAnalyses";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 
-interface AnalisesTabProps {
-  analises: AnaliseConfig[];
-  currentAnalises: AnaliseConfig[];
-  analisesStartIndex: number;
-  analisesEndIndex: number;
-  totalAnalises: number;
-  analisesPerPage: number;
-  setAnalisesPerPage: (value: number) => void;
-  analisesPage: number;
-  setAnalisesPage: (value: number) => void;
-  totalAnalisesPages: number;
-  setShowAnaliseForm: (show: boolean) => void;
-  setEditingAnalise: (analise: AnaliseConfig | null) => void;
-  setAnaliseFormData: (data: AnaliseConfig) => void;
-  handleDeleteAnalise: (id: string) => void;
+interface AnalysesTabProps {
+  analyses: Analysis[];
+  analysesStartIndex: number;
+  analysesEndIndex: number;
+  totalAnalyses: number;
+  analysesPerPage: number;
+  setAnalysesPerPage: (value: number) => void;
+  analysesPage: number;
+  setAnalysesPage: (value: number) => void;
+  totalAnalysesPages: number;
+  setShowAnalysisForm: (show: boolean) => void;
+  setEditingAnalysis: (analysis: Analysis | null) => void;
+  setAnalysisFormData: (data: Analysis) => void;
+  handleDeleteAnalysis: (id: string) => void;
 }
 
 export const AnalisesTab = ({
-  currentAnalises,
-  analisesStartIndex,
-  analisesEndIndex,
-  totalAnalises,
-  analisesPerPage,
-  setAnalisesPerPage,
-  analisesPage,
-  setAnalisesPage,
-  totalAnalisesPages,
-  setShowAnaliseForm,
-  setEditingAnalise,
-  setAnaliseFormData,
-  handleDeleteAnalise
-}: AnalisesTabProps) => {
+  analyses,
+  analysesStartIndex,
+  analysesEndIndex,
+  totalAnalyses,
+  analysesPerPage,
+  setAnalysesPerPage,
+  analysesPage,
+  setAnalysesPage,
+  totalAnalysesPages,
+  setShowAnalysisForm,
+  setEditingAnalysis,
+  setAnalysisFormData,
+  handleDeleteAnalysis
+}: AnalysesTabProps) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [analiseToDelete, setAnaliseToDelete] = useState<string | null>(null);
+  const [analysisToDelete, setAnalysisToDelete] = useState<string | null>(null);
 
-  const handleEdit = (analise: AnaliseConfig) => {
-    setEditingAnalise(analise);
-    setAnaliseFormData(analise);
-    setShowAnaliseForm(true);
+  const handleEditAnalysis = (analysis: Analysis) => {
+    setEditingAnalysis(analysis);
+    setAnalysisFormData(analysis);
+    setShowAnalysisForm(true);
   };
 
   const openDeleteDialog = (id: string) => {
-    setAnaliseToDelete(id);
+    setAnalysisToDelete(id);
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = () => {
-    if (analiseToDelete) {
-      handleDeleteAnalise(analiseToDelete);
-      setAnaliseToDelete(null);
+    if (analysisToDelete) {
+      handleDeleteAnalysis(analysisToDelete);
+      setAnalysisToDelete(null);
     }
     setDeleteDialogOpen(false);
   };
@@ -71,7 +70,7 @@ export const AnalisesTab = ({
           <CardTitle>Análises</CardTitle>
           <Button 
             className="bg-green-600 hover:bg-green-700"
-            onClick={() => setShowAnaliseForm(true)}
+            onClick={() => setShowAnalysisForm(true)}
           >
             <Plus className="h-4 w-4 mr-2" />
             Nova Análise
@@ -92,16 +91,16 @@ export const AnalisesTab = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {currentAnalises.map((analise) => (
-                  <TableRow key={analise.id}>
-                    <TableCell className="font-medium">{analise.nome}</TableCell>
-                    <TableCell>{analise.tipo}</TableCell>
-                    <TableCell>{analise.colaborador}</TableCell>
-                    <TableCell>{analise.prazo}</TableCell>
-                    <TableCell>R$ {analise.valor}</TableCell>
+                {analyses.map((analysis) => (
+                  <TableRow key={analysis.id}>
+                    <TableCell className="font-medium">{analysis.name}</TableCell>
+                    <TableCell>{analysis.type}</TableCell>
+                    <TableCell>{analysis.collaborator}</TableCell>
+                    <TableCell>{analysis.deadline}</TableCell>
+                    <TableCell>R$ {analysis.value}</TableCell>
                     <TableCell>
-                      <Badge variant={analise.status === "Ativo" ? "default" : "secondary"}>
-                        {analise.status}
+                      <Badge variant={analysis.status === "Ativo" ? "default" : "secondary"}>
+                        {analysis.status}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -109,14 +108,14 @@ export const AnalisesTab = ({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleEdit(analise)}
+                          onClick={() => handleEditAnalysis(analysis)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => openDeleteDialog(analise.id)}
+                          onClick={() => openDeleteDialog(analysis.id)}
                           className="text-destructive hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -131,11 +130,11 @@ export const AnalisesTab = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600">
-                  Mostrando {analisesStartIndex + 1} a {Math.min(analisesEndIndex, totalAnalises)} de {totalAnalises} análises
+                  Mostrando {analysesStartIndex + 1} a {Math.min(analysesEndIndex, totalAnalyses)} de {totalAnalyses} análises
                 </span>
-                <Select value={analisesPerPage.toString()} onValueChange={(value) => {
-                  setAnalisesPerPage(Number(value));
-                  setAnalisesPage(1);
+                <Select value={analysesPerPage.toString()} onValueChange={(value) => {
+                  setAnalysesPerPage(Number(value));
+                  setAnalysesPage(1);
                 }}>
                   <SelectTrigger className="w-20">
                     <SelectValue />
@@ -150,21 +149,21 @@ export const AnalisesTab = ({
                 <span className="text-sm text-gray-600">por página</span>
               </div>
               
-              {totalAnalisesPages > 1 && (
+              {totalAnalysesPages > 1 && (
                 <Pagination>
                   <PaginationContent>
                     <PaginationItem>
                       <PaginationPrevious 
-                        onClick={() => setAnalisesPage(Math.max(1, analisesPage - 1))}
-                        className={analisesPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        onClick={() => setAnalysesPage(Math.max(1, analysesPage - 1))}
+                        className={analysesPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                       />
                     </PaginationItem>
                     
-                    {Array.from({ length: totalAnalisesPages }, (_, i) => i + 1).map((page) => (
+                    {Array.from({ length: totalAnalysesPages }, (_, i) => i + 1).map((page) => (
                       <PaginationItem key={page}>
                         <PaginationLink
-                          onClick={() => setAnalisesPage(page)}
-                          isActive={analisesPage === page}
+                          onClick={() => setAnalysesPage(page)}
+                          isActive={analysesPage === page}
                           className="cursor-pointer"
                         >
                           {page}
@@ -174,8 +173,8 @@ export const AnalisesTab = ({
                     
                     <PaginationItem>
                       <PaginationNext 
-                        onClick={() => setAnalisesPage(Math.min(totalAnalisesPages, analisesPage + 1))}
-                        className={analisesPage === totalAnalisesPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        onClick={() => setAnalysesPage(Math.min(totalAnalysesPages, analysesPage + 1))}
+                        className={analysesPage === totalAnalysesPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                       />
                     </PaginationItem>
                   </PaginationContent>
