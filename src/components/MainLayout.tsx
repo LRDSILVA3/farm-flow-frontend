@@ -4,14 +4,14 @@ import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, S
 import { Home, Users, MapPin, FileText, Calendar, DollarSign, Settings, LogOut, FlaskConical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import ClientesPage from "./pages/ClientesPage";
-import FazendasPage from "./pages/FazendasPage";
-import PedidosPage from "./pages/PedidosPage";
-import AgendaPage from "./pages/AgendaPage";
-import FinanceiroPage from "./pages/FinanceiroPage";
-import ConfiguracoesPage from "./pages/ConfiguracoesPage";
+import CustomersPage from "./pages/CustomersPage";
+import FazendasPage from "./pages/FarmPage";
+import PedidosPage from "./pages/OrdersPage";
+import AgendaPage from "./pages/SchedulePage";
+import FinanceiroPage from "./pages/FinancialPage";
+import ConfiguracoesPage from "./pages/SettingsPage";
 import DashboardHome from "./pages/DashboardHome";
-import AnalisesPrincipalPage from "./pages/AnalisesPrincipalPage";
+import AnalisesPrincipalPage from "./pages/AnalysisPage";
 
 const MainLayoutContent = () => {
   const [currentPage, setCurrentPage] = useState("dashboard");
@@ -50,7 +50,7 @@ const MainLayoutContent = () => {
   const currentPageComponent = useMemo(() => {
     switch (currentPage) {
       case "clientes":
-        return <ClientesPage onNavigateToFazendas={handleNavigateToFazendas} />;
+        return <CustomersPage onNavigateToFazendas={handleNavigateToFazendas} />;
       case "fazendas":
         return <FazendasPage />;
       case "pedidos":
