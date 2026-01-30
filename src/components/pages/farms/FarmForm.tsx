@@ -12,13 +12,7 @@ import { useState, useEffect } from "react";
 import { CustomerSelect } from "./CustomerSelect";
 import { CityStateSelect } from "./CityStateSelect";
 import { Farm } from "@/hooks/useFarms";
-
-interface Customer {
-  id: string;
-  cpf: string;
-  name: string;
-  email: string;
-}
+import { useClients, Client } from "@/hooks/useClients";
 
 interface FarmFormProps {
   open: boolean;
@@ -43,32 +37,14 @@ export const FarmForm = ({
   onDeletePlot,
   onAddPlot
 }: FarmFormProps) => {
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const { clients, loading: clientsLoading } = useClients();
+  const [customers, setCustomers] = useState<Client[]>([]);
 
-  // Simulate fetching clients - in a real app, this would come from an API
   useEffect(() => {
-    const mockCustomers: Customer[] = [
-      {
-        id: "1",
-        cpf: "123.456.789-00",
-        name: "João Silva",
-        email: "joao@email.com"
-      },
-      {
-        id: "2", 
-        cpf: "987.654.321-00",
-        name: "Maria Santos",
-        email: "maria@email.com"
-      },
-      {
-        id: "3",
-        cpf: "456.789.123-00", 
-        name: "Pedro Oliveira",
-        email: "pedro@email.com"
-      }
-    ];
-    setCustomers(mockCustomers);
-  }, []);
+    if (!clientsLoading) {
+      setCustomers(clients);
+    }
+  }, [clients, clientsLoading]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

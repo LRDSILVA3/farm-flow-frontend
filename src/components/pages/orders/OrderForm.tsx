@@ -9,8 +9,9 @@ import { CustomerSelect } from "../farms/CustomerSelect";
 import { FarmSelect } from "./FarmSelect";
 import { PlotSelect } from "./PlotSelect";
 import { ConferenciaServiceForm } from "./ConferenciaServiceForm";
-import React from "react";
-import { availableCustomers, allFarms, allPlots, Plot } from "./mockData";
+import React, { useMemo } from "react";
+import { useClients } from "@/hooks/useClients";
+import { useFarms, Plot } from "@/hooks/useFarms";
 
 interface OrderFormProps {
   open: boolean;
@@ -20,8 +21,6 @@ interface OrderFormProps {
   onInputChange: (field: keyof Order, value: string | { id: string; name: string; quantity: number }[]) => void;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
-  availableFarms: any[];
-  availablePlots: Plot[];
 }
 
 export const OrderForm = ({
@@ -32,10 +31,23 @@ export const OrderForm = ({
   onInputChange,
   onSubmit,
   onCancel,
-  availableFarms,
-  availablePlots,
 }: OrderFormProps) => {
   const [selectedPlot, setSelectedPlot] = React.useState<string>("todos");
+  const { clients } = useClients();
+  const { farms } = useFarms();
+
+  const allPlots = useMemo(() => farms.flatMap(farm => farm.plots.map(plot => ({ ...plot, farm_id: farm.id }))), [farms]);
+
+  const availableFarms = useMemo(() => {
+    if (!formData.clientId) return [];
+    return farms.filter(farm => farm.clientId === formData.clientId);
+  }, [farms, formData.clientId]);
+
+  const availablePlots = useMemo(() => {
+    if (!formData.farmId) return [];
+    const selectedFarm = farms.find(farm => farm.id === formData.farmId);
+    return selectedFarm ? selectedFarm.plots : [];
+  }, [farms, formData.farmId]);
 
   const availableServices = [
     { id: "1", name: "Pulverização", valorAlqueire: "200.00", status: "Ativo" },
@@ -73,7 +85,6 @@ export const OrderForm = ({
   };
 
   const handleCustomerChange = (id: string) => {
-    console.log("Cliente selecionado:", id);
     onInputChange("clientId", id);
     onInputChange("farmId", "");
     setSelectedPlot("todos");
@@ -83,10 +94,9 @@ export const OrderForm = ({
   const handleFarmChange = (id: string) => {
     onInputChange("farmId", id);
     setSelectedPlot("todos");
-    const selectedFarm = allFarms.find(farm => farm.id === id);
+    const selectedFarm = farms.find(farm => farm.id === id);
     if (selectedFarm) {
-      const farmPlots = allPlots.filter(p => p.farm_id === selectedFarm.id);
-      const totalArea = farmPlots.reduce((sum, p) => sum + parseFloat(p.area), 0);
+      const totalArea = selectedFarm.plots.reduce((sum, p) => sum + parseFloat(p.area), 0);
       onInputChange("area", totalArea.toString());
     } else {
       onInputChange("area", "");
@@ -95,15 +105,14 @@ export const OrderForm = ({
 
   const handlePlotChange = (plotId: string) => {
     setSelectedPlot(plotId);
-    const selectedFarm = allFarms.find(f => f.id === formData.farmId);
+    const selectedFarm = farms.find(f => f.id === formData.farmId);
     if (!selectedFarm) return;
 
     if (plotId === "todos") {
-      const farmPlots = allPlots.filter(p => p.farm_id === selectedFarm.id);
-      const totalArea = farmPlots.reduce((sum, p) => sum + parseFloat(p.area), 0);
+      const totalArea = selectedFarm.plots.reduce((sum, p) => sum + parseFloat(p.area), 0);
       onInputChange("area", totalArea.toString());
     } else {
-      const plot = allPlots.find(p => p.id === plotId);
+      const plot = selectedFarm.plots.find(p => p.id === plotId);
       onInputChange("area", plot ? plot.area : "");
     }
   };
@@ -211,7 +220,7 @@ export const OrderForm = ({
       case "Conferência":
         return (
           <ConferenciaServiceForm
-            initialAlqueires={parseFloat(formData.area) || 0}
+            initialAlqueires={((parseFloat(formData.area) || 0) / 2.42)}
             initialNumAnalises={parseInt(formData.productsData?.[0]?.quantity?.toString() || "0")}
             onValuesChange={(calculatedValue) => onInputChange("value", calculatedValue.toFixed(2))}
           />
@@ -237,7 +246,7 @@ export const OrderForm = ({
               <CustomerSelect
                 value={formData.clientId}
                 onValueChange={handleCustomerChange}
-                customers={availableCustomers}
+                customers={clients}
               />
             </div>
             <div>
@@ -277,30 +286,32 @@ export const OrderForm = ({
 
           {renderFieldsByType()}
           
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="area">Área (ha)</Label>
-              <Input
-                id="area"
-                type="number"
-                step="0.1"
-                value={formData.area}
-                onChange={(e) => onInputChange("area", e.target.value)}
-                required
-              />
+          {formData.type !== "Conferência" && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="area">Área (ha)</Label>
+                <Input
+                  id="area"
+                  type="number"
+                  step="0.1"
+                  value={formData.area}
+                  onChange={(e) => onInputChange("area", e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="value">Valor</Label>
+                <Input
+                  id="value"
+                  value={formData.value}
+                  onChange={(e) => onInputChange("value", e.target.value)}
+                  placeholder="R$ 0,00"
+                  required
+                  readOnly={formData.type === "Conferência"}
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="value">Valor</Label>
-              <Input
-                id="value"
-                value={formData.value}
-                onChange={(e) => onInputChange("value", e.target.value)}
-                placeholder="R$ 0,00"
-                required
-                readOnly={formData.type === "Conferência"}
-              />
-            </div>
-          </div>
+          )}
           
           <div className="grid grid-cols-2 gap-4">
             <div>
