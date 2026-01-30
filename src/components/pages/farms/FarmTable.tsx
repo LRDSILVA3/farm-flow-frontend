@@ -68,7 +68,7 @@ export const FarmsTable = ({
           {currentFarms.map((farm) => (
             <TableRow key={farm.id}>
               <TableCell className="font-medium">{farm.name}</TableCell>
-              <TableCell>{farm.owner}</TableCell>
+              <TableCell>{farm.clientName}</TableCell>
               <TableCell>{farm.area}</TableCell>
               <TableCell>{farm.city} - {farm.state}</TableCell>
               <TableCell>{formatPhoneNumber(farm.contact)}</TableCell>

@@ -8,7 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { OrdersTable } from "./orders/OrdersTable";
 import { OrderForm } from "./orders/OrderForm";
 import { useOrders, Order } from "@/hooks/useOrders";
-import { availableCustomers, allFarms, allPlots, Plot } from "./orders/mockData";
+import { useClients, Client } from "@/hooks/useClients";
+import { useFarms, Farm, Plot } from "@/hooks/useFarms";
 
 const OrdersPage = () => {
   const { toast } = useToast();
@@ -28,32 +29,41 @@ const OrdersPage = () => {
     setItemsPerPage
   } = useOrders();
 
+  const { clients } = useClients();
+  const { farms } = useFarms();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [serviceFilter, setServiceFilter] = useState("");
   const [cidadeEstadoFilter, setCidadeEstadoFilter] = useState("");
-  const [availableFarms, setAvailableFarms] = useState<any[]>([]);
+  const [availableFarms, setAvailableFarms] = useState<Farm[]>([]);
   const [availablePlots, setAvailablePlots] = useState<Plot[]>([]);
 
   useEffect(() => {
     if (formData.clientId) {
-      const customer = availableCustomers.find(c => c.id === formData.clientId);
-      if (customer) {
-        setAvailableFarms(allFarms.filter(farm => farm.owner === customer.name));
+      const client = clients.find(c => c.id === formData.clientId);
+      // The owner of a farm is a client's name, not id. So we need to find the client name first.
+      if (client) {
+        setAvailableFarms(farms.filter(farm => farm.owner === client.name));
       } else {
         setAvailableFarms([]);
       }
     } else {
-      setAvailableFarms(allFarms);
+      setAvailableFarms([]);
     }
-  }, [formData.clientId]);
+  }, [formData.clientId, clients, farms]);
 
   useEffect(() => {
     if (formData.farmId) {
-      setAvailablePlots(allPlots.filter(plot => plot.farm_id === formData.farmId));
+      const farm = farms.find(f => f.id === formData.farmId);
+      if (farm) {
+        setAvailablePlots(farm.plots || []);
+      } else {
+        setAvailablePlots([]);
+      }
     } else {
       setAvailablePlots([]);
     }
-  }, [formData.farmId]);
+  }, [formData.farmId, farms]);
 
   const handleEdit = (order: Order) => {
     console.log("Editing order:", order);
@@ -93,20 +103,24 @@ const OrdersPage = () => {
   };
 
   const handleInputChange = (field: keyof Order, value: any) => {
-    // IMPORTANT: OrderForm updates multiple fields in sequence (customer -> farm -> area).
-    // Using the functional setter prevents stale state overwriting previous updates.
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const availableServices = ["Pulverização", "Plantio", "Colheita", "Adubação"];
-  const cidadesEstados = ["Interior SP", "Interior MG", "Interior GO"];
+  const cidadesEstados = Array.from(new Set(farms.map(f => `${f.city} - ${f.state}`))).sort();
 
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.clientId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.farmId.toLowerCase().includes(searchTerm.toLowerCase());
+    const clientName = clients.find(c => c.id === order.clientId)?.name || "";
+    const farmName = farms.find(f => f.id === order.farmId)?.name || "";
+
+    const matchesSearch = clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      farmName.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesService = !serviceFilter || serviceFilter === "all" || order.serviceName === serviceFilter || order.serviceGroup === serviceFilter;
-    const matchesCidadeEstado = !cidadeEstadoFilter || cidadeEstadoFilter === "all";
+    
+    const farm = farms.find(f => f.id === order.farmId);
+    const farmLocation = farm ? `${farm.city} - ${farm.state}` : "";
+    const matchesCidadeEstado = !cidadeEstadoFilter || cidadeEstadoFilter === "all" || farmLocation === cidadeEstadoFilter;
     
     return matchesSearch && matchesService && matchesCidadeEstado;
   });
@@ -190,6 +204,8 @@ const OrdersPage = () => {
         onInputChange={handleInputChange}
         onSubmit={handleSubmit}
         onCancel={resetForm}
+        clients={clients}
+        farms={farms}
         availableFarms={availableFarms}
         availablePlots={availablePlots}
       />

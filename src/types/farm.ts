@@ -11,8 +11,9 @@ export interface Plot {
 
 export interface Farm {
   id: string;
+  clientId: string;
   name: string;
-  owner: string;
+  clientName: string; // Renamed from 'owner' to 'clientName'
   area: string;
   city: string;
   state: string;

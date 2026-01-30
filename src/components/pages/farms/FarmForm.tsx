@@ -87,8 +87,14 @@ export const FarmForm = ({
             <div>
               <Label htmlFor="owner">Proprietário</Label>
               <CustomerSelect
-                value={formData.owner}
-                onValueChange={(value) => onInputChange("owner", value)}
+                value={formData.clientId}
+                onValueChange={(value) => {
+                  const selectedCustomer = customers.find(cust => cust.id === value);
+                  if (selectedCustomer) {
+                    onInputChange("clientId", selectedCustomer.id);
+                    onInputChange("clientName", selectedCustomer.name);
+                  }
+                }}
                 customers={customers}
               />
             </div>

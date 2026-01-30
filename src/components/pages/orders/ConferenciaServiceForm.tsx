@@ -147,15 +147,25 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div>
           <Label htmlFor="alqueires">Alqueires:</Label>
           <Input
             id="alqueires"
             type="number"
             value={alqueires}
-            onChange={(e) => setAlqueires(parseFloat(e.target.value))}
+            onChange={(e) => setAlqueires(parseFloat(e.target.value) || 0)}
             min="0"
+          />
+        </div>
+        <div>
+          <Label htmlFor="hectares">Hectares (ha):</Label>
+          <Input
+            id="hectares"
+            type="number"
+            value={(alqueires * 2.42).toFixed(2)}
+            readOnly
+            className="bg-gray-100"
           />
         </div>
         <div>
@@ -164,7 +174,7 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
             id="num-analises"
             type="number"
             value={numAnalises}
-            onChange={(e) => setNumAnalises(parseInt(e.target.value))}
+            onChange={(e) => setNumAnalises(parseInt(e.target.value) || 0)}
             min="0"
           />
         </div>

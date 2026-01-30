@@ -20,6 +20,7 @@ vi.mock('./farms/FarmForm', () => ({
 let mockShowFarmForm = false;
 let mockFormData = {
     id: '',
+    clientId: '',
     name: '',
     owner: '',
     area: '0',
@@ -73,7 +74,7 @@ describe('FarmsPage', () => {
     beforeEach(() => {
         mockShowFarmForm = false;
         mockFormData = {
-            id: '', name: '', owner: '', area: '0', contact: '', city: '', state: '', status: 'Ativo', lot: '', registration: '', plots: [],
+            id: '', clientId: '', name: '', owner: '', area: '0', contact: '', city: '', state: '', status: 'Ativo', lot: '', registration: '', plots: [],
         };
         vi.clearAllMocks();
         MockFarmForm.mockClear(); // Clear mock calls for FarmForm

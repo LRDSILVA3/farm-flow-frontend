@@ -13,26 +13,13 @@ export interface Plot {
   lot: string;
 }
 
-export interface Farm {
-  id: string;
-  name: string;
-  owner: string;
-  area: string;
-  city: string;
-  state: string;
-  contact: string;
-  status: string;
-  registration: string;
-  lot: string;
-  plots: Plot[];
-}
+
 
 interface FarmDB {
   id: string;
   user_id: string;
   client_id: string | null;
   name: string;
-  owner: string | null;
   area: number | null;
   city: string | null;
   state: string | null;
@@ -42,6 +29,7 @@ interface FarmDB {
   lot: string | null;
   created_at: string;
   updated_at: string;
+  clients: { name: string } | null; // Joined client data
 }
 
 interface PlotDB {
@@ -71,8 +59,9 @@ const mapPlotFromDB = (db: PlotDB): Plot => ({
 
 const mapFarmFromDB = (db: FarmDB, plots: PlotDB[] = []): Farm => ({
   id: db.id,
+  clientId: db.client_id || "",
   name: db.name,
-  owner: db.owner || "",
+  clientName: db.clients?.name || "", // Use the joined client's name
   area: db.area?.toString() || "",
   city: db.city || "",
   state: db.state || "",
@@ -96,8 +85,9 @@ export const useFarms = () => {
   const [selectedFarm, setSelectedFarm] = useState<Farm | null>(null);
   const [formData, setFormData] = useState<Farm>({
     id: "",
+    clientId: "",
     name: "",
-    owner: "",
+    clientName: "", // Updated from 'owner' to 'clientName'
     area: "",
     city: "",
     state: "",
@@ -123,7 +113,7 @@ export const useFarms = () => {
     try {
       const { data: farmsData, error: farmsError } = await supabase
         .from("farms")
-        .select("*")
+        .select("*, clients(name)") // Select all fields from farms and the name from the joined clients table
         .order("name");
 
       if (farmsError) throw farmsError;
@@ -162,8 +152,8 @@ export const useFarms = () => {
         .from("farms")
         .insert({
           user_id: user.id,
+          client_id: farm.clientId || null, // Use clientId
           name: farm.name,
-          owner: farm.owner || null,
           area: farm.area ? parseFloat(farm.area) : null,
           city: farm.city || null,
           state: farm.state || null,
@@ -197,8 +187,8 @@ export const useFarms = () => {
       const { error } = await supabase
         .from("farms")
         .update({
+          client_id: farm.clientId || null, // Use clientId
           name: farm.name,
-          owner: farm.owner || null,
           area: farm.area ? parseFloat(farm.area) : null,
           city: farm.city || null,
           state: farm.state || null,
