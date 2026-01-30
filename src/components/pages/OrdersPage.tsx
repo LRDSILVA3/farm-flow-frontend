@@ -93,7 +93,9 @@ const OrdersPage = () => {
   };
 
   const handleInputChange = (field: keyof Order, value: any) => {
-    setFormData({ ...formData, [field]: value });
+    // IMPORTANT: OrderForm updates multiple fields in sequence (customer -> farm -> area).
+    // Using the functional setter prevents stale state overwriting previous updates.
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const availableServices = ["Pulverização", "Plantio", "Colheita", "Adubação"];

@@ -33,6 +33,7 @@ export const CustomerSelect = ({ value, onValueChange, customers }: CustomerSele
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          type="button"
           variant="outline"
           role="combobox"
           aria-expanded={open}
@@ -42,7 +43,7 @@ export const CustomerSelect = ({ value, onValueChange, customers }: CustomerSele
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent className="z-[60] w-full p-0" align="start">
         <div className="flex items-center border-b px-3 py-2">
           <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
           <Input
