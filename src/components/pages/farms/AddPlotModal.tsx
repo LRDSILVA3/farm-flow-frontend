@@ -1,6 +1,6 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Farm, Plot } from "../FarmPage";
+import { Farm, Plot } from "@/types/farm";
 import { PlotForm } from "./PlotForm";
 import { usePlotsModal } from "./usePlotModal";
 

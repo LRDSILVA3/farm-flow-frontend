@@ -1,12 +1,12 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PlotForm } from './PlotForm';
-import { Plot } from '../FarmPage';
+import { Plot } from '@/types/farm';
 
 const mockPlot: Plot = {
     id: '1',
     name: 'Talhão Teste',
-    area: 50,
+    area: '50',
     city: 'Campinas',
     state: 'SP',
     registration: '654321',
@@ -21,7 +21,7 @@ describe('PlotForm', () => {
 
     const renderCreateForm = () => {
         const emptyPlotData: Plot = {
-            id: '', name: '', area: 0, city: '', state: '', registration: '', lot: '', status: 'Ativo'
+            id: '', name: '', area: '0', city: '', state: '', registration: '', lot: '', status: 'Ativo'
         };
 
         return render(
@@ -82,7 +82,7 @@ describe('PlotForm', () => {
     });
     
     it('calls setPlotForm when a field is changed', () => {
-        const emptyPlotData: Plot = { id: '', name: '', area: 0, city: '', state: '', registration: '', lot: '', status: 'Ativo' };
+        const emptyPlotData: Plot = { id: '', name: '', area: '0', city: '', state: '', registration: '', lot: '', status: 'Ativo' };
         render(
             <PlotForm
                 plotForm={emptyPlotData}

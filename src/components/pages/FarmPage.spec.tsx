@@ -1,5 +1,5 @@
-import { render, screen, fireEvent, within } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import FarmsPage from './FarmPage';
 import { MemoryRouter } from 'react-router-dom';
 import * as useFarms from '@/hooks/useFarms';
@@ -22,7 +22,7 @@ let mockFormData = {
     id: '',
     name: '',
     owner: '',
-    area: 0,
+    area: '0',
     contact: '',
     city: '',
     state: '',
@@ -57,7 +57,7 @@ const mockUseFarms = {
         mockFormData = data;
     }
   }),
-  plotForm: { id: '', name: '', area: 0, city: '', state: '', registration: '', lot: '', status: 'Ativo' },
+  plotForm: { id: '', name: '', area: '0', city: '', state: '', registration: '', lot: '', status: 'Ativo' },
   setPlotForm: vi.fn(),
   addFarm: vi.fn(),
   updateFarm: vi.fn(),
@@ -73,7 +73,7 @@ describe('FarmsPage', () => {
     beforeEach(() => {
         mockShowFarmForm = false;
         mockFormData = {
-            id: '', name: '', owner: '', area: 0, contact: '', city: '', state: '', status: 'Ativo', lot: '', registration: '', plots: [],
+            id: '', name: '', owner: '', area: '0', contact: '', city: '', state: '', status: 'Ativo', lot: '', registration: '', plots: [],
         };
         vi.clearAllMocks();
         MockFarmForm.mockClear(); // Clear mock calls for FarmForm
@@ -120,15 +120,17 @@ describe('FarmsPage', () => {
     expect(MockFarmForm).toHaveBeenCalled();
 
     // Get the props passed to MockFarmForm
-    const farmFormProps = MockFarmForm.mock.calls[0][0];
+    const mockCalls = MockFarmForm.mock.calls as unknown as Array<[{ onSubmit: (e: { preventDefault: () => void }) => Promise<void> }]>;
+    if (mockCalls.length > 0) {
+      const farmFormProps = mockCalls[0][0];
+      // Simulate form submission
+      const mockEvent = { preventDefault: vi.fn() };
+      await farmFormProps.onSubmit(mockEvent);
 
-    // Simulate form submission
-    const mockEvent = { preventDefault: vi.fn() };
-    await farmFormProps.onSubmit(mockEvent);
-
-    expect(mockEvent.preventDefault).toHaveBeenCalled();
-    expect(mockedAddFarm).toHaveBeenCalledWith(expect.objectContaining({
-        name: '', // Initial formData name
-    }));
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+      expect(mockedAddFarm).toHaveBeenCalledWith(expect.objectContaining({
+          name: '', // Initial formData name
+      }));
+    }
   });
 });

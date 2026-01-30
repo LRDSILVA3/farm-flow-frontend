@@ -2,7 +2,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { Farm, Plot } from "../FarmPage";
+import { Farm, Plot } from "@/types/farm";
 import { PlotForm } from "./PlotForm";
 import { PlotsTable } from "./PlotsTable";
 import { usePlotsModal } from "./usePlotModal";

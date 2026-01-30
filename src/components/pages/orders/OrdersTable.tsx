@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Edit } from "lucide-react";
-import { Order } from "../OrdersPage";
+import { Order } from "@/hooks/useOrders";
 
 interface OrdersTableProps {
   orders: Order[];
@@ -80,9 +80,9 @@ export const OrdersTable = ({
         <TableBody>
           {currentOrders.map((order) => (
             <TableRow key={order.id}>
-              <TableCell>{order.customer}</TableCell>
-              <TableCell>{order.farm}</TableCell>
-              <TableCell>{order.service}</TableCell>
+              <TableCell>{order.clientId}</TableCell>
+              <TableCell>{order.farmId}</TableCell>
+              <TableCell>{order.serviceName || order.serviceGroup}</TableCell>
               <TableCell>{order.area}</TableCell>
               <TableCell>{order.value}</TableCell>
               <TableCell>

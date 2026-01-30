@@ -2,7 +2,7 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from "lucide-react";
-import { Plot } from "../FarmPage";
+import { Plot } from "@/types/farm";
 
 interface PlotsTableProps {
   plots: Plot[];

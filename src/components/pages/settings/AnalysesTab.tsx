@@ -99,8 +99,8 @@ export const AnalysesTab = ({
                     <TableCell>{analysis.deadline}</TableCell>
                     <TableCell>R$ {analysis.value}</TableCell>
                     <TableCell>
-                      <Badge variant={analysis.status === "Ativo" ? "default" : "secondary"}>
-                        {analysis.status}
+                      <Badge variant={analysis.status === "Active" ? "default" : "secondary"}>
+                        {analysis.status === "Active" ? "Ativo" : "Inativo"}
                       </Badge>
                     </TableCell>
                     <TableCell>

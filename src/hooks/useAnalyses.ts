@@ -113,11 +113,11 @@ export const useAnalyses = () => {
     setAnalysisFormData({
       id: "",
       name: "",
-      type: "Solo",
+      type: "Soil",
       collaborator: "",
       deadline: 0,
       value: "",
-      status: "Ativo"
+      status: "Active"
     });
     setEditingAnalysis(null);
     setShowAnalysisForm(false);
