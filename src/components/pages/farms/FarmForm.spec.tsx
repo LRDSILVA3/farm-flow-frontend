@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { FarmForm } from './FarmForm';
-import { Farm } from '@/hooks/useFarms';
+import { Farm } from '@/types/farm';
 
 // Mock child components
 vi.mock('./CustomerSelect', () => ({
@@ -26,7 +26,7 @@ const mockFarm: Farm = {
     id: '1',
     name: 'Fazenda Teste',
     owner: '1',
-    area: 100,
+    area: '100',
     contact: '11999999999',
     city: 'São Paulo',
     state: 'SP',
@@ -43,7 +43,7 @@ describe('FarmForm', () => {
 
     const renderCreateForm = () => {
         const emptyFarmData: Farm = {
-            id: '', name: '', owner: '', area: 0, contact: '', city: '', state: '', status: 'Ativo', lot: '', registration: '', plots: [],
+            id: '', name: '', owner: '', area: '0', contact: '', city: '', state: '', status: 'Ativo', lot: '', registration: '', plots: [],
         };
 
         return render(

@@ -104,21 +104,21 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "analysis_execution_client_id_fkey"
+            foreignKeyName: "analises_execucao_cliente_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "analysis_execution_farm_id_fkey"
+            foreignKeyName: "analises_execucao_fazenda_id_fkey"
             columns: ["farm_id"]
             isOneToOne: false
             referencedRelation: "farms"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "analysis_execution_plot_id_fkey"
+            foreignKeyName: "analises_execucao_talhao_id_fkey"
             columns: ["plot_id"]
             isOneToOne: false
             referencedRelation: "plots"
@@ -309,21 +309,21 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "executions_client_id_fkey"
+            foreignKeyName: "execucoes_cliente_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "executions_farm_id_fkey"
+            foreignKeyName: "execucoes_fazenda_id_fkey"
             columns: ["farm_id"]
             isOneToOne: false
             referencedRelation: "farms"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "executions_order_id_fkey"
+            foreignKeyName: "execucoes_pedido_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
@@ -382,7 +382,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "farms_client_id_fkey"
+            foreignKeyName: "fazendas_cliente_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
@@ -441,14 +441,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "orders_client_id_fkey"
+            foreignKeyName: "pedidos_cliente_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "orders_farm_id_fkey"
+            foreignKeyName: "pedidos_fazenda_id_fkey"
             columns: ["farm_id"]
             isOneToOne: false
             referencedRelation: "farms"
@@ -495,7 +495,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "partial_executions_execution_id_fkey"
+            foreignKeyName: "execucoes_parciais_execucao_id_fkey"
             columns: ["execution_id"]
             isOneToOne: false
             referencedRelation: "executions"
@@ -545,7 +545,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "plots_farm_id_fkey"
+            foreignKeyName: "talhoes_fazenda_id_fkey"
             columns: ["farm_id"]
             isOneToOne: false
             referencedRelation: "farms"
@@ -667,14 +667,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "service_variables_service_id_fkey"
+            foreignKeyName: "servico_variaveis_servico_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "services"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "service_variables_variable_id_fkey"
+            foreignKeyName: "servico_variaveis_variavel_id_fkey"
             columns: ["variable_id"]
             isOneToOne: false
             referencedRelation: "cost_variables"

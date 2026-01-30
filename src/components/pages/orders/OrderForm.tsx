@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Plus, Minus } from "lucide-react";
-import { Order } from "../OrdersPage";
+import { Order } from "@/hooks/useOrders";
 import { CustomerSelect } from "../farms/CustomerSelect";
 import { FarmSelect } from "./FarmSelect";
 import { PlotSelect } from "./PlotSelect";

@@ -1,5 +1,5 @@
 import { useRef, useEffect } from "react";
-import { Farm, Plot } from "../FarmPage";
+import { Farm, Plot } from "@/types/farm";
 
 export const useFarmHandlers = (
   farms: Farm[],

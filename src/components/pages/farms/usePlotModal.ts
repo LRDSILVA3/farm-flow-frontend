@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Plot } from "../FarmPage";
+import { Plot } from "@/types/farm";
 import { useToast } from "@/hooks/use-toast";
 
 export const usePlotsModal = (
