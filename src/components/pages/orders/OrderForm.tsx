@@ -218,13 +218,8 @@ export const OrderForm = ({
         );
 
       case "Conferência":
-        return (
-          <ConferenciaServiceForm
-            initialAlqueires={((parseFloat(formData.area) || 0) / 2.42)}
-            initialNumAnalises={parseInt(formData.productsData?.[0]?.quantity?.toString() || "0")}
-            onValuesChange={(calculatedValue) => onInputChange("value", calculatedValue.toFixed(2))}
-          />
-        );
+        return null; // Rendered separately below
+
 
       default:
         return null;
@@ -312,36 +307,60 @@ export const OrderForm = ({
               </div>
             </div>
           )}
+
+          {/* ConferenciaServiceForm moved here */}
+          {formData.type === "Conferência" && (
+            <ConferenciaServiceForm
+              initialAlqueires={((parseFloat(formData.area) || 0) / 2.42)}
+              initialNumAnalises={parseInt(formData.productsData?.[0]?.quantity?.toString() || "0")}
+              onValuesChange={(calculatedValue) => onInputChange("value", calculatedValue.toFixed(2))}
+            />
+          )}
+
+          {/* Display final value when type is Conferencia */}
+          {formData.type === "Conferência" && (
+            <div className="mt-4">
+              <Label htmlFor="final-value">Valor Total (R$)</Label>
+              <Input
+                id="final-value"
+                value={formData.value}
+                readOnly
+                className="bg-gray-100"
+              />
+            </div>
+          )}
           
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value) => onInputChange("status", value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Pendente">Pendente</SelectItem>
-                  <SelectItem value="Em Andamento">Em Andamento</SelectItem>
-                  <SelectItem value="Concluído">Concluído</SelectItem>
-                  <SelectItem value="Cancelado">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
+          {editingOrder && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select value={formData.status} onValueChange={(value) => onInputChange("status", value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pendente">Pendente</SelectItem>
+                    <SelectItem value="Em Andamento">Em Andamento</SelectItem>
+                    <SelectItem value="Concluído">Concluído</SelectItem>
+                    <SelectItem value="Cancelado">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="payment">Pagamento</Label>
+                <Select value={formData.payment} onValueChange={(value) => onInputChange("payment", value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Aguardando">Aguardando</SelectItem>
+                    <SelectItem value="Parcial">Parcial</SelectItem>
+                    <SelectItem value="Pago">Pago</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div>
-              <Label htmlFor="payment">Pagamento</Label>
-              <Select value={formData.payment} onValueChange={(value) => onInputChange("payment", value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Aguardando">Aguardando</SelectItem>
-                  <SelectItem value="Parcial">Parcial</SelectItem>
-                  <SelectItem value="Pago">Pago</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          )}
           
           <div className="flex justify-end space-x-2">
             <Button type="button" variant="outline" onClick={onCancel}>
