@@ -1,0 +1,32 @@
+PLANILHA PARA CÁLCULO DE ANÁLISES DE CONFERÊNCIA;;;;;;;HOJE:;HOJE()
+;;;;;;;;
+Cliente deseja Nota Fiscal (S/N);;;;S;SERÁ EMITIDA NF PARA CLIENTE;;;
+Distância da Fazenda (ida Cbl --> área) - Km:;;;;0;Data limite p cobrar juro;BANCO DE DADOS'!B27;;
+Vencimento do Serviço (DD/MM/AA):;;;;45868;"SE(DIAS(E5;G4)>0;(POTÊNCIA(('BANCO DE DADOS'!B40+100)/100;(DIAS(E5;G4)/30)));1)";;;
+Deseja análise física (fins bancários)(S/N):;;;;N;"SE(E6=""S"";SOMA('INPUT DADOS'!D3:D5;'INPUT DADOS'!C24);SOMA('INPUT DADOS'!D3:D5))";;;
+% das Análises de 20-40cm;;;;0;;;;
+Talhão;Alq;Num. Análises;;R$ / Talhão;R$ / Alqueire;R$ / Ponto;OBS;Data Prov. Coleta
+1;1;2;;"SE(B9>0;SE((B9*'BANCO DE DADOS'!$B$10+('BANCO DE DADOS'!$B$12*$E$4/$B$29*B9))<(C9*'BANCO DE DADOS'!$B$8+('BANCO DE DADOS'!$B$12*$E$4/$B$29*B9));(C9*'BANCO DE DADOS'!$B$8+('BANCO DE DADOS'!$B$12*$E$4/$B$29*B9));(B9*'BANCO DE DADOS'!$B$10+('BANCO DE DADOS'!$B$12*$E$4/$B$29*B9)));0)*$F$5";"SE(B9>0;E9/B9;0)";"SE(B9>0;E9/C9;0)";;
+;;;;;;;;
+;;;;;;;;
+;;;;;;;;
+;;;;;;;;
+;;;;;;;;
+;;;;;;;;
+;;;;;;;;
+;;;;;;;;
+;;;;;;;;
+;;;;;;;;
+;;;;;;;;
+;;;;;;;;
+;;;;;;;;
+;;;;;;;;
+;;;;;;;;
+;;;;;;;;
+;;;;;;;;
+;;;;;;;;
+;;;;;;;;
+TOTAIS;"SOMASE(A9:A28;""<>0"";B9:B28)";"SOMASE(A9:A28;""<>0"";C9:D28)";;;;;;
+VALOR TOTAL DO TRABALHO (R$).................................:;;;;SOMA(E9:E28)+F30;"SE('INPUT CONFERENCIA'!E7>0;SE('INPUT CONFERENCIA'!C29*'INPUT CONFERENCIA'!E7<=1;1;ARRED('INPUT CONFERENCIA'!E7*'INPUT CONFERENCIA'!C29;0));0)*('INPUT DADOS'!C23+'BANCO DE DADOS'!B10)";;;
+VALOR TOTAL POR ÁREA (R$/ALQ)............................:;;;;E30/B29;;;;
+VALOR TOTAL POR PONTO (R$/PTO)............................:;;;;E30/C29;;;;

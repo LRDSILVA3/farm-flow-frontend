@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,8 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { OrdersTable } from "./orders/OrdersTable";
 import { OrderForm } from "./orders/OrderForm";
 import { useOrders, Order } from "@/hooks/useOrders";
-
-
+import { availableCustomers, allFarms, allPlots, Plot } from "./orders/mockData";
 
 const OrdersPage = () => {
   const { toast } = useToast();
@@ -32,6 +31,29 @@ const OrdersPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [serviceFilter, setServiceFilter] = useState("");
   const [cidadeEstadoFilter, setCidadeEstadoFilter] = useState("");
+  const [availableFarms, setAvailableFarms] = useState<any[]>([]);
+  const [availablePlots, setAvailablePlots] = useState<Plot[]>([]);
+
+  useEffect(() => {
+    if (formData.clientId) {
+      const customer = availableCustomers.find(c => c.id === formData.clientId);
+      if (customer) {
+        setAvailableFarms(allFarms.filter(farm => farm.owner === customer.name));
+      } else {
+        setAvailableFarms([]);
+      }
+    } else {
+      setAvailableFarms(allFarms);
+    }
+  }, [formData.clientId]);
+
+  useEffect(() => {
+    if (formData.farmId) {
+      setAvailablePlots(allPlots.filter(plot => plot.farm_id === formData.farmId));
+    } else {
+      setAvailablePlots([]);
+    }
+  }, [formData.farmId]);
 
   const handleEdit = (order: Order) => {
     console.log("Editing order:", order);
@@ -166,6 +188,8 @@ const OrdersPage = () => {
         onInputChange={handleInputChange}
         onSubmit={handleSubmit}
         onCancel={resetForm}
+        availableFarms={availableFarms}
+        availablePlots={availablePlots}
       />
     </div>
   );

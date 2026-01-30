@@ -3,6 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { formatPhoneNumber } from "@/lib/utils";
 import { Edit, Eye } from "lucide-react";
 import { Farm } from "@/hooks/useFarms";
 
@@ -70,7 +71,7 @@ export const FarmsTable = ({
               <TableCell>{farm.owner}</TableCell>
               <TableCell>{farm.area}</TableCell>
               <TableCell>{farm.city} - {farm.state}</TableCell>
-              <TableCell>{farm.contact}</TableCell>
+              <TableCell>{formatPhoneNumber(farm.contact)}</TableCell>
               <TableCell>
                 <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(farm.status)}`}>
                   {farm.status}

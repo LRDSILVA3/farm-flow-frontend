@@ -16,9 +16,10 @@ interface FarmSelectProps {
   value: string;
   onValueChange: (value: string) => void;
   farms: Farm[];
+  disabled?: boolean;
 }
 
-export const FarmSelect = ({ value, onValueChange, farms }: FarmSelectProps) => {
+export const FarmSelect = ({ value, onValueChange, farms, disabled }: FarmSelectProps) => {
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredFarms = farms.filter(farm =>
@@ -27,7 +28,7 @@ export const FarmSelect = ({ value, onValueChange, farms }: FarmSelectProps) => 
   );
 
   return (
-    <Select value={value} onValueChange={onValueChange}>
+    <Select value={value} onValueChange={onValueChange} disabled={disabled}>
       <SelectTrigger>
         <SelectValue placeholder="Selecione uma fazenda" />
       </SelectTrigger>
@@ -42,7 +43,7 @@ export const FarmSelect = ({ value, onValueChange, farms }: FarmSelectProps) => 
           />
         </div>
         {filteredFarms.map((farm) => (
-          <SelectItem key={farm.id} value={farm.name}>
+          <SelectItem key={farm.id} value={farm.id}>
             {farm.name} - {farm.owner}
           </SelectItem>
         ))}

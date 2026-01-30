@@ -33,7 +33,7 @@ export const BannerModal = ({
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Simular upload de imagem - em produção seria enviada para um servidor
+      // Simulate image upload - in production, it would be sent to a server
       const mockImageUrl = "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=400";
       handleImageUpload(mockImageUrl);
     }

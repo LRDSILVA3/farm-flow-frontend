@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { formatCPF, formatPhoneNumber } from "@/lib/utils";
 import { Edit, MapPin } from "lucide-react";
 import { Client } from "../../../hooks/useClients";
 
@@ -48,9 +49,9 @@ export const CustomersTable = ({
           {currentClients.map((client) => (
             <TableRow key={client.id}>
               <TableCell className="font-medium">{client.name}</TableCell>
-              <TableCell>{client.cpf}</TableCell>
+              <TableCell>{formatCPF(client.cpf)}</TableCell>
               <TableCell>{client.email}</TableCell>
-              <TableCell>{client.phone}</TableCell>
+              <TableCell>{formatPhoneNumber(client.phone)}</TableCell>
               <TableCell>{client.state}/{client.city}</TableCell>
               <TableCell>
                 <div className="flex space-x-2">
@@ -58,6 +59,7 @@ export const CustomersTable = ({
                     variant="outline"
                     size="sm"
                     onClick={() => onEdit(client)}
+                    title="Editar cliente"
                   >
                     <Edit className="h-4 w-4" />
                   </Button>

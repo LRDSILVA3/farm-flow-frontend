@@ -21,4 +21,8 @@ Para responder com precisão, utilize sempre os arquivos de contexto abaixo como
 - **Tarefas e Sprint:** [Consultar .gemini/tasks.md]
 - **Visão Técnica:** [Consultar .gemini/context.md]
 
+## 📋 Arquivos Importantes
+
+- **`budget.xlsm`**: Esta planilha de orçamento contém lógica de negócios crítica que precisa ser migrada para os serviços do sistema. É essencial entender as fórmulas e cálculos presentes nela para replicá-los corretamente no backend.
+
 Sempre que eu pedir para atualizar uma tarefa, reflita a mudança no arquivo `.gemini/tasks.md`.

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { IMaskInput } from "react-imask";
 import { CityStateSelect } from "@/components/pages/farms/CityStateSelect";
 import { useToast } from "@/hooks/use-toast";
 import { Client } from "../../../hooks/useClients";
@@ -76,12 +77,14 @@ export const CustomersForm = ({ editingClient, onSave, onUpdate, onCancel }: Cus
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="cpf">CPF</Label>
-            <Input
+            <IMaskInput
+              mask="000.000.000-00"
               id="cpf"
               value={formData.cpf}
-              onChange={(e) => setFormData({...formData, cpf: e.target.value})}
+              onAccept={(value) => setFormData({...formData, cpf: value as string})}
               placeholder="123.456.789-00"
               required
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
           <div>
@@ -117,22 +120,26 @@ export const CustomersForm = ({ editingClient, onSave, onUpdate, onCancel }: Cus
           </div>
           <div>
             <Label htmlFor="phone">phone</Label>
-            <Input
+            <IMaskInput
+              mask="(00) 00000-0000"
               id="phone"
               value={formData.phone}
-              onChange={(e) => setFormData({...formData, phone: e.target.value})}
+              onAccept={(value) => setFormData({...formData, phone: value as string})}
               placeholder="(11) 99999-9999"
               required
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
           <div>
             <Label htmlFor="zipCode">zipCode</Label>
-            <Input
+            <IMaskInput
+              mask="00000-000"
               id="zipCode"
               value={formData.zipCode}
-              onChange={(e) => setFormData({...formData, zipCode: e.target.value})}
+              onAccept={(value) => setFormData({...formData, zipCode: value as string})}
               placeholder="01234-567"
               required
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
           <div>

@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { IMaskInput } from "react-imask";
 import { Trash2, Plus } from "lucide-react";
 
 import { useState, useEffect } from "react";
@@ -44,7 +45,7 @@ export const FarmForm = ({
 }: FarmFormProps) => {
   const [customers, setCustomers] = useState<Customer[]>([]);
 
-  // Simular busca de clientes - em um app real, isso viria de uma API
+  // Simulate fetching clients - in a real app, this would come from an API
   useEffect(() => {
     const mockCustomers: Customer[] = [
       {
@@ -81,10 +82,11 @@ export const FarmForm = ({
   };
 
   const handleAddPlotClick = () => {
-    if (onAddPlot) {
-      const farmId = editingFarm ? editingFarm.id : formData.id || 'temp';
-      onAddPlot(farmId);
+    if (!onAddPlot) {
+      return;
     }
+    const farmId = editingFarm ? editingFarm.id : formData.id || 'temp';
+    onAddPlot(farmId);
   };
 
   return (
@@ -95,7 +97,7 @@ export const FarmForm = ({
             {editingFarm ? "Editar Fazenda" : "Nova Fazenda"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form onSubmit={onSubmit} className="space-y-4" role="form">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="name">Nome da Fazenda</Label>
@@ -130,11 +132,13 @@ export const FarmForm = ({
             </div>
             <div>
               <Label htmlFor="contact">Contato</Label>
-              <Input
+              <IMaskInput
+                mask="(00) 00000-0000"
                 id="contact"
                 value={formData.contact}
-                onChange={(e) => onInputChange("contact", e.target.value)}
+                onAccept={(value) => onInputChange("contact", value as string)}
                 required
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
           </div>

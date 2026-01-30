@@ -4,50 +4,51 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
-interface Customer {
+export interface Plot {
   id: string;
-  cpf: string;
+  farm_id: string;
   name: string;
-  email: string;
+  area: string;
 }
 
-interface CustomerSelectProps {
+interface PlotSelectProps {
   value: string;
   onValueChange: (value: string) => void;
-  customers: Customer[];
+  plots: Plot[];
+  disabled: boolean;
 }
 
-export const CustomerSelect = ({ value, onValueChange, customers }: CustomerSelectProps) => {
+export const PlotSelect = ({ value, onValueChange, plots, disabled }: PlotSelectProps) => {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredcustomers = customers.filter(cliente =>
-    cliente.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cliente.cpf.includes(searchTerm)
+  const filteredPlots = plots.filter(plot =>
+    plot.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <Select value={value} onValueChange={onValueChange}>
+    <Select value={value} onValueChange={onValueChange} disabled={disabled}>
       <SelectTrigger>
-        <SelectValue placeholder="Selecione um cliente" />
+        <SelectValue placeholder="Selecione um talhão" />
       </SelectTrigger>
       <SelectContent>
         <div className="flex items-center px-3 pb-2">
           <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
           <Input
-            placeholder="Buscar cliente..."
+            placeholder="Buscar talhão..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="h-8 w-full border-0 p-0 focus-visible:ring-0"
           />
         </div>
-        {filteredcustomers.map((cliente) => (
-          <SelectItem key={cliente.id} value={cliente.id}>
-            {cliente.name} - {cliente.cpf}
+        <SelectItem value="todos">Todos</SelectItem>
+        {filteredPlots.map((plot) => (
+          <SelectItem key={plot.id} value={plot.id}>
+            {plot.name}
           </SelectItem>
         ))}
-        {filteredcustomers.length === 0 && (
+        {filteredPlots.length === 0 && (
           <div className="px-3 py-2 text-sm text-gray-500">
-            Nenhum cliente encontrado
+            Nenhum talhão encontrado
           </div>
         )}
       </SelectContent>

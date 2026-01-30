@@ -12,7 +12,7 @@ export const useCounterAnimation = (end: number, duration: number = 2000) => {
       if (!startTime) startTime = currentTime;
       const progress = Math.min((currentTime - startTime) / duration, 1);
       
-      // Usar easing function para uma animação mais suave
+      // Use an easing function for a smoother animation
       const easeOutQuart = 1 - Math.pow(1 - progress, 4);
       setCount(Math.floor(end * easeOutQuart));
 
