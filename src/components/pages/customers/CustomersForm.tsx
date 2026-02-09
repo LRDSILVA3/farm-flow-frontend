@@ -88,12 +88,12 @@ export const CustomersForm = ({ editingClient, onSave, onUpdate, onCancel }: Cus
             />
           </div>
           <div>
-            <Label htmlFor="name">name</Label>
+            <Label htmlFor="name">Nome</Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
-              placeholder="name completo"
+              placeholder="Nome completo"
               required
             />
           </div>
@@ -119,7 +119,7 @@ export const CustomersForm = ({ editingClient, onSave, onUpdate, onCancel }: Cus
             />
           </div>
           <div>
-            <Label htmlFor="phone">phone</Label>
+            <Label htmlFor="phone">Telefone</Label>
             <IMaskInput
               mask="(00) 00000-0000"
               id="phone"
@@ -131,7 +131,7 @@ export const CustomersForm = ({ editingClient, onSave, onUpdate, onCancel }: Cus
             />
           </div>
           <div>
-            <Label htmlFor="zipCode">zipCode</Label>
+            <Label htmlFor="zipCode">CEP</Label>
             <IMaskInput
               mask="00000-000"
               id="zipCode"

@@ -71,7 +71,7 @@ describe('PlotForm', () => {
 
         expect(screen.getByText('Editar Talhão')).toBeInTheDocument();
         expect(screen.getByLabelText('Nome do Talhão')).toHaveValue(mockPlot.name);
-        expect(screen.getByLabelText('Área (ha)')).toHaveValue(mockPlot.area);
+        expect(screen.getByLabelText('Área (ha)')).toHaveValue(Number(mockPlot.area));
         expect(screen.getByLabelText('Cidade')).toHaveValue(mockPlot.city);
         expect(screen.getByLabelText('Estado')).toHaveValue(mockPlot.state);
         expect(screen.getByLabelText('Matrícula')).toHaveValue(mockPlot.registration);

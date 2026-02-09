@@ -46,12 +46,12 @@ describe('CustomersPage', () => {
     expect(screen.getByRole('heading', { name: /Novo Client/i })).toBeInTheDocument();
 
     // Fill out the form
-    fireEvent.change(screen.getByLabelText(/CPF/i), { target: { value: '123.456.789-00' } });
-    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'John Doe' } });
+    fireEvent.input(screen.getByLabelText(/CPF/i), { target: { value: '12345678900' } });
+    fireEvent.change(screen.getByLabelText(/Nome/i), { target: { value: 'John Doe' } });
     fireEvent.change(screen.getByLabelText(/Data de Nascimento/i), { target: { value: '1990-01-01' } });
     fireEvent.change(screen.getByLabelText(/Email/i), { target: { value: 'john.doe@example.com' } });
-    fireEvent.change(screen.getByLabelText(/phone/i), { target: { value: '(11) 99999-9999' } });
-    fireEvent.change(screen.getByLabelText(/zipCode/i), { target: { value: '01234-567' } });
+    fireEvent.input(screen.getByLabelText(/Telefone/i), { target: { value: '11999999999' } });
+    fireEvent.input(screen.getByLabelText(/CEP/i), { target: { value: '01234567' } });
 
     // Submit the form
     const submitButton = screen.getByRole('button', { name: /Cadastrar/i });
@@ -126,9 +126,9 @@ describe('CustomersPage', () => {
     expect(screen.getByRole('heading', { name: /Editar Client/i })).toBeInTheDocument();
 
     expect(screen.getByLabelText(/CPF/i)).toHaveValue(mockClient.cpf);
-    expect(screen.getByLabelText(/name/i)).toHaveValue(mockClient.name);
+    expect(screen.getByLabelText(/Nome/i)).toHaveValue(mockClient.name);
     
-    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'John Doe Updated' } });
+    fireEvent.change(screen.getByLabelText(/Nome/i), { target: { value: 'John Doe Updated' } });
 
     const submitButton = screen.getByRole('button', { name: /Atualizar/i });
     fireEvent.click(submitButton);

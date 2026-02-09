@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ConferenciaService } from '../../../services/ConferenciaService';
+import { useCostVariables } from '../../../hooks/useCostVariables';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
@@ -23,6 +24,8 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
   initialNumAnalises,
   onValuesChange,
 }) => {
+  const { costVariables, loading: loadingCostVariables } = useCostVariables();
+
   const [distanciaFazendaKm, setDistanciaFazendaKm] = useState<number>(0);
   const [clienteDesejaNotaFiscal, setClienteDesejaNotaFiscal] = useState<boolean>(false);
   const [vencimentoServico, setVencimentoServico] = useState<Date | undefined>(new Date());
@@ -35,16 +38,21 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
   const [totalValuePerAlq, setTotalValuePerAlq] = useState<number>(0);
   const [totalValuePerPoint, setTotalValuePerPoint] = useState<number>(0);
 
-  const conferenciaService = new ConferenciaService();
+  const conferenciaService = useMemo(() => {
+    if (costVariables.length > 0) {
+      return new ConferenciaService(costVariables);
+    }
+    return null;
+  }, [costVariables]);
 
   useEffect(() => {
     setAlqueires(initialAlqueires);
   }, [initialAlqueires]);
 
   useEffect(() => {
-    if (vencimentoServico) {
+    if (vencimentoServico && conferenciaService) {
       const formattedVencimento = format(vencimentoServico, 'dd/MM/yyyy');
-      const { totalValue, details } = conferenciaService.calculate({
+      const { totalValue } = conferenciaService.calculate({
         clienteDesejaNotaFiscal: clienteDesejaNotaFiscal ? 'S' : 'N',
         distanciaFazendaKm: distanciaFazendaKm,
         vencimentoServico: formattedVencimento,
@@ -57,7 +65,7 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
       setTotalValue(totalValue);
       setTotalValuePerAlq(alqueires > 0 ? totalValue / alqueires : 0);
       setTotalValuePerPoint(numAnalises > 0 ? totalValue / numAnalises : 0);
-      onValuesChange(totalValue); // Notify parent component of the calculated value
+      onValuesChange(totalValue);
     }
   }, [
     distanciaFazendaKm,
@@ -68,14 +76,32 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
     alqueires,
     numAnalises,
     onValuesChange,
+    conferenciaService,
   ]);
+
+  if (loadingCostVariables) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <p className="ml-2">Carregando variáveis de custo...</p>
+      </div>
+    );
+  }
+
+  if (!conferenciaService) {
+    return (
+      <div className="text-red-500 p-4 border border-red-500 rounded-md">
+        As variáveis de custo não foram carregadas. O cálculo não pode ser realizado.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 p-4 border rounded-md">
       <h3 className="text-lg font-semibold">Cálculo de conferência</h3>
 
       <div className="space-y-4">
-        {/* Nota Fiscal */}
+        {/* Fields remain the same */}
         <div className="flex items-center space-x-2">
           <Switch
             id="nota-fiscal"
@@ -84,25 +110,20 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
           />
           <Label htmlFor="nota-fiscal">Cliente deseja nota fiscal?</Label>
         </div>
-        {clienteDesejaNotaFiscal && (
-          <p className="text-sm text-green-600 ml-9">Será emitida NF para o cliente</p>
-        )}
-
-        {/* Distância da Fazenda */}
+        
         <div>
           <Label htmlFor="distancia-fazenda">Distância da fazenda - Km:</Label>
           <Input
             id="distancia-fazenda"
             type="number"
             value={distanciaFazendaKm}
-            onChange={(e) => setDistanciaFazendaKm(parseFloat(e.target.value))}
+            onChange={(e) => setDistanciaFazendaKm(parseFloat(e.target.value) || 0)}
             min="0"
           />
         </div>
-
-        {/* Vencimento do Serviço */}
+        
         <div>
-          <Label htmlFor="vencimento-servico">Vencimento do serviço (DD/MM/AA):</Label>
+          <Label htmlFor="vencimento-servico">Vencimento do serviço:</Label>
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -127,17 +148,15 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
           </Popover>
         </div>
 
-        {/* Análise Física */}
         <div className="flex items-center space-x-2">
           <Switch
             id="analise-fisica"
             checked={desejaAnaliseFisica}
             onCheckedChange={setDesejaAnaliseFisica}
           />
-          <Label htmlFor="analise-fisica">Deseja análise física (para fins bancários)?</Label>
+          <Label htmlFor="analise-fisica">Deseja análise física?</Label>
         </div>
 
-        {/* % das Análises de 20-40cm */}
         <div>
           <Label htmlFor="perc-analises-20-40cm">% das análises de 20-40cm:</Label>
           <div className="flex items-center">
@@ -145,23 +164,22 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
               id="perc-analises-20-40cm"
               type="number"
               value={percentualAnalises20_40cm}
-              onChange={(e) => setPercentualAnalises20_40cm(parseFloat(e.target.value))}
+              onChange={(e) => setPercentualAnalises20_40cm(parseFloat(e.target.value) || 0)}
               min="0"
               max="100"
               className="w-full rounded-r-none"
             />
-            <span className="flex items-center h-10 px-3 border border-l-0 rounded-r-md bg-gray-50 text-gray-700">%</span>
+            <span className="flex items-center h-10 px-3 border border-l-0 rounded-r-md bg-muted text-muted-foreground">%</span>
           </div>
         </div>
 
-        {/* Alqueires, Hectares, Número de Análises */}
         <div className="grid grid-cols-3 gap-4">
           <div>
             <Label htmlFor="alqueires">Alqueires:</Label>
             <Input
               id="alqueires"
               type="number"
-              value={alqueires.toFixed(2)}
+              value={alqueires}
               onChange={(e) => setAlqueires(parseFloat(e.target.value) || 0)}
               min="0"
             />
@@ -173,7 +191,7 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
               type="number"
               value={(alqueires * 2.42).toFixed(2)}
               readOnly
-              className="bg-gray-100"
+              className="bg-muted"
             />
           </div>
           <div>

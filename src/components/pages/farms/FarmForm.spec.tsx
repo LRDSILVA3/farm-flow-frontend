@@ -98,8 +98,8 @@ describe('FarmForm', () => {
 
         expect(screen.getByText('Editar Fazenda')).toBeInTheDocument();
         expect(screen.getByLabelText('Nome da Fazenda')).toHaveValue(mockFarm.name);
-        expect(screen.getByLabelText('Área Total (ha)')).toHaveValue(mockFarm.area);
-        expect(screen.getByLabelText('Contato')).toHaveValue(mockFarm.contact);
+        expect(screen.getByLabelText('Área Total (ha)')).toHaveValue(Number(mockFarm.area));
+        expect(screen.getByLabelText<HTMLInputElement>('Contato')).toHaveValue('(11) 99999-9999');
         expect(screen.getByTestId('city-select')).toHaveValue(mockFarm.city);
         expect(screen.getByTestId('state-select')).toHaveValue(mockFarm.state);
         expect(screen.getByLabelText('Lote')).toHaveValue(mockFarm.lot);

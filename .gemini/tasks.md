@@ -18,6 +18,7 @@
 - [x] Gerar teste para as telas de criar e editar de farm.
 - [x] Gerar teste para as telas de criar e editar de plot.
 - [x] Verificar e ajustar dados mocados em processos de criação (cliente, fazenda, talhão).
+- [x] Refatorar `ConferenciaService` para utilizar variáveis de custo dinâmicas.
 
 ## ✨ Features
 - [x] **Apply Mask:** Adicionar máscara de telefone no campo de contato.
