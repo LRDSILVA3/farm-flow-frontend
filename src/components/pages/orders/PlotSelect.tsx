@@ -6,7 +6,6 @@ import { Search } from "lucide-react";
 
 export interface Plot {
   id: string;
-  farm_id: string;
   name: string;
   area: string;
 }

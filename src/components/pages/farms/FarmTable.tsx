@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { formatPhoneNumber } from "@/lib/utils";
 import { Edit, Eye } from "lucide-react";
-import { Farm } from "@/hooks/useFarms";
+import { Farm } from "@/types/farm";
 
 
 interface FarmsTableProps {

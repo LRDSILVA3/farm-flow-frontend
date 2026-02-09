@@ -1,19 +1,9 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Farm, Plot } from "@/types/farm";
 
-export interface Plot {
-  id: string;
-  name: string;
-  area: string;
-  status: string;
-  city: string;
-  state: string;
-  registration: string;
-  lot: string;
-}
-
-
+export type { Farm, Plot };
 
 interface FarmDB {
   id: string;
@@ -29,7 +19,7 @@ interface FarmDB {
   lot: string | null;
   created_at: string;
   updated_at: string;
-  clients: { name: string } | null; // Joined client data
+  clients: { name: string } | null;
 }
 
 interface PlotDB {
@@ -166,7 +156,7 @@ export const useFarms = () => {
         .single();
 
       if (error) throw error;
-      setFarms(prev => [...prev, mapFarmFromDB(data, [])]);
+      setFarms(prev => [...prev, mapFarmFromDB(data as unknown as FarmDB, [])]);
       toast({
         title: "Fazenda cadastrada",
         description: "A fazenda foi cadastrada com sucesso."

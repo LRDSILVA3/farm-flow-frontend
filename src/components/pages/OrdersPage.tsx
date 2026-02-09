@@ -1,18 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { OrdersTable } from "./orders/OrdersTable";
 import { OrderForm } from "./orders/OrderForm";
 import { useOrders, Order } from "@/hooks/useOrders";
-import { useClients, Client } from "@/hooks/useClients";
-import { useFarms, Farm, Plot } from "@/hooks/useFarms";
+import { useClients } from "@/hooks/useClients";
+import { useFarms } from "@/hooks/useFarms";
 
 const OrdersPage = () => {
-  const { toast } = useToast();
   const {
     orders,
     showOrderForm,
@@ -35,35 +33,6 @@ const OrdersPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [serviceFilter, setServiceFilter] = useState("");
   const [cidadeEstadoFilter, setCidadeEstadoFilter] = useState("");
-  const [availableFarms, setAvailableFarms] = useState<Farm[]>([]);
-  const [availablePlots, setAvailablePlots] = useState<Plot[]>([]);
-
-  useEffect(() => {
-    if (formData.clientId) {
-      const client = clients.find(c => c.id === formData.clientId);
-      // The owner of a farm is a client's name, not id. So we need to find the client name first.
-      if (client) {
-        setAvailableFarms(farms.filter(farm => farm.owner === client.name));
-      } else {
-        setAvailableFarms([]);
-      }
-    } else {
-      setAvailableFarms([]);
-    }
-  }, [formData.clientId, clients, farms]);
-
-  useEffect(() => {
-    if (formData.farmId) {
-      const farm = farms.find(f => f.id === formData.farmId);
-      if (farm) {
-        setAvailablePlots(farm.plots || []);
-      } else {
-        setAvailablePlots([]);
-      }
-    } else {
-      setAvailablePlots([]);
-    }
-  }, [formData.farmId, farms]);
 
   const handleEdit = (order: Order) => {
     console.log("Editing order:", order);
@@ -204,10 +173,6 @@ const OrdersPage = () => {
         onInputChange={handleInputChange}
         onSubmit={handleSubmit}
         onCancel={resetForm}
-        clients={clients}
-        farms={farms}
-        availableFarms={availableFarms}
-        availablePlots={availablePlots}
       />
     </div>
   );

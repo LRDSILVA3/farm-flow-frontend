@@ -11,7 +11,7 @@ import { PlotSelect } from "./PlotSelect";
 import { ConferenciaServiceForm } from "./ConferenciaServiceForm";
 import React, { useMemo } from "react";
 import { useClients } from "@/hooks/useClients";
-import { useFarms, Plot } from "@/hooks/useFarms";
+import { useFarms } from "@/hooks/useFarms";
 
 interface OrderFormProps {
   open: boolean;
@@ -36,7 +36,6 @@ export const OrderForm = ({
   const { clients } = useClients();
   const { farms } = useFarms();
 
-  const allPlots = useMemo(() => farms.flatMap(farm => farm.plots.map(plot => ({ ...plot, farm_id: farm.id }))), [farms]);
 
   const availableFarms = useMemo(() => {
     if (!formData.clientId) return [];

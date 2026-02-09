@@ -8,7 +8,7 @@ import { FarmForm } from "./farms/FarmForm";
 import { PlotsModal } from "./farms/PlotsModal";
 import { AddPlotModal } from "./farms/AddPlotModal";
 import { FarmPageHeader } from "./farms/FarmPageHeader";
-import { useFarms, Farm, Plot } from "@/hooks/useFarms";
+import { useFarms } from "@/hooks/useFarms";
 import { useFarmHandlers } from "./farms/usePlotHandlers";
 
 
@@ -95,7 +95,7 @@ const FarmsPage = () => {
 
   const filteredFarms = farms.filter(farm => {
     const matchesSearch = farm.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      farm.owner.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (farm.clientName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       farm.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
       farm.state.toLowerCase().includes(searchTerm.toLowerCase());
     

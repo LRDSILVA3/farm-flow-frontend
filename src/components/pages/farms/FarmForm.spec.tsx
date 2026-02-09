@@ -24,8 +24,9 @@ vi.mock('./CityStateSelect', () => ({
 
 const mockFarm: Farm = {
     id: '1',
+    clientId: '1',
     name: 'Fazenda Teste',
-    owner: '1',
+    clientName: 'Cliente Teste',
     area: '100',
     contact: '11999999999',
     city: 'São Paulo',
@@ -43,7 +44,7 @@ describe('FarmForm', () => {
 
     const renderCreateForm = () => {
         const emptyFarmData: Farm = {
-            id: '', name: '', owner: '', area: '0', contact: '', city: '', state: '', status: 'Ativo', lot: '', registration: '', plots: [],
+            id: '', clientId: '', name: '', clientName: '', area: '0', contact: '', city: '', state: '', status: 'Ativo', lot: '', registration: '', plots: [],
         };
 
         return render(

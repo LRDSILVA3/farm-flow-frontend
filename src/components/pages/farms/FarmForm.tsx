@@ -11,7 +11,7 @@ import { Trash2, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { CustomerSelect } from "./CustomerSelect";
 import { CityStateSelect } from "./CityStateSelect";
-import { Farm } from "@/hooks/useFarms";
+import { Farm } from "@/types/farm";
 import { useClients, Client } from "@/hooks/useClients";
 
 interface FarmFormProps {

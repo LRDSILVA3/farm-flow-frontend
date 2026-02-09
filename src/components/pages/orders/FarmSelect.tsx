@@ -7,9 +7,8 @@ import { Search } from "lucide-react";
 interface Farm {
   id: string;
   name: string;
-  owner: string;
+  clientName: string;
   area: string;
-  location: string;
 }
 
 interface FarmSelectProps {
@@ -24,7 +23,7 @@ export const FarmSelect = ({ value, onValueChange, farms, disabled }: FarmSelect
 
   const filteredFarms = farms.filter(farm =>
     farm.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    farm.owner.toLowerCase().includes(searchTerm.toLowerCase())
+    (farm.clientName || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -44,7 +43,7 @@ export const FarmSelect = ({ value, onValueChange, farms, disabled }: FarmSelect
         </div>
         {filteredFarms.map((farm) => (
           <SelectItem key={farm.id} value={farm.id}>
-            {farm.name} - {farm.owner}
+            {farm.name} - {farm.clientName}
           </SelectItem>
         ))}
         {filteredFarms.length === 0 && (
