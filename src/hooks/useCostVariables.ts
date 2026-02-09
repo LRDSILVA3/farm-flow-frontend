@@ -9,6 +9,7 @@ export interface CostVariable {
   code: string;
   value: number;
   description: string;
+  linkedServices: { id: string; name: string }[];
 }
 
 export const useCostVariables = () => {
@@ -26,29 +27,46 @@ export const useCostVariables = () => {
     name: "",
     code: "",
     value: 0,
-    description: ""
+    description: "",
+    linkedServices: []
   });
 
   const fetchCostVariables = async () => {
     if (!user) return;
     
     setLoading(true);
-    const { data, error } = await supabase
-      .from("cost_variables")
-      .select("*")
-      .order("created_at", { ascending: false });
 
-    if (error) {
-      toast({ title: "Erro ao carregar variáveis", description: error.message, variant: "destructive" });
-    } else {
-      setCostVariables(data?.map(v => ({
-        id: v.id,
-        name: v.name,
-        code: v.code,
-        value: Number(v.value) || 0,
-        description: v.description || ""
-      })) || []);
+    const [varsResult, linksResult] = await Promise.all([
+      supabase.from("cost_variables").select("*").order("created_at", { ascending: false }),
+      supabase.from("service_variables").select("variable_id, service_id, services(name)")
+    ]);
+
+    if (varsResult.error) {
+      toast({ title: "Erro ao carregar variáveis", description: varsResult.error.message, variant: "destructive" });
+      setLoading(false);
+      return;
     }
+
+    const serviceMap = new Map<string, { id: string; name: string }[]>();
+    if (linksResult.data) {
+      for (const link of linksResult.data) {
+        const serviceName = (link as any).services?.name || "Desconhecido";
+        if (!serviceMap.has(link.variable_id)) {
+          serviceMap.set(link.variable_id, []);
+        }
+        serviceMap.get(link.variable_id)!.push({ id: link.service_id, name: serviceName });
+      }
+    }
+
+    setCostVariables(varsResult.data?.map(v => ({
+      id: v.id,
+      name: v.name,
+      code: v.code,
+      value: Number(v.value) || 0,
+      description: v.description || "",
+      linkedServices: serviceMap.get(v.id) || []
+    })) || []);
+    
     setLoading(false);
   };
 
@@ -111,7 +129,8 @@ export const useCostVariables = () => {
       name: "",
       code: "",
       value: 0,
-      description: ""
+      description: "",
+      linkedServices: []
     });
     setEditingCostVariable(null);
     setShowCostVariableForm(false);

@@ -55,8 +55,9 @@ export const useFarmHandlers = (
   const resetForm = () => {
     setFormData({
       id: "",
+      clientId: "",
       name: "",
-      owner: "",
+      clientName: "",
       area: "",
       city: "",
       state: "",

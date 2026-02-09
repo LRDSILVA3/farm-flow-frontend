@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Link } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { CostVariable } from "../../../hooks/useCostVariables";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 
@@ -81,6 +82,7 @@ export const CostVariablesTab: React.FC<CostVariablesTabProps> = ({
                   <TableHead>Nome</TableHead>
                   <TableHead>Código</TableHead>
                   <TableHead>Valor</TableHead>
+                  <TableHead>Serviços Vinculados</TableHead>
                   <TableHead>Descrição</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
@@ -95,6 +97,20 @@ export const CostVariablesTab: React.FC<CostVariablesTabProps> = ({
                       </code>
                     </TableCell>
                     <TableCell>{formatCurrency(variable.value)}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {variable.linkedServices.length > 0 ? (
+                          variable.linkedServices.map((service) => (
+                            <Badge key={service.id} variant="secondary" className="text-xs">
+                              <Link className="h-3 w-3 mr-1" />
+                              {service.name}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Nenhum</span>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell className="max-w-[200px] truncate">{variable.description}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
