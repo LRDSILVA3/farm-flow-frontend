@@ -1,18 +1,22 @@
 import { useState, useEffect, FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/services/api";
 
 export interface Equipment {
   id: string;
   name: string;
+  type?: "Veículo" | "Ferramenta" | "Outro" | string;
+  model?: string;
+  plate?: string;
+  serialNumber?: string;
+  hourmeter?: string;
+  year?: string;
+  notes?: string;
   status: string;
 }
 
 export const useEquipment = () => {
   const { toast } = useToast();
-  const { user } = useAuth();
-
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [equipmentPage, setEquipmentPage] = useState(1);
@@ -22,33 +26,77 @@ export const useEquipment = () => {
   const [equipmentFormData, setEquipmentFormData] = useState<Equipment>({
     id: "",
     name: "",
-    status: "Available"
+    type: "Veículo",
+    model: "",
+    plate: "",
+    serialNumber: "",
+    hourmeter: "",
+    year: "",
+    notes: "",
+    status: "Disponível"
   });
 
   const fetchEquipment = async () => {
-    if (!user) return;
-
     setLoading(true);
-    const { data, error } = await supabase
-      .from("equipment")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
+    try {
+      const data = await api.get<any[]>('/equipment');
+      if (Array.isArray(data)) {
+        setEquipment(data.map(e => ({
+          id: e.id,
+          name: e.name || "",
+          type: e.type || "Veículo",
+          model: e.model || "",
+          plate: e.plate || "",
+          serialNumber: e.serial_number || e.serialNumber || "",
+          hourmeter: e.hourmeter || "",
+          year: e.year || "",
+          notes: e.notes || "",
+          status: e.status || "Disponível"
+        })));
+      }
+    } catch (error: any) {
       toast({ title: "Erro ao carregar equipamentos", description: error.message, variant: "destructive" });
-    } else {
-      setEquipment(data?.map(e => ({
-        id: e.id,
-        name: e.name,
-        status: e.status || "Available"
-      })) || []);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     fetchEquipment();
-  }, [user]);
+  }, []);
+
+  const handleEquipmentInputChange = (field: keyof Equipment, value: any) => {
+    setEquipmentFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleEquipmentSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        name: equipmentFormData.name,
+        type: equipmentFormData.type || "Veículo",
+        model: equipmentFormData.model || null,
+        plate: equipmentFormData.plate || null,
+        serial_number: equipmentFormData.serialNumber || null,
+        hourmeter: equipmentFormData.hourmeter || null,
+        year: equipmentFormData.year || null,
+        notes: equipmentFormData.notes || null,
+        status: equipmentFormData.status
+      };
+
+      if (editingEquipment) {
+        await api.put(`/equipment/${editingEquipment.id}`, payload);
+        toast({ title: "Equipamento atualizado", description: "O equipamento foi atualizado com sucesso." });
+      } else {
+        await api.post('/equipment', payload);
+        toast({ title: "Equipamento cadastrado", description: "O equipamento foi cadastrado com sucesso." });
+      }
+      resetEquipmentForm();
+      await fetchEquipment();
+    } catch (error: any) {
+      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+    }
+  };
 
   const handleEditEquipment = (item: Equipment) => {
     setEditingEquipment(item);
@@ -56,102 +104,65 @@ export const useEquipment = () => {
     setShowEquipmentForm(true);
   };
 
-  const handleEquipmentSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-
-    if (editingEquipment) {
-      const { error } = await supabase
-        .from("equipment")
-        .update({
-          name: equipmentFormData.name,
-          status: equipmentFormData.status
-        })
-        .eq("id", editingEquipment.id);
-
-      if (error) {
-        toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
-      } else {
-        toast({ title: "Equipamento atualizado", description: "O equipamento foi atualizado com sucesso." });
-        fetchEquipment();
-      }
-    } else {
-      const { error } = await supabase
-        .from("equipment")
-        .insert({
-          user_id: user.id,
-          name: equipmentFormData.name,
-          status: equipmentFormData.status
-        });
-
-      if (error) {
-        toast({ title: "Erro ao criar", description: error.message, variant: "destructive" });
-      } else {
-        toast({ title: "Equipamento criado", description: "O equipamento foi criado com sucesso." });
-        fetchEquipment();
-      }
+  const handleDeleteEquipment = async (id: string) => {
+    try {
+      await api.delete(`/equipment/${id}`);
+      toast({ title: "Equipamento removido", description: "Equipamento excluído com sucesso." });
+      await fetchEquipment();
+    } catch (error: any) {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
     }
-
-    resetEquipmentForm();
   };
 
   const resetEquipmentForm = () => {
+    setShowEquipmentForm(false);
+    setEditingEquipment(null);
     setEquipmentFormData({
       id: "",
       name: "",
+      type: "Veículo",
+      model: "",
+      plate: "",
+      serialNumber: "",
+      hourmeter: "",
+      year: "",
+      notes: "",
       status: "Disponível"
     });
-    setEditingEquipment(null);
-    setShowEquipmentForm(false);
-  };
-
-  const handleDeleteEquipment = async (id: string) => {
-    if (!user) return;
-
-    const { error } = await supabase
-      .from("equipment")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Equipamento excluído", description: "O equipamento foi excluído com sucesso." });
-      fetchEquipment();
-    }
-  };
-
-  const handleEquipmentInputChange = (field: keyof Equipment, value: string) => {
-    setEquipmentFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const totalEquipment = equipment.length;
-  const totalEquipmentPages = Math.ceil(totalEquipment / equipmentPerPage);
-  const equipmentStartIndex = (equipmentPage - 1) * equipmentPerPage;
-  const equipmentEndIndex = equipmentStartIndex + equipmentPerPage;
-  const currentEquipment = equipment.slice(equipmentStartIndex, equipmentEndIndex);
+  const totalEquipmentPages = Math.max(1, Math.ceil(totalEquipment / (equipmentPerPage || 10)));
+  const safePage = Math.min(equipmentPage, totalEquipmentPages);
+  const equipmentStartIndex = (safePage - 1) * (equipmentPerPage || 10);
+  const equipmentEndIndex = equipmentStartIndex + (equipmentPerPage || 10);
+  const paginatedEquipment = equipment.slice(equipmentStartIndex, equipmentEndIndex);
 
   return {
-    equipment,
+    equipment: paginatedEquipment,
+    allEquipment: equipment,
     loading,
-    equipmentPage,
+    equipmentPage: safePage,
     setEquipmentPage,
     equipmentPerPage,
     setEquipmentPerPage,
-    showEquipmentForm,
-    setShowEquipmentForm,
-    editingEquipment,
-    equipmentFormData,
-    handleEditEquipment,
-    handleEquipmentSubmit,
-    resetEquipmentForm,
-    handleEquipmentInputChange,
-    handleDeleteEquipment,
     totalEquipment,
     totalEquipmentPages,
     equipmentStartIndex,
     equipmentEndIndex,
-    currentEquipment,
-    fetchEquipment
+    showEquipmentForm,
+    setShowEquipmentForm,
+    editingEquipment,
+    setEditingEquipment,
+    equipmentFormData,
+    setEquipmentFormData,
+    handleEquipmentInputChange,
+    handleInputChange: handleEquipmentInputChange,
+    handleEquipmentSubmit,
+    handleSaveEquipment: handleEquipmentSubmit,
+    handleEditEquipment,
+    handleDeleteEquipment,
+    resetEquipmentForm,
+    refetch: fetchEquipment
   };
 };

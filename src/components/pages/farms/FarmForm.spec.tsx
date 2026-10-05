@@ -84,11 +84,11 @@ describe('FarmForm', () => {
         expect(screen.getByText('Nova Fazenda')).toBeInTheDocument();
         expect(screen.getByLabelText('Nome da Fazenda')).toHaveValue('');
         expect(screen.getByLabelText('Área Total (ha)')).toHaveValue(0);
-        expect(screen.getByLabelText('Contato')).toHaveValue('');
+        expect(screen.getByLabelText(/Contato/i)).toHaveValue('');
         expect(screen.getByTestId('city-select')).toHaveValue('');
         expect(screen.getByTestId('state-select')).toHaveValue('');
-        expect(screen.getByLabelText('Lote')).toHaveValue('');
-        expect(screen.getByLabelText('Matrícula')).toHaveValue('');
+        expect(screen.getByLabelText(/Lote/i)).toHaveValue('');
+        expect(screen.getByLabelText(/Matrícula/i)).toHaveValue('');
 
         const createButton = screen.getByRole('button', { name: /Criar/i });
         expect(createButton).toBeInTheDocument();
@@ -100,11 +100,11 @@ describe('FarmForm', () => {
         expect(screen.getByText('Editar Fazenda')).toBeInTheDocument();
         expect(screen.getByLabelText('Nome da Fazenda')).toHaveValue(mockFarm.name);
         expect(screen.getByLabelText('Área Total (ha)')).toHaveValue(Number(mockFarm.area));
-        expect(screen.getByLabelText<HTMLInputElement>('Contato')).toHaveValue('(11) 99999-9999');
+        expect(screen.getByLabelText<HTMLInputElement>(/Contato/i)).toHaveValue('(11) 99999-9999');
         expect(screen.getByTestId('city-select')).toHaveValue(mockFarm.city);
         expect(screen.getByTestId('state-select')).toHaveValue(mockFarm.state);
-        expect(screen.getByLabelText('Lote')).toHaveValue(mockFarm.lot);
-        expect(screen.getByLabelText('Matrícula')).toHaveValue(mockFarm.registration);
+        expect(screen.getByLabelText(/Lote/i)).toHaveValue(mockFarm.lot);
+        expect(screen.getByLabelText(/Matrícula/i)).toHaveValue(mockFarm.registration);
         
         const updateButton = screen.getByRole('button', { name: /Atualizar/i });
         expect(updateButton).toBeInTheDocument();
@@ -119,7 +119,7 @@ describe('FarmForm', () => {
     });
 
     it('calls onSubmit when the form is submitted', () => {
-        renderCreateForm();
+        renderEditForm();
 
         const form = screen.getByRole('form');
         fireEvent.submit(form);

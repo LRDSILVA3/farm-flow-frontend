@@ -36,13 +36,16 @@ export const usePlan = () => {
     }
   ]);
 
-  // Mock services for selection
+  // Catálogo de serviços oficiais sincronizados com o modelo de negócio
   const [services] = useState([
-    { id: 1, name: "Pulverização" },
-    { id: 2, name: "Plantio" },
-    { id: 3, name: "Colheita" },
-    { id: 4, name: "Análise de Solo" },
-    { id: 5, name: "Irrigação" }
+    { id: 1, name: "Amostragem de Solo (AP)" },
+    { id: 2, name: "Conferência" },
+    { id: 3, name: "Coleta Foliar" },
+    { id: 4, name: "Compactação de Solo" },
+    { id: 5, name: "Voo de Drone (Mapeamento)" },
+    { id: 6, name: "Pulverização com Drone" },
+    { id: 7, name: "Aplicação ATV" },
+    { id: 8, name: "Sistema Equaliza" }
   ]);
 
   const [plansPage, setPlansPage] = useState(1);

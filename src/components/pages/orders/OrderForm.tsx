@@ -9,6 +9,13 @@ import { CustomerSelect } from "../farms/CustomerSelect";
 import { FarmSelect } from "./FarmSelect";
 import { PlotSelect } from "./PlotSelect";
 import { ConferenciaServiceForm } from "./ConferenciaServiceForm";
+import { FoliarServiceForm } from "./FoliarServiceForm";
+import { CompactionServiceForm } from "./CompactionServiceForm";
+import { DroneMappingServiceForm } from "./DroneMappingServiceForm";
+import { ATVServiceForm } from "./ATVServiceForm";
+import { SoilSamplingServiceForm } from "./SoilSamplingServiceForm";
+import { DroneSprayingServiceForm } from "./DroneSprayingServiceForm";
+import { EqualizaServiceForm } from "./EqualizaServiceForm";
 import React, { useMemo } from "react";
 import { useClients } from "@/hooks/useClients";
 import { useFarms } from "@/hooks/useFarms";
@@ -33,9 +40,9 @@ export const OrderForm = ({
   onCancel,
 }: OrderFormProps) => {
   const [selectedPlot, setSelectedPlot] = React.useState<string>("todos");
+  const [isConferenciaAllPlotsSelected, setIsConferenciaAllPlotsSelected] = React.useState<boolean>(false);
   const { clients } = useClients();
   const { farms } = useFarms();
-
 
   const availableFarms = useMemo(() => {
     if (!formData.clientId) return [];
@@ -48,11 +55,32 @@ export const OrderForm = ({
     return selectedFarm ? selectedFarm.plots : [];
   }, [farms, formData.farmId]);
 
+  // Sempre arredonda para exatamente 2 casas decimais
+  const currentFarmTotalAlqueires = useMemo(() => {
+    if (!formData.farmId) return 0;
+    const selectedFarm = farms.find(farm => farm.id === formData.farmId);
+    if (selectedFarm) {
+      const totalAreaHectares = selectedFarm.plots.reduce((sum, p) => sum + (parseFloat(p.area || "0") || 0), 0);
+      return Number((totalAreaHectares / 2.42).toFixed(2));
+    }
+    return 0;
+  }, [farms, formData.farmId]);
+
+  const calculatedAlqueires = useMemo(() => {
+    const ha = parseFloat(formData.area || "0") || 0;
+    return Number((ha / 2.42).toFixed(2));
+  }, [formData.area]);
+
+  // Serviços Oficiais validados da Planilha Agronômica
   const availableServices = [
-    { id: "1", name: "Pulverização", valorAlqueire: "200.00", status: "Ativo" },
-    { id: "2", name: "Plantio", valorAlqueire: "150.00", status: "Ativo" },
-    { id: "3", name: "Colheita", valorAlqueire: "180.00", status: "Ativo" },
-    { id: "4", name: "Adubação", valorAlqueire: "120.00", status: "Ativo" }
+    { id: "1", name: "Amostragem de Solo (AP)", valorAlqueire: "278.30", status: "Ativo" },
+    { id: "2", name: "Conferência", valorAlqueire: "65.00", status: "Ativo" },
+    { id: "3", name: "Coleta Foliar", valorAlqueire: "60.00", status: "Ativo" },
+    { id: "4", name: "Compactação de Solo", valorAlqueire: "430.00", status: "Ativo" },
+    { id: "5", name: "Voo de Drone (Mapeamento)", valorAlqueire: "50.00", status: "Ativo" },
+    { id: "6", name: "Pulverização com Drone", valorAlqueire: "200.00", status: "Ativo" },
+    { id: "7", name: "Aplicação ATV", valorAlqueire: "260.00", status: "Ativo" },
+    { id: "8", name: "Sistema Equaliza", valorAlqueire: "671.65", status: "Ativo" },
   ];
 
   const availableProducts = [
@@ -62,10 +90,39 @@ export const OrderForm = ({
     { id: "4", name: "Herbicida", valorUn: "65.00" }
   ];
 
-  const availableServiceGroups = [
-    { id: "1", name: "Pacote Completo", description: "Pulverização + Plantio + Colheita" },
-    { id: "2", name: "Pacote Básico", description: "Pulverização + Adubação" }
-  ];
+  const activeSpecializedService = useMemo(() => {
+    const valid = [
+      "Conferência",
+      "Coleta Foliar",
+      "Compactação de Solo",
+      "Voo de Drone (Mapeamento)",
+      "Aplicação ATV",
+      "Amostragem de Solo (AP)",
+      "Pulverização",
+      "Pulverização com Drone",
+      "Sistema Equaliza",
+      "Equaliza"
+    ];
+    if (valid.includes(formData.type)) return formData.type;
+    if (formData.type === "Serviço" && valid.includes(formData.serviceName)) return formData.serviceName;
+    return null;
+  }, [formData.type, formData.serviceName]);
+
+  React.useEffect(() => {
+    if (!open) {
+      setSelectedPlot("todos");
+      setIsConferenciaAllPlotsSelected(false);
+    }
+  }, [open]);
+
+  const handleValuesChange = React.useCallback((calculatedValue: number) => {
+    const formatted = calculatedValue.toFixed(2);
+    const currentVal = parseFloat(formData.value || "0") || 0;
+    // Previne loops de re-renderização: só atualiza se houver diferença real >= 1 centavo
+    if (Math.abs(currentVal - calculatedValue) >= 0.01) {
+      onInputChange("value", formatted);
+    }
+  }, [formData.value, onInputChange]);
 
   const addProduct = () => {
     const newProducts = [...(formData.productsData || []), { id: "", name: "", quantity: 1 }];
@@ -88,6 +145,7 @@ export const OrderForm = ({
     onInputChange("farmId", "");
     setSelectedPlot("todos");
     onInputChange("area", "");
+    setIsConferenciaAllPlotsSelected(false);
   };
 
   const handleFarmChange = (id: string) => {
@@ -95,10 +153,12 @@ export const OrderForm = ({
     setSelectedPlot("todos");
     const selectedFarm = farms.find(farm => farm.id === id);
     if (selectedFarm) {
-      const totalArea = selectedFarm.plots.reduce((sum, p) => sum + parseFloat(p.area), 0);
-      onInputChange("area", totalArea.toString());
+      const totalArea = selectedFarm.plots.reduce((sum, p) => sum + (parseFloat(p.area || "0") || 0), 0);
+      onInputChange("area", totalArea.toFixed(2));
+      setIsConferenciaAllPlotsSelected(true);
     } else {
       onInputChange("area", "");
+      setIsConferenciaAllPlotsSelected(false);
     }
   };
 
@@ -108,11 +168,14 @@ export const OrderForm = ({
     if (!selectedFarm) return;
 
     if (plotId === "todos") {
-      const totalArea = selectedFarm.plots.reduce((sum, p) => sum + parseFloat(p.area), 0);
-      onInputChange("area", totalArea.toString());
+      const totalArea = selectedFarm.plots.reduce((sum, p) => sum + (parseFloat(p.area || "0") || 0), 0);
+      onInputChange("area", totalArea.toFixed(2));
+      setIsConferenciaAllPlotsSelected(true);
     } else {
       const plot = selectedFarm.plots.find(p => p.id === plotId);
-      onInputChange("area", plot ? plot.area : "");
+      const plotArea = plot ? (parseFloat(plot.area || "0") || 0).toFixed(2) : "";
+      onInputChange("area", plotArea);
+      setIsConferenciaAllPlotsSelected(false);
     }
   };
 
@@ -155,7 +218,7 @@ export const OrderForm = ({
                 <div>
                   <Label>Quantidade</Label>
                   <Input
-                    type="number"
+                    type="number" step="any"
                     min="1"
                     value={product.quantity}
                     onChange={(e) => updateProduct(index, "quantity", parseInt(e.target.value) || 1)}
@@ -191,34 +254,10 @@ export const OrderForm = ({
                       {service.name} - R$ {service.valorAlqueire}/alqueire
                     </SelectItem>
                   ))}
-                  <SelectItem value="Conferência">Conferência</SelectItem>
               </SelectContent>
             </Select>
           </div>
         );
-
-      case "Grupo de Serviços":
-        return (
-          <div>
-            <Label htmlFor="serviceGroup">Grupo de Serviços</Label>
-            <Select value={formData.serviceGroup} onValueChange={(value) => onInputChange("serviceGroup", value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um grupo" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableServiceGroups.map((group) => (
-                  <SelectItem key={group.id} value={group.name}>
-                    {group.name} - {group.description}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        );
-
-      case "Conferência":
-        return null; // Rendered separately below
-
 
       default:
         return null;
@@ -233,7 +272,7 @@ export const OrderForm = ({
             {editingOrder ? "Editar Pedido" : "Novo Pedido"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form key={open ? (editingOrder?.id || 'new-order-clean') : 'closed'} onSubmit={onSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="customer">Cliente</Label>
@@ -262,69 +301,169 @@ export const OrderForm = ({
               />
             </div>
           </div>
+
+          {/* Resumo da Área Selecionada */}
+          {formData.area && (
+            <div className="flex gap-4 p-2.5 bg-muted/40 rounded-md border text-sm">
+              <div>
+                Área em Hectares: <strong>{parseFloat(formData.area).toFixed(2)} ha</strong>
+              </div>
+              <div className="border-l pl-4">
+                Área em Alqueires: <strong>{calculatedAlqueires.toFixed(2)} alq</strong>
+              </div>
+            </div>
+          )}
           
           <div>
-            <Label htmlFor="type">Tipo</Label>
-            <Select value={formData.type} onValueChange={(value) => onInputChange("type", value)}>
+            <Label htmlFor="type">Tipo do Pedido / Serviço</Label>
+            <Select
+              value={formData.type}
+              onValueChange={(value) => {
+                onInputChange("type", value);
+                if (value !== "Produto" && value !== "Serviço") {
+                  onInputChange("serviceName", value);
+                }
+              }}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Produto">Produto</SelectItem>
-                <SelectItem value="Serviço">Serviço</SelectItem>
-                <SelectItem value="Grupo de Serviços">Grupo de Serviços</SelectItem>
-                <SelectItem value="Conferência">Conferência</SelectItem>
+                <SelectItem value="Amostragem de Solo (AP)">Amostragem de Solo (AP)</SelectItem>
+                <SelectItem value="Conferência">Conferência de Amostragem</SelectItem>
+                <SelectItem value="Voo de Drone (Mapeamento)">Voo de Drone (Mapeamento)</SelectItem>
+                <SelectItem value="Pulverização com Drone">Pulverização com Drone</SelectItem>
+                <SelectItem value="Compactação de Solo">Compactação de Solo</SelectItem>
+                <SelectItem value="Coleta Foliar">Coleta Foliar</SelectItem>
+                <SelectItem value="Aplicação ATV">Aplicação ATV (Sistematização)</SelectItem>
+                <SelectItem value="Sistema Equaliza">Sistema Equaliza</SelectItem>
+                <SelectItem value="Produto">Venda de Produto</SelectItem>
+                <SelectItem value="Serviço">Outro Serviço Avulso</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {renderFieldsByType()}
           
-          {formData.type !== "Conferência" && (
-            <div className="grid grid-cols-2 gap-4">
+          {formData.type === "Serviço" && Boolean(formData.serviceName) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="area">Área (ha)</Label>
                 <Input
                   id="area"
                   type="number"
-                  step="0.1"
+                  step="0.01"
                   value={formData.area}
                   onChange={(e) => onInputChange("area", e.target.value)}
+                  placeholder="0.00"
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="value">Valor</Label>
+                <Label htmlFor="value">Valor Total (R$)</Label>
                 <Input
                   id="value"
                   value={formData.value}
                   onChange={(e) => onInputChange("value", e.target.value)}
                   placeholder="R$ 0,00"
                   required
-                  readOnly={formData.type === "Conferência"}
                 />
               </div>
             </div>
           )}
 
-          {/* ConferenciaServiceForm moved here */}
-          {formData.type === "Conferência" && (
+          {/* Subformulários Especializados da Planilha Agronômica com Estabilização */}
+          {activeSpecializedService === "Conferência" && (
             <ConferenciaServiceForm
-              initialAlqueires={((parseFloat(formData.area) || 0) / 2.42)}
+              initialAlqueires={calculatedAlqueires}
               initialNumAnalises={parseInt(formData.productsData?.[0]?.quantity?.toString() || "0")}
-              onValuesChange={(calculatedValue) => onInputChange("value", calculatedValue.toFixed(2))}
+              totalFarmAlqueires={currentFarmTotalAlqueires}
+              onValuesChange={handleValuesChange}
+              onAllPlotsSelectedChange={setIsConferenciaAllPlotsSelected}
+              onProductsChange={(products) => onInputChange("productsData", products)}
             />
           )}
 
-          {/* Display final value when type is Conferencia */}
-          {formData.type === "Conferência" && (
-            <div className="mt-4">
-              <Label htmlFor="final-value">Valor Total (R$)</Label>
+          {activeSpecializedService === "Coleta Foliar" && (
+            <FoliarServiceForm
+              initialAlqueires={calculatedAlqueires}
+              initialNumPontos={parseInt(formData.productsData?.[0]?.quantity?.toString() || "0")}
+              totalFarmAlqueires={currentFarmTotalAlqueires}
+              onValuesChange={handleValuesChange}
+              onProductsChange={(products) => onInputChange("productsData", products)}
+            />
+          )}
+
+          {activeSpecializedService === "Compactação de Solo" && (
+            <CompactionServiceForm
+              initialNumPontos={parseInt(formData.productsData?.[0]?.quantity?.toString() || "4")}
+              onValuesChange={handleValuesChange}
+            />
+          )}
+
+          {activeSpecializedService === "Voo de Drone (Mapeamento)" && (
+            <DroneMappingServiceForm
+              initialAlqueires={calculatedAlqueires}
+              onValuesChange={handleValuesChange}
+            />
+          )}
+
+          {activeSpecializedService === "Aplicação ATV" && (
+            <ATVServiceForm
+              initialAreaHa={parseFloat(formData.area) || 10}
+              onValuesChange={handleValuesChange}
+            />
+          )}
+
+          {activeSpecializedService === "Amostragem de Solo (AP)" && (
+            <SoilSamplingServiceForm
+              initialAlqueires={
+                formData.productsData?.find((p: any) => p.id === 'servico_ap' || p.type === 'SERVICO_AP')?.quantity
+                  ? Number(formData.productsData.find((p: any) => p.id === 'servico_ap' || p.type === 'SERVICO_AP').quantity)
+                  : calculatedAlqueires
+              }
+              initialNumPontos={
+                formData.productsData && formData.productsData.length > 0
+                  ? formData.productsData
+                      .filter((p: any) => p.id === 'analises_completa' || p.id === 'analises_macro' || p.type === 'MACRO+S+P_REM' || p.type === 'MACRO')
+                      .reduce((sum: number, p: any) => sum + (parseInt(p.quantity?.toString() || "0") || 0), 0) || parseInt(formData.productsData?.[0]?.quantity?.toString() || "0")
+                  : 0
+              }
+              initialProducts={formData.productsData}
+              onValuesChange={handleValuesChange}
+              onAreaChange={(areaHa) => {
+                const cur = parseFloat(formData.area || "0") || 0;
+                if (Math.abs(cur - areaHa) > 0.05) {
+                  onInputChange("area", areaHa.toFixed(2));
+                }
+              }}
+              onProductsChange={(products) => onInputChange("productsData", products)}
+            />
+          )}
+
+          {(activeSpecializedService === "Pulverização" || activeSpecializedService === "Pulverização com Drone") && (
+            <DroneSprayingServiceForm
+              initialAreaHa={parseFloat(formData.area) || 0}
+              onValuesChange={handleValuesChange}
+            />
+          )}
+
+          {(activeSpecializedService === "Sistema Equaliza" || activeSpecializedService === "Equaliza") && (
+            <EqualizaServiceForm
+              initialAlqueires={calculatedAlqueires}
+              onValuesChange={handleValuesChange}
+            />
+          )}
+
+          {/* Exibição Clara do Total Calculado */}
+          {activeSpecializedService && (
+            <div className="mt-4 p-3 bg-muted/30 border rounded-md">
+              <Label htmlFor="final-value" className="text-sm font-semibold">Valor Total Calculado do Pedido</Label>
               <Input
                 id="final-value"
-                value={formData.value}
+                value={`R$ ${parseFloat(formData.value || "0").toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 readOnly
-                className="bg-gray-100"
+                className="bg-background font-bold text-lg text-primary mt-1"
               />
             </div>
           )}
@@ -361,12 +500,12 @@ export const OrderForm = ({
             </div>
           )}
           
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={onCancel}>
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-auto">
               Cancelar
             </Button>
-            <Button type="submit" className="bg-green-600 hover:bg-green-700">
-              {editingOrder ? "Atualizar" : "Criar"}
+            <Button type="submit" className="w-full sm:w-auto bg-green-600 hover:bg-green-700">
+              {editingOrder ? "Atualizar Pedido" : "Criar Pedido"}
             </Button>
           </div>
         </form>

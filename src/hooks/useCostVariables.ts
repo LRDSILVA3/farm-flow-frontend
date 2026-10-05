@@ -1,7 +1,6 @@
 import { useState, useEffect, FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/services/api";
 
 export interface CostVariable {
   id: string;
@@ -9,12 +8,11 @@ export interface CostVariable {
   code: string;
   value: number;
   description: string;
-  linkedServices: { id: string; name: string }[];
+  linkedServices?: string[];
 }
 
 export const useCostVariables = () => {
   const { toast } = useToast();
-  const { user } = useAuth();
   
   const [costVariables, setCostVariables] = useState<CostVariable[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,47 +30,29 @@ export const useCostVariables = () => {
   });
 
   const fetchCostVariables = async () => {
-    if (!user) return;
-    
     setLoading(true);
-
-    const [varsResult, linksResult] = await Promise.all([
-      supabase.from("cost_variables").select("*").order("created_at", { ascending: false }),
-      supabase.from("service_variables").select("variable_id, service_id, services(name)")
-    ]);
-
-    if (varsResult.error) {
-      toast({ title: "Erro ao carregar variáveis", description: varsResult.error.message, variant: "destructive" });
-      setLoading(false);
-      return;
-    }
-
-    const serviceMap = new Map<string, { id: string; name: string }[]>();
-    if (linksResult.data) {
-      for (const link of linksResult.data) {
-        const serviceName = (link as any).services?.name || "Desconhecido";
-        if (!serviceMap.has(link.variable_id)) {
-          serviceMap.set(link.variable_id, []);
-        }
-        serviceMap.get(link.variable_id)!.push({ id: link.service_id, name: serviceName });
+    try {
+      const data = await api.get<any[]>('/cost-variables');
+      if (Array.isArray(data)) {
+        setCostVariables(data.map(c => ({
+          id: c.id,
+          name: c.name,
+          code: c.code || "",
+          value: Number(c.value || 0),
+          description: c.description || "",
+          linkedServices: c.linked_services || c.linkedServices || []
+        })));
       }
+    } catch (err: any) {
+      toast({ title: "Erro ao carregar variáveis", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
-
-    setCostVariables(varsResult.data?.map(v => ({
-      id: v.id,
-      name: v.name,
-      code: v.code,
-      value: Number(v.value) || 0,
-      description: v.description || "",
-      linkedServices: serviceMap.get(v.id) || []
-    })) || []);
-    
-    setLoading(false);
   };
 
   useEffect(() => {
     fetchCostVariables();
-  }, [user]);
+  }, []);
 
   const handleEditCostVariable = (variable: CostVariable) => {
     setEditingCostVariable(variable);
@@ -82,45 +62,27 @@ export const useCostVariables = () => {
 
   const handleCostVariableSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    try {
+      const payload = {
+        name: costVariableFormData.name,
+        code: costVariableFormData.code,
+        value: costVariableFormData.value,
+        description: costVariableFormData.description,
+        linked_services: costVariableFormData.linkedServices
+      };
 
-    if (editingCostVariable) {
-      const { error } = await supabase
-        .from("cost_variables")
-        .update({
-          name: costVariableFormData.name,
-          code: costVariableFormData.code,
-          value: costVariableFormData.value,
-          description: costVariableFormData.description
-        })
-        .eq("id", editingCostVariable.id);
-
-      if (error) {
-        toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
-      } else {
+      if (editingCostVariable) {
+        await api.put(`/cost-variables/${editingCostVariable.id}`, payload);
         toast({ title: "Variável atualizada", description: "A variável foi atualizada com sucesso." });
-        fetchCostVariables();
-      }
-    } else {
-      const { error } = await supabase
-        .from("cost_variables")
-        .insert({
-          user_id: user.id,
-          name: costVariableFormData.name,
-          code: costVariableFormData.code,
-          value: costVariableFormData.value,
-          description: costVariableFormData.description
-        });
-
-      if (error) {
-        toast({ title: "Erro ao criar", description: error.message, variant: "destructive" });
       } else {
+        await api.post('/cost-variables', payload);
         toast({ title: "Variável criada", description: "A variável foi criada com sucesso." });
-        fetchCostVariables();
       }
+      fetchCostVariables();
+      resetCostVariableForm();
+    } catch (err: any) {
+      toast({ title: "Erro ao salvar variável", description: err.message, variant: "destructive" });
     }
-
-    resetCostVariableForm();
   };
 
   const resetCostVariableForm = () => {
@@ -137,18 +99,12 @@ export const useCostVariables = () => {
   };
 
   const handleDeleteCostVariable = async (id: string) => {
-    if (!user) return;
-
-    const { error } = await supabase
-      .from("cost_variables")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await api.delete(`/cost-variables/${id}`);
       toast({ title: "Variável excluída", description: "A variável foi excluída com sucesso." });
       fetchCostVariables();
+    } catch (err: any) {
+      toast({ title: "Erro ao excluir variável", description: err.message, variant: "destructive" });
     }
   };
 

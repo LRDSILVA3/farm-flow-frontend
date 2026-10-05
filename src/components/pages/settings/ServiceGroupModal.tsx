@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +5,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ServiceGroup } from "../../../hooks/useServiceGroups";
+
+export interface ServiceOption {
+  id: string;
+  name: string;
+}
 
 interface ServiceGroupModalProps {
   showServiceGroupForm: boolean;
@@ -15,7 +19,20 @@ interface ServiceGroupModalProps {
   handleServiceGroupSubmit: (e: React.FormEvent) => void;
   resetServiceGroupForm: () => void;
   handleServiceGroupInputChange: (field: keyof ServiceGroup, value: string | string[]) => void;
+  availableServices?: ServiceOption[];
 }
+
+const DEFAULT_OFFICIAL_SERVICES: ServiceOption[] = [
+  { id: "serv-ap", name: "Amostragem de Solo (AP)" },
+  { id: "serv-conf", name: "Conferência de Amostragem" },
+  { id: "serv-foliar", name: "Coleta Foliar" },
+  { id: "serv-drone-map", name: "Voo de Drone (Mapeamento)" },
+  { id: "serv-drone-pulve", name: "Pulverização Drone" },
+  { id: "serv-compacta", name: "Compactação de Solo" },
+  { id: "serv-atv", name: "Aplicação ATV (Sistematização)" },
+  { id: "serv-equaliza", name: "Sistema Equaliza (Multi-anual)" },
+  { id: "serv-condut", name: "Condutividade Elétrica" },
+];
 
 export const ServiceGroupModal: React.FC<ServiceGroupModalProps> = ({
   showServiceGroupForm,
@@ -24,21 +41,19 @@ export const ServiceGroupModal: React.FC<ServiceGroupModalProps> = ({
   serviceGroupFormData,
   handleServiceGroupSubmit,
   resetServiceGroupForm,
-  handleServiceGroupInputChange
+  handleServiceGroupInputChange,
+  availableServices = DEFAULT_OFFICIAL_SERVICES,
 }) => {
-  // Lista de serviços disponíveis
-  const availableServices = [
-    { id: "1", name: "Pulverização" },
-    { id: "2", name: "Plantio" },
-    { id: "3", name: "Colheita" },
-    { id: "4", name: "Adubação" }
-  ];
+  const servicesToRender = availableServices && availableServices.length > 0
+    ? availableServices
+    : DEFAULT_OFFICIAL_SERVICES;
 
   const handleServiceChange = (serviceId: string, checked: boolean) => {
+    const current = serviceGroupFormData.servicesIds || [];
     if (checked) {
-      handleServiceGroupInputChange("servicesIds", [...serviceGroupFormData.servicesIds, serviceId]);
+      handleServiceGroupInputChange("servicesIds", [...current, serviceId]);
     } else {
-      handleServiceGroupInputChange("servicesIds", serviceGroupFormData.servicesIds.filter(id => id !== serviceId));
+      handleServiceGroupInputChange("servicesIds", current.filter(id => id !== serviceId));
     }
   };
 
@@ -58,6 +73,7 @@ export const ServiceGroupModal: React.FC<ServiceGroupModalProps> = ({
                 id="name"
                 value={serviceGroupFormData.name}
                 onChange={(e) => handleServiceGroupInputChange("name", e.target.value)}
+                placeholder="Ex: Pacote Completo Solo & Drone"
                 required
               />
             </div>
@@ -81,32 +97,43 @@ export const ServiceGroupModal: React.FC<ServiceGroupModalProps> = ({
               id="description"
               value={serviceGroupFormData.description}
               onChange={(e) => handleServiceGroupInputChange("description", e.target.value)}
-              placeholder="Ex: Pacote completo de serviços"
+              placeholder="Ex: Pacote oficial com serviços de amostragem e tecnologia de precisão"
             />
           </div>
 
           <div>
-            <Label>Serviços Inclusos</Label>
-            <div className="space-y-2 mt-2">
-              {availableServices.map((service) => (
-                <div key={service.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`service-${service.id}`}
-                    checked={serviceGroupFormData.servicesIds.includes(service.id)}
-                    onCheckedChange={(checked) => handleServiceChange(service.id, checked as boolean)}
-                  />
-                  <Label htmlFor={`service-${service.id}`}>{service.name}</Label>
-                </div>
-              ))}
+            <div className="flex items-center justify-between mb-2">
+              <Label className="font-semibold">Serviços da Planilha / Sistema Inclusos</Label>
+              <span className="text-xs text-muted-foreground">
+                {(serviceGroupFormData.servicesIds || []).length} selecionado(s)
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-muted/20 border rounded-md max-h-56 overflow-y-auto">
+              {servicesToRender.map((service) => {
+                const isChecked = (serviceGroupFormData.servicesIds || []).includes(service.id) ||
+                                  (serviceGroupFormData.servicesIds || []).includes(service.name);
+                return (
+                  <div key={service.id} className="flex items-center space-x-2 py-1 px-2 rounded hover:bg-muted/40 transition-colors">
+                    <Checkbox
+                      id={`service-${service.id}`}
+                      checked={isChecked}
+                      onCheckedChange={(checked) => handleServiceChange(service.id, checked as boolean)}
+                    />
+                    <Label htmlFor={`service-${service.id}`} className="cursor-pointer text-xs font-normal">
+                      {service.name}
+                    </Label>
+                  </div>
+                );
+              })}
             </div>
           </div>
           
-          <div className="flex justify-end space-x-2">
+          <div className="flex justify-end space-x-2 pt-2">
             <Button type="button" variant="outline" onClick={resetServiceGroupForm}>
               Cancelar
             </Button>
             <Button type="submit" className="bg-green-600 hover:bg-green-700">
-              {editingServiceGroup ? "Atualizar" : "Criar"}
+              {editingServiceGroup ? "Atualizar Grupo" : "Criar Grupo"}
             </Button>
           </div>
         </form>

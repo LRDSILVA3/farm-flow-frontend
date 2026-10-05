@@ -25,6 +25,7 @@ const availablePermissions = [
   { id: "analysis", name: "Análises" },
   { id: "financial", name: "Financeiro" },
   { id: "customers", name: "Clientes" },
+  { id: "reports", name: "Relatórios & Auditoria" },
   { id: "settings", name: "Configurações" }
 ];
 
@@ -88,7 +89,8 @@ export const UserModal: React.FC<UserModalProps> = ({
                 <SelectContent>
                   <SelectItem value="Administrador">Administrador</SelectItem>
                   <SelectItem value="Gerente">Gerente</SelectItem>
-                  <SelectItem value="Operador">Operador</SelectItem>
+                  <SelectItem value="Operador de Campo">Operador de Campo</SelectItem>
+                  <SelectItem value="Financeiro">Financeiro</SelectItem>
                   <SelectItem value="Analista">Analista</SelectItem>
                 </SelectContent>
               </Select>

@@ -1,9 +1,10 @@
-
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plot } from "@/types/farm";
+import { AlertCircle } from "lucide-react";
 
 interface PlotFormProps {
   plotForm: Plot;
@@ -20,72 +21,117 @@ export const PlotForm = ({
   onSubmit,
   onCancel
 }: PlotFormProps) => {
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newErrors: Record<string, string> = {};
+    if (!plotForm.name?.trim()) {
+      newErrors.name = "Nome do talhão é obrigatório";
+    }
+    if (!plotForm.area || parseFloat(plotForm.area) < 0) {
+      newErrors.area = "Informe uma área válida em hectares";
+    }
+
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
+
+    onSubmit(e);
+  };
+
   return (
-    <form onSubmit={onSubmit} className="bg-gray-50 p-4 rounded-lg border">
-      <h5 className="font-medium mb-4">
+    <form onSubmit={handleFormSubmit} className="bg-gray-50 p-4 rounded-lg border space-y-4">
+      <h5 className="font-semibold text-base">
         {editingPlot ? "Editar Talhão" : "Adicionar Novo Talhão"}
       </h5>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="plotName">Nome do Talhão</Label>
           <Input
             id="plotName"
             value={plotForm.name}
-            onChange={(e) => setPlotForm({ ...plotForm, name: e.target.value })}
-            required
+            onChange={(e) => {
+              setPlotForm({ ...plotForm, name: e.target.value });
+              if (errors.name) setErrors(prev => ({ ...prev, name: "" }));
+            }}
+            placeholder="Ex: Talhão 01 - Sede"
+            className={errors.name ? "border-red-500" : ""}
           />
+          {errors.name && (
+            <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+              <AlertCircle className="w-3.5 h-3.5" /> {errors.name}
+            </p>
+          )}
         </div>
+
         <div>
           <Label htmlFor="plotArea">Área (ha)</Label>
           <Input
             id="plotArea"
             type="number"
-            step="0.1"
+            step="0.01"
             value={plotForm.area}
-            onChange={(e) => setPlotForm({ ...plotForm, area: e.target.value })}
-            required
+            onChange={(e) => {
+              setPlotForm({ ...plotForm, area: e.target.value });
+              if (errors.area) setErrors(prev => ({ ...prev, area: "" }));
+            }}
+            placeholder="0.00"
+            className={errors.area ? "border-red-500" : ""}
           />
+          {errors.area && (
+            <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+              <AlertCircle className="w-3.5 h-3.5" /> {errors.area}
+            </p>
+          )}
         </div>
+
         <div>
           <Label htmlFor="plotCity">Cidade</Label>
           <Input
             id="plotCity"
-            value={plotForm.city}
+            value={plotForm.city || ""}
             onChange={(e) => setPlotForm({ ...plotForm, city: e.target.value })}
-            required
+            placeholder="Cidade"
           />
         </div>
+
         <div>
           <Label htmlFor="plotState">Estado</Label>
           <Input
             id="plotState"
-            value={plotForm.state}
+            value={plotForm.state || ""}
             onChange={(e) => setPlotForm({ ...plotForm, state: e.target.value })}
-            required
+            placeholder="UF"
           />
         </div>
-        <div>
-          <Label htmlFor="plotRegistration">Matrícula</Label>
-          <Input
-            id="plotRegistration"
-            value={plotForm.registration}
-            onChange={(e) => setPlotForm({ ...plotForm, registration: e.target.value })}
-            required
-          />
-        </div>
+
+        {/* Ordem Padronizada: LOTE primeiro, depois MATRÍCULA (Ambos Opcionais) */}
         <div>
           <Label htmlFor="plotLot">Lote</Label>
           <Input
             id="plotLot"
-            value={plotForm.lot}
+            value={plotForm.lot || ""}
             onChange={(e) => setPlotForm({ ...plotForm, lot: e.target.value })}
-            required
+            placeholder="Ex: Lote 04 (Opcional)"
           />
         </div>
+
+        <div>
+          <Label htmlFor="plotRegistration">Matrícula</Label>
+          <Input
+            id="plotRegistration"
+            value={plotForm.registration || ""}
+            onChange={(e) => setPlotForm({ ...plotForm, registration: e.target.value })}
+            placeholder="Ex: 56.789 (Opcional)"
+          />
+        </div>
+
         <div>
           <Label htmlFor="plotStatus">Status</Label>
           <Select value={plotForm.status} onValueChange={(value) => setPlotForm({ ...plotForm, status: value })}>
-            <SelectTrigger>
+            <SelectTrigger id="plotStatus">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -95,7 +141,8 @@ export const PlotForm = ({
           </Select>
         </div>
       </div>
-      <div className="flex justify-end space-x-2 mt-4">
+
+      <div className="flex justify-end space-x-2 pt-2 border-t">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancelar
         </Button>

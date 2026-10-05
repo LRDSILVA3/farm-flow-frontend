@@ -99,9 +99,9 @@ describe('PlotForm', () => {
     });
 
     it('calls onSubmit when the form is submitted', () => {
-        renderCreateForm();
+        renderEditForm();
 
-        const form = screen.getByRole('button', { name: 'Adicionar' }).closest('form');
+        const form = screen.getByRole('button', { name: 'Atualizar' }).closest('form');
         fireEvent.submit(form!);
         expect(mockOnSubmit).toHaveBeenCalled();
     });

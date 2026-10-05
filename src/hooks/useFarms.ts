@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { api } from "@/services/api";
 import { Farm, Plot } from "@/types/farm";
 
 export type { Farm, Plot };
 
 interface FarmDB {
   id: string;
-  user_id: string;
+  user_id?: string;
   client_id: string | null;
   name: string;
   area: number | null;
@@ -17,9 +17,10 @@ interface FarmDB {
   status: string | null;
   registration: string | null;
   lot: string | null;
-  created_at: string;
-  updated_at: string;
-  clients: { name: string } | null;
+  created_at?: string;
+  updated_at?: string;
+  client?: { id: string; name: string } | null;
+  plots?: PlotDB[];
 }
 
 interface PlotDB {
@@ -32,35 +33,38 @@ interface PlotDB {
   state: string | null;
   registration: string | null;
   lot: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 const mapPlotFromDB = (db: PlotDB): Plot => ({
   id: db.id,
   name: db.name,
-  area: db.area?.toString() || "",
-  status: db.status || "Active",
+  area: db.area !== null && db.area !== undefined ? db.area.toString() : "",
+  status: db.status || "Ativo",
   city: db.city || "",
   state: db.state || "",
   registration: db.registration || "",
   lot: db.lot || ""
 });
 
-const mapFarmFromDB = (db: FarmDB, plots: PlotDB[] = []): Farm => ({
-  id: db.id,
-  clientId: db.client_id || "",
-  name: db.name,
-  clientName: db.clients?.name || "", // Use the joined client's name
-  area: db.area?.toString() || "",
-  city: db.city || "",
-  state: db.state || "",
-  contact: db.contact || "",
-  status: db.status || "Active",
-  registration: db.registration || "",
-  lot: db.lot || "",
-  plots: plots.filter(p => p.farm_id === db.id).map(mapPlotFromDB)
-});
+const mapFarmFromDB = (db: any): Farm => {
+  const plotsList = Array.isArray(db.plots) ? db.plots : [];
+  return {
+    id: db.id,
+    clientId: db.client_id || db.client?.id || "",
+    name: db.name,
+    clientName: db.client?.name || "",
+    area: db.area !== null && db.area !== undefined ? db.area.toString() : "",
+    city: db.city || "",
+    state: db.state || "",
+    contact: db.contact || "",
+    status: db.status || "Ativo",
+    registration: db.registration || "",
+    lot: db.lot || "",
+    plots: plotsList.map(mapPlotFromDB)
+  };
+};
 
 export const useFarms = () => {
   const [farms, setFarms] = useState<Farm[]>([]);
@@ -73,11 +77,12 @@ export const useFarms = () => {
   const [editingFarm, setEditingFarm] = useState<Farm | null>(null);
   const [showPlotsModal, setShowPlotsModal] = useState(false);
   const [selectedFarm, setSelectedFarm] = useState<Farm | null>(null);
+
   const [formData, setFormData] = useState<Farm>({
     id: "",
     clientId: "",
     name: "",
-    clientName: "", // Updated from 'owner' to 'clientName'
+    clientName: "",
     area: "",
     city: "",
     state: "",
@@ -101,27 +106,15 @@ export const useFarms = () => {
 
   const fetchFarms = async () => {
     try {
-      const { data: farmsData, error: farmsError } = await supabase
-        .from("farms")
-        .select("*, clients(name)") // Select all fields from farms and the name from the joined clients table
-        .order("name");
-
-      if (farmsError) throw farmsError;
-
-      const { data: plotsData, error: plotsError } = await supabase
-        .from("plots")
-        .select("*");
-
-      if (plotsError) throw plotsError;
-
-      const mappedFarms = (farmsData || []).map(f => 
-        mapFarmFromDB(f, plotsData || [])
-      );
-      setFarms(mappedFarms);
+      const backendData = await api.get<any[]>('/farms');
+      if (Array.isArray(backendData)) {
+        const mapped = backendData.map(mapFarmFromDB);
+        setFarms(mapped);
+      }
     } catch (error: any) {
       toast({
         title: "Erro ao carregar fazendas",
-        description: error.message,
+        description: error.message || "Erro de conexão com o servidor local.",
         variant: "destructive"
       });
     } finally {
@@ -135,37 +128,27 @@ export const useFarms = () => {
 
   const addFarm = async (farm: Omit<Farm, 'id' | 'plots'>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      const { data, error } = await supabase
-        .from("farms")
-        .insert({
-          user_id: user.id,
-          client_id: farm.clientId || null, // Use clientId
-          name: farm.name,
-          area: farm.area ? parseFloat(farm.area) : null,
-          city: farm.city || null,
-          state: farm.state || null,
-          contact: farm.contact || null,
-          status: farm.status || "Active",
-          registration: farm.registration || null,
-          lot: farm.lot || null
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      setFarms(prev => [...prev, mapFarmFromDB(data as unknown as FarmDB, [])]);
+      const created = await api.post<any>('/farms', {
+        client_id: farm.clientId || null,
+        name: farm.name,
+        area: farm.area ? parseFloat(farm.area) : null,
+        city: farm.city || null,
+        state: farm.state || null,
+        contact: farm.contact || null,
+        status: farm.status || "Ativo",
+        registration: farm.registration || null,
+        lot: farm.lot || null
+      });
+      await fetchFarms();
       toast({
         title: "Fazenda cadastrada",
         description: "A fazenda foi cadastrada com sucesso."
       });
-      return data;
+      return created;
     } catch (error: any) {
       toast({
         title: "Erro ao cadastrar fazenda",
-        description: error.message,
+        description: error.message || "Falha ao gravar no banco de dados.",
         variant: "destructive"
       });
       return null;
@@ -174,23 +157,18 @@ export const useFarms = () => {
 
   const updateFarm = async (farm: Farm) => {
     try {
-      const { error } = await supabase
-        .from("farms")
-        .update({
-          client_id: farm.clientId || null, // Use clientId
-          name: farm.name,
-          area: farm.area ? parseFloat(farm.area) : null,
-          city: farm.city || null,
-          state: farm.state || null,
-          contact: farm.contact || null,
-          status: farm.status || "Active",
-          registration: farm.registration || null,
-          lot: farm.lot || null
-        })
-        .eq("id", farm.id);
-
-      if (error) throw error;
-      setFarms(prev => prev.map(f => f.id === farm.id ? farm : f));
+      await api.put<any>(`/farms/${farm.id}`, {
+        client_id: farm.clientId || null,
+        name: farm.name,
+        area: farm.area ? parseFloat(farm.area) : null,
+        city: farm.city || null,
+        state: farm.state || null,
+        contact: farm.contact || null,
+        status: farm.status || "Ativo",
+        registration: farm.registration || null,
+        lot: farm.lot || null
+      });
+      await fetchFarms();
       toast({
         title: "Fazenda atualizada",
         description: "A fazenda foi atualizada com sucesso."
@@ -198,7 +176,24 @@ export const useFarms = () => {
     } catch (error: any) {
       toast({
         title: "Erro ao atualizar fazenda",
-        description: error.message,
+        description: error.message || "Falha ao atualizar fazenda.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteFarm = async (farmId: string) => {
+    try {
+      await api.delete(`/farms/${farmId}`);
+      await fetchFarms();
+      toast({
+        title: "Fazenda removida",
+        description: "A fazenda foi excluída com sucesso."
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao remover fazenda",
+        description: error.message || "Falha ao excluir fazenda.",
         variant: "destructive"
       });
     }
@@ -206,68 +201,46 @@ export const useFarms = () => {
 
   const addPlot = async (farmId: string, plot: Omit<Plot, 'id'>) => {
     try {
-      const { data, error } = await supabase
-        .from("plots")
-        .insert({
-          farm_id: farmId,
-          name: plot.name,
-          area: plot.area ? parseFloat(plot.area) : null,
-          status: plot.status || "Active",
-          city: plot.city || null,
-          state: plot.state || null,
-          registration: plot.registration || null,
-          lot: plot.lot || null
-        })
-        .select()
-        .single();
+      const createdPlot = await api.post<any>(`/farms/${farmId}/plots`, {
+        name: plot.name,
+        area: plot.area ? parseFloat(plot.area) : null,
+        status: plot.status || "Ativo",
+        city: plot.city || null,
+        state: plot.state || null,
+        registration: plot.registration || null,
+        lot: plot.lot || null
+      });
+      await fetchFarms();
 
-      if (error) throw error;
-      
-      const newPlot = mapPlotFromDB(data);
-      setFarms(prev => prev.map(f => {
-        if (f.id === farmId) {
-          return { ...f, plots: [...f.plots, newPlot] };
-        }
-        return f;
-      }));
-      
+      const mapped = mapPlotFromDB(createdPlot);
       if (selectedFarm?.id === farmId) {
-        setSelectedFarm(prev => prev ? { ...prev, plots: [...prev.plots, newPlot] } : null);
+        setSelectedFarm(prev => prev ? { ...prev, plots: [...prev.plots, mapped] } : null);
       }
-      
+
       toast({
         title: "Talhão adicionado",
         description: "O talhão foi adicionado com sucesso."
       });
+      return createdPlot;
     } catch (error: any) {
       toast({
         title: "Erro ao adicionar talhão",
-        description: error.message,
+        description: error.message || "Falha ao salvar talhão no banco.",
         variant: "destructive"
       });
+      return null;
     }
   };
 
   const deletePlot = async (farmId: string, plotId: string) => {
     try {
-      const { error } = await supabase
-        .from("plots")
-        .delete()
-        .eq("id", plotId);
+      await api.delete(`/farms/plots/${plotId}`);
+      await fetchFarms();
 
-      if (error) throw error;
-      
-      setFarms(prev => prev.map(f => {
-        if (f.id === farmId) {
-          return { ...f, plots: f.plots.filter(p => p.id !== plotId) };
-        }
-        return f;
-      }));
-      
       if (selectedFarm?.id === farmId) {
         setSelectedFarm(prev => prev ? { ...prev, plots: prev.plots.filter(p => p.id !== plotId) } : null);
       }
-      
+
       toast({
         title: "Talhão removido",
         description: "O talhão foi removido com sucesso."
@@ -275,7 +248,7 @@ export const useFarms = () => {
     } catch (error: any) {
       toast({
         title: "Erro ao remover talhão",
-        description: error.message,
+        description: error.message || "Falha ao excluir talhão.",
         variant: "destructive"
       });
     }
@@ -303,6 +276,7 @@ export const useFarms = () => {
     setPlotForm,
     addFarm,
     updateFarm,
+    deleteFarm,
     addPlot,
     deletePlot,
     refetch: fetchFarms

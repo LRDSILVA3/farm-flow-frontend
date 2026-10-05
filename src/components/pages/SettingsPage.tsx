@@ -1,11 +1,11 @@
-
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Settings, Users, Smartphone } from "lucide-react";
+import { Settings, Users, Smartphone, Printer } from "lucide-react";
 import { OperationalSection } from "./settings/OperationalSection";
 import { SystemSection } from "./settings/SystemSection";
 import { UsersSection } from "./settings/UsersSection";
 import { AppSection } from "./settings/AppSection";
+import { PdfHeaderTab } from "./settings/PdfHeaderTab";
 
 const SettingsPage = () => {
   const [activeSection, setActiveSection] = useState("operational");
@@ -16,6 +16,12 @@ const SettingsPage = () => {
       title: "Configurações Operacionais",
       icon: Settings,
       description: "Serviços, produtos e equipamentos"
+    },
+    {
+      id: "pdf",
+      title: "Cabeçalho de PDFs",
+      icon: Printer,
+      description: "Personalizar dados da empresa e rodapé dos orçamentos"
     },
     {
       id: "system",
@@ -41,6 +47,8 @@ const SettingsPage = () => {
     switch (activeSection) {
       case "operational":
         return <OperationalSection />;
+      case "pdf":
+        return <PdfHeaderTab />;
       case "system":
         return <SystemSection />;
       case "users":
@@ -53,9 +61,9 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="flex gap-6">
+    <div className="flex flex-col md:flex-row gap-6">
       {/* Sidebar Menu */}
-      <div className="w-64 space-y-2">
+      <div className="w-full md:w-64 space-y-2">
         <div className="mb-4">
           <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>
           <p className="text-gray-600 text-sm">Gerencie as configurações do sistema</p>

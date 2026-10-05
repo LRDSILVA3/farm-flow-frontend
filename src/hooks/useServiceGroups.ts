@@ -1,7 +1,6 @@
 import { useState, useEffect, FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/services/api";
 
 export interface ServiceGroup {
   id: string;
@@ -13,7 +12,6 @@ export interface ServiceGroup {
 
 export const useServiceGroups = () => {
   const { toast } = useToast();
-  const { user } = useAuth();
 
   const [serviceGroups, setServiceGroups] = useState<ServiceGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,31 +28,28 @@ export const useServiceGroups = () => {
   });
 
   const fetchServiceGroups = async () => {
-    if (!user) return;
-
     setLoading(true);
-    const { data, error } = await supabase
-      .from("service_groups")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      toast({ title: "Erro ao carregar grupos de serviços", description: error.message, variant: "destructive" });
-    } else {
-      setServiceGroups(data?.map(g => ({
-        id: g.id,
-        name: g.name,
-        description: g.description || "",
-        servicesIds: g.services_ids || [],
-        status: g.status || "Ativo"
-      })) || []);
+    try {
+      const data = await api.get<any[]>('/service-groups');
+      if (Array.isArray(data)) {
+        setServiceGroups(data.map(g => ({
+          id: g.id,
+          name: g.name,
+          description: g.description || "",
+          servicesIds: g.services_ids || g.servicesIds || [],
+          status: g.status || "Ativo"
+        })));
+      }
+    } catch (err: any) {
+      toast({ title: "Erro ao carregar grupos", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     fetchServiceGroups();
-  }, [user]);
+  }, []);
 
   const handleEditServiceGroup = (group: ServiceGroup) => {
     setEditingServiceGroup(group);
@@ -64,45 +59,26 @@ export const useServiceGroups = () => {
 
   const handleServiceGroupSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    try {
+      const payload = {
+        name: serviceGroupFormData.name,
+        description: serviceGroupFormData.description,
+        services_ids: serviceGroupFormData.servicesIds,
+        status: serviceGroupFormData.status
+      };
 
-    if (editingServiceGroup) {
-      const { error } = await supabase
-        .from("service_groups")
-        .update({
-          name: serviceGroupFormData.name,
-          description: serviceGroupFormData.description,
-          services_ids: serviceGroupFormData.servicesIds,
-          status: serviceGroupFormData.status
-        })
-        .eq("id", editingServiceGroup.id);
-
-      if (error) {
-        toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
-      } else {
+      if (editingServiceGroup) {
+        await api.put(`/service-groups/${editingServiceGroup.id}`, payload);
         toast({ title: "Grupo atualizado", description: "O grupo de serviços foi atualizado com sucesso." });
-        fetchServiceGroups();
-      }
-    } else {
-      const { error } = await supabase
-        .from("service_groups")
-        .insert({
-          user_id: user.id,
-          name: serviceGroupFormData.name,
-          description: serviceGroupFormData.description,
-          services_ids: serviceGroupFormData.servicesIds,
-          status: serviceGroupFormData.status
-        });
-
-      if (error) {
-        toast({ title: "Erro ao criar", description: error.message, variant: "destructive" });
       } else {
+        await api.post('/service-groups', payload);
         toast({ title: "Grupo criado", description: "O grupo de serviços foi criado com sucesso." });
-        fetchServiceGroups();
       }
+      fetchServiceGroups();
+      resetServiceGroupForm();
+    } catch (err: any) {
+      toast({ title: "Erro ao salvar grupo", description: err.message, variant: "destructive" });
     }
-
-    resetServiceGroupForm();
   };
 
   const resetServiceGroupForm = () => {
@@ -118,18 +94,12 @@ export const useServiceGroups = () => {
   };
 
   const handleDeleteServiceGroup = async (id: string) => {
-    if (!user) return;
-
-    const { error } = await supabase
-      .from("service_groups")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await api.delete(`/service-groups/${id}`);
       toast({ title: "Grupo excluído", description: "O grupo de serviços foi excluído com sucesso." });
       fetchServiceGroups();
+    } catch (err: any) {
+      toast({ title: "Erro ao excluir grupo", description: err.message, variant: "destructive" });
     }
   };
 

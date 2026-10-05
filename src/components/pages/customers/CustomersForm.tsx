@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +7,7 @@ import { IMaskInput } from "react-imask";
 import { CityStateSelect } from "@/components/pages/farms/CityStateSelect";
 import { useToast } from "@/hooks/use-toast";
 import { Client } from "../../../hooks/useClients";
+import { AlertCircle } from "lucide-react";
 
 interface CustomersFormProps {
   editingClient: Client | null;
@@ -31,15 +31,35 @@ export const CustomersForm = ({ editingClient, onSave, onUpdate, onCancel }: Cus
     cadPro: editingClient?.cadPro || ""
   });
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.name.trim()) {
+      newErrors.name = "O nome do cliente é obrigatório.";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!validate()) {
+      toast({ 
+        title: "Atenção: campos obrigatórios", 
+        description: "Por favor, preencha o nome do cliente para prosseguir.", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
     if (editingClient) {
       onUpdate({ ...formData, id: editingClient.id });
-      toast({ title: "Client atualizado com sucesso!" });
+      toast({ title: "Cliente atualizado com sucesso!" });
     } else {
       onSave(formData);
-      toast({ title: "Client cadastrado com sucesso!" });
+      toast({ title: "Cliente cadastrado com sucesso!" });
     }
 
     resetForm();
@@ -57,6 +77,7 @@ export const CustomersForm = ({ editingClient, onSave, onUpdate, onCancel }: Cus
       state: "",
       cadPro: ""
     });
+    setErrors({});
     onCancel();
   };
 
@@ -71,93 +92,106 @@ export const CustomersForm = ({ editingClient, onSave, onUpdate, onCancel }: Cus
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{editingClient ? "Editar Client" : "Novo Client"}</CardTitle>
+        <CardTitle>{editingClient ? "Editar Cliente" : "Novo Client"}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="name">Nome</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => {
+                setFormData({ ...formData, name: e.target.value });
+                if (errors.name) {
+                  setErrors(prev => ({ ...prev, name: "" }));
+                }
+              }}
+              placeholder="Ex: João da Silva"
+              className={errors.name ? "border-red-500 focus-visible:ring-red-500" : ""}
+            />
+            {errors.name && (
+              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5 inline" /> {errors.name}
+              </p>
+            )}
+          </div>
+
           <div>
             <Label htmlFor="cpf">CPF</Label>
             <IMaskInput
               mask="000.000.000-00"
               id="cpf"
               value={formData.cpf}
-              onAccept={(value) => setFormData({...formData, cpf: value as string})}
-              placeholder="123.456.789-00"
-              required
+              onAccept={(value) => setFormData({ ...formData, cpf: value as string })}
+              placeholder="000.000.000-00"
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
-          <div>
-            <Label htmlFor="name">Nome</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
-              placeholder="Nome completo"
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="birthDate">Data de Nascimento</Label>
-            <Input
-              id="birthDate"
-              type="date"
-              value={formData.birthDate}
-              onChange={(e) => setFormData({...formData, birthDate: e.target.value})}
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
-              placeholder="email@exemplo.com"
-              required
-            />
-          </div>
+
           <div>
             <Label htmlFor="phone">Telefone</Label>
             <IMaskInput
               mask="(00) 00000-0000"
               id="phone"
               value={formData.phone}
-              onAccept={(value) => setFormData({...formData, phone: value as string})}
-              placeholder="(11) 99999-9999"
-              required
+              onAccept={(value) => setFormData({ ...formData, phone: value as string })}
+              placeholder="(00) 00000-0000"
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
+
+          <div>
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="cliente@exemplo.com"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="birthDate">Data de Nascimento</Label>
+            <Input
+              id="birthDate"
+              type="date"
+              value={formData.birthDate}
+              onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="cadPro">CAD/PRO (Opcional)</Label>
+            <Input
+              id="cadPro"
+              value={formData.cadPro}
+              onChange={(e) => setFormData({ ...formData, cadPro: e.target.value })}
+              placeholder="Inscrição Estadual ou CAD/PRO"
+            />
+          </div>
+
           <div>
             <Label htmlFor="zipCode">CEP</Label>
             <IMaskInput
               mask="00000-000"
               id="zipCode"
               value={formData.zipCode}
-              onAccept={(value) => setFormData({...formData, zipCode: value as string})}
-              placeholder="01234-567"
-              required
+              onAccept={(value) => setFormData({ ...formData, zipCode: value as string })}
+              placeholder="00000-000"
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
-          <div>
-            <Label htmlFor="cadPro">CAD/PRO (Opcional)</Label>
-            <Input
-              id="cadPro"
-              value={formData.cadPro}
-              onChange={(e) => setFormData({...formData, cadPro: e.target.value})}
-              placeholder="Número do CAD/PRO"
-            />
-          </div>
+
           <CityStateSelect
             state={formData.state}
             city={formData.city}
             onStateChange={handleStateChange}
             onCityChange={handleCityChange}
           />
-          <div className="md:col-span-2 flex gap-2">
+
+          <div className="md:col-span-2 flex gap-2 pt-2">
             <Button type="submit" className="bg-green-600 hover:bg-green-700">
               {editingClient ? "Atualizar" : "Cadastrar"}
             </Button>

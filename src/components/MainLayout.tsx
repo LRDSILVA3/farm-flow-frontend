@@ -1,9 +1,29 @@
-
 import { useState, useMemo, useCallback } from "react";
-import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
-import { Home, Users, MapPin, FileText, Calendar, DollarSign, Settings, LogOut, FlaskConical } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarTrigger,
+  SidebarInset,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import {
+  Home,
+  Users,
+  MapPin,
+  FileText,
+  Calendar,
+  DollarSign,
+  Settings,
+  LogOut,
+  FlaskConical,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import CustomersPage from "./pages/CustomersPage";
 import FarmsPage from "./pages/FarmPage";
 import OrdersPage from "./pages/OrdersPage";
@@ -12,20 +32,17 @@ import FinancialPage from "./pages/FinancialPage";
 import SettingsPage from "./pages/SettingsPage";
 import DashboardHome from "./pages/DashboardHome";
 import AnalysisPage from "./pages/AnalysisPage";
+import ReportsPage from "./pages/ReportsPage";
+import { BarChart3 } from "lucide-react";
 
 const MainLayoutContent = () => {
   const [currentPage, setCurrentPage] = useState("dashboard");
   const { toast } = useToast();
+  const { signOut } = useAuth();
+  const { isMobile, setOpenMobile } = useSidebar();
 
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        title: "Erro ao sair",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
+    await signOut();
   };
 
   const menuItems = [
@@ -36,16 +53,19 @@ const MainLayoutContent = () => {
     { id: "schedule", title: "Agenda", icon: Calendar },
     { id: "analysis", title: "Análises", icon: FlaskConical },
     { id: "financial", title: "Financeiro", icon: DollarSign },
+    { id: "reports", title: "Relatórios", icon: BarChart3 },
     { id: "settings", title: "Configurações", icon: Settings },
   ];
 
   const handleNavigateToFarms = useCallback((customerCpf: string) => {
     setCurrentPage("farms");
-  }, []);
+    if (isMobile) setOpenMobile(false);
+  }, [isMobile, setOpenMobile]);
 
   const handleMenuClick = useCallback((pageId: string) => {
     setCurrentPage(pageId);
-  }, []);
+    if (isMobile) setOpenMobile(false);
+  }, [isMobile, setOpenMobile]);
 
   const currentPageComponent = useMemo(() => {
     switch (currentPage) {
@@ -59,64 +79,84 @@ const MainLayoutContent = () => {
         return <SchedulePage />;
       case "financial":
         return <FinancialPage />;
+      case "reports":
+        return <ReportsPage />;
       case "settings":
         return <SettingsPage />;
       case "analysis":
         return <AnalysisPage />;
       default:
-        return <DashboardHome />;
+        return <DashboardHome onNavigate={handleMenuClick} />;
     }
-  }, [currentPage, handleNavigateToFarms]);
+  }, [currentPage, handleNavigateToFarms, handleMenuClick]);
 
   return (
-    <div className="min-h-screen flex w-full">
+    <>
       <Sidebar>
-        <SidebarHeader className="p-4">
-          <h2 className="text-xl font-bold text-green-700">Preciza</h2>
-          <p className="text-sm text-gray-600">Sistema de Agricultura de Precisão.</p>
+        <SidebarHeader className="p-4 border-b">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-green-700 flex items-center justify-center text-white font-bold">
+              P
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-green-700 leading-tight">Preciza</h2>
+              <p className="text-xs text-muted-foreground">Agricultura de Precisão</p>
+            </div>
+          </div>
         </SidebarHeader>
-        <SidebarContent>
+        <SidebarContent className="p-2">
           <SidebarMenu>
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.id}>
                 <SidebarMenuButton
                   onClick={() => handleMenuClick(item.id)}
                   isActive={currentPage === item.id}
+                  className="gap-3 py-2.5 rounded-md"
                 >
                   <item.icon className="h-4 w-4" />
-                  <span>{item.title}</span>
+                  <span className="font-medium text-sm">{item.title}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
-            <SidebarMenuItem>
-              <SidebarMenuButton onClick={handleLogout}>
+            <SidebarMenuItem className="mt-4 pt-4 border-t">
+              <SidebarMenuButton onClick={handleLogout} className="gap-3 py-2.5 text-red-600 hover:text-red-700 hover:bg-red-50">
                 <LogOut className="h-4 w-4" />
-                <span>Sair</span>
+                <span className="font-medium text-sm">Sair</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
       </Sidebar>
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-          <SidebarTrigger className="-ml-1" />
-          <div className="ml-auto">
-            <p className="text-sm text-gray-600">Bem-vindo ao sistema Preciza</p>
+
+      <SidebarInset className="flex flex-col flex-1 w-full min-w-0 bg-slate-50/50">
+        <header className="flex h-14 sm:h-16 shrink-0 items-center justify-between border-b px-4 sm:px-8 bg-white sticky top-0 z-10 shadow-sm w-full">
+          <div className="flex items-center gap-2">
+            <SidebarTrigger className="-ml-1" />
+            <span className="text-xs sm:text-sm font-semibold text-slate-800 hidden sm:inline">
+              Preciza CRM
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+            <span className="hidden md:inline">Ambiente:</span>
+            <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-semibold text-xs">
+              Online
+            </span>
           </div>
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4">
-          <div key={currentPage}>
+
+        <div className="flex-1 p-4 sm:p-6 lg:p-8 w-full min-w-0 overflow-x-hidden">
+          <div key={currentPage} className="animate-fade-in w-full">
             {currentPageComponent}
           </div>
         </div>
       </SidebarInset>
-    </div>
+    </>
   );
 };
 
 const MainLayout = () => {
   return (
-    <SidebarProvider>
+    <SidebarProvider className="w-full min-h-screen bg-slate-50/50">
       <MainLayoutContent />
     </SidebarProvider>
   );

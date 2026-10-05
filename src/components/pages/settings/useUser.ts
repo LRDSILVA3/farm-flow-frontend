@@ -19,22 +19,32 @@ export const useUser = () => {
     { 
       id: "1", 
       name: "João Silva", 
-      email: "joao@email.com", 
+      email: "joao@agroflow.com", 
       phone: "(11) 99999-9999",
       role: "Administrador", 
       status: "Ativo", 
-      permissions: ["dashboard", "farms", "orders", "analysis", "financial", "settings"],
+      permissions: ["dashboard", "farms", "orders", "schedule", "analysis", "financial", "customers", "reports", "settings"],
       creationDate: "2024-01-15"
     },
     { 
       id: "2", 
       name: "Maria Santos", 
-      email: "maria@email.com", 
+      email: "maria@agroflow.com", 
       phone: "(11) 88888-8888",
-      role: "Operador", 
+      role: "Operador de Campo", 
       status: "Ativo", 
-      permissions: ["dashboard", "farms", "orders", "analysis"],
+      permissions: ["dashboard", "farms", "orders", "schedule"],
       creationDate: "2024-02-20"
+    },
+    { 
+      id: "3", 
+      name: "Carlos Ferreira", 
+      email: "carlos.financeiro@agroflow.com", 
+      phone: "(11) 97777-7777",
+      role: "Financeiro", 
+      status: "Ativo", 
+      permissions: ["dashboard", "orders", "financial", "customers", "reports"],
+      creationDate: "2024-03-01"
     }
   ]);
 

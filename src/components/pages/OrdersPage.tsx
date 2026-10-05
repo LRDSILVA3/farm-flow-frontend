@@ -21,21 +21,26 @@ const OrdersPage = () => {
     setFormData,
     addOrder,
     updateOrder,
+    approveOrder,
+    cancelOrder,
+    recordExecution,
+    addSchedule,
+    recordPayment,
     currentPage,
     setCurrentPage,
     itemsPerPage,
-    setItemsPerPage
+    setItemsPerPage,
+    resetOrderForm
   } = useOrders();
 
   const { clients } = useClients();
   const { farms } = useFarms();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [serviceFilter, setServiceFilter] = useState("");
-  const [cidadeEstadoFilter, setCidadeEstadoFilter] = useState("");
+  const [serviceFilter, setServiceFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const handleEdit = (order: Order) => {
-    console.log("Editing order:", order);
     setEditingOrder(order);
     setFormData(order);
     setShowOrderForm(true);
@@ -43,13 +48,11 @@ const OrdersPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (editingOrder) {
       await updateOrder(formData);
     } else {
       await addOrder(formData);
     }
-    
     resetForm();
   };
 
@@ -64,34 +67,41 @@ const OrdersPage = () => {
       serviceGroup: "",
       area: "",
       value: "",
+      numericValue: 0,
       status: "Pendente",
-      payment: "Aguardando"
+      payment: "Aguardando",
+      executions: [],
+      schedules: [],
+      payments: [],
+      executedArea: 0,
+      paidAmount: 0
     });
     setEditingOrder(null);
     setShowOrderForm(false);
   };
 
   const handleInputChange = (field: keyof Order, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
-  const availableServices = ["Pulverização", "Plantio", "Colheita", "Adubação"];
-  const cidadesEstados = Array.from(new Set(farms.map(f => `${f.city} - ${f.state}`))).sort();
-
+  // Filtered orders
   const filteredOrders = orders.filter(order => {
-    const clientName = clients.find(c => c.id === order.clientId)?.name || "";
-    const farmName = farms.find(f => f.id === order.farmId)?.name || "";
+    const clientName = order.client?.name || clients.find(c => c.id === order.clientId)?.name || "";
+    const farmName = order.farm?.name || farms.find(f => f.id === order.farmId)?.name || "";
+    const serviceName = order.serviceName || order.type || "";
 
-    const matchesSearch = clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      farmName.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesService = !serviceFilter || serviceFilter === "all" || order.serviceName === serviceFilter || order.serviceGroup === serviceFilter;
-    
-    const farm = farms.find(f => f.id === order.farmId);
-    const farmLocation = farm ? `${farm.city} - ${farm.state}` : "";
-    const matchesCidadeEstado = !cidadeEstadoFilter || cidadeEstadoFilter === "all" || farmLocation === cidadeEstadoFilter;
-    
-    return matchesSearch && matchesService && matchesCidadeEstado;
+    const matchesSearch =
+      clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      farmName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      serviceName.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesService = serviceFilter === "all" || serviceName === serviceFilter || order.type === serviceFilter;
+    const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+
+    return matchesSearch && matchesService && matchesStatus;
   });
 
   return (
@@ -99,12 +109,9 @@ const OrdersPage = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Pedidos</h1>
-          <p className="text-gray-600">Gerencie os pedidos de serviços</p>
+          <p className="text-muted-foreground">Gerencie orçamentos, aprovações, execuções e pagamentos de serviços</p>
         </div>
-        <Button 
-          className="bg-green-600 hover:bg-green-700"
-          onClick={() => setShowOrderForm(true)}
-        >
+        <Button onClick={() => { resetOrderForm(); setShowOrderForm(true); }} className="bg-green-600 hover:bg-green-700">
           <Plus className="h-4 w-4 mr-2" />
           Novo Pedido
         </Button>
@@ -112,47 +119,36 @@ const OrdersPage = () => {
 
       <Card>
         <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <CardTitle>Lista de Pedidos</CardTitle>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
-              <div className="flex items-center space-x-2">
-                <Search className="h-4 w-4 text-gray-400" />
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar pedido..."
+                  placeholder="Buscar por cliente, fazenda ou serviço..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-64"
+                  className="pl-8 w-full sm:w-64"
                 />
               </div>
-              <Select value={serviceFilter} onValueChange={setServiceFilter}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Serviço" />
+
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-36">
+                  <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos os serviços</SelectItem>
-                  {availableServices.map((service) => (
-                    <SelectItem key={service} value={service}>
-                      {service}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={cidadeEstadoFilter} onValueChange={setCidadeEstadoFilter}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Cidade/Estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as cidades</SelectItem>
-                  {cidadesEstados.map((cidadeEstado) => (
-                    <SelectItem key={cidadeEstado} value={cidadeEstado}>
-                      {cidadeEstado}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="all">Todos os Status</SelectItem>
+                  <SelectItem value="Pendente">Pendente</SelectItem>
+                  <SelectItem value="Aprovado">Aprovado</SelectItem>
+                  <SelectItem value="Em Andamento">Em Andamento</SelectItem>
+                  <SelectItem value="Concluído">Concluído</SelectItem>
+                  <SelectItem value="Cancelado">Cancelado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
         </CardHeader>
+
         <CardContent>
           <OrdersTable
             orders={filteredOrders}
@@ -161,18 +157,23 @@ const OrdersPage = () => {
             onPageChange={setCurrentPage}
             onItemsPerPageChange={setItemsPerPage}
             onEdit={handleEdit}
+            onApprove={approveOrder}
+            onCancel={cancelOrder}
+            onRecordExecution={recordExecution}
+            onAddSchedule={addSchedule}
+            onRecordPayment={recordPayment}
           />
         </CardContent>
       </Card>
 
       <OrderForm
         open={showOrderForm}
-        onOpenChange={setShowOrderForm}
+        onOpenChange={(open) => { if (!open) resetOrderForm(); setShowOrderForm(open); }}
         editingOrder={editingOrder}
         formData={formData}
         onInputChange={handleInputChange}
         onSubmit={handleSubmit}
-        onCancel={resetForm}
+        onCancel={() => { resetOrderForm(); setShowOrderForm(false); }}
       />
     </div>
   );

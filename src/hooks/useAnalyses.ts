@@ -1,7 +1,6 @@
 import { useState, useEffect, FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/services/api";
 
 export interface Analysis {
   id: string;
@@ -15,8 +14,6 @@ export interface Analysis {
 
 export const useAnalyses = () => {
   const { toast } = useToast();
-  const { user } = useAuth();
-
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [loading, setLoading] = useState(true);
   const [analysesPage, setAnalysesPage] = useState(1);
@@ -34,120 +31,69 @@ export const useAnalyses = () => {
   });
 
   const fetchAnalyses = async () => {
-    if (!user) return;
-
     setLoading(true);
-    const { data, error } = await supabase
-      .from("analyses")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
+    try {
+      const data = await api.get<any[]>('/analyses');
+      if (Array.isArray(data)) {
+        setAnalyses(data.map(a => ({
+          id: a.id,
+          name: a.name,
+          type: a.type || "Soil",
+          collaborator: a.collaborator || "",
+          deadline: a.deadline || 0,
+          value: a.value ? String(a.value) : "0,00",
+          status: a.status || "Active"
+        })));
+      }
+    } catch (error: any) {
       toast({ title: "Erro ao carregar análises", description: error.message, variant: "destructive" });
-    } else {
-      setAnalyses(data?.map(a => ({
-        id: a.id,
-        name: a.name,
-        type: (a.type as "Soil" | "Leaf") || "Soil",
-        collaborator: a.collaborator || "",
-        deadline: a.deadline || 0,
-        value: a.value || "",
-        status: (a.status as "Active" | "Inactive") || "Active"
-      })) || []);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     fetchAnalyses();
-  }, [user]);
+  }, []);
 
-  const handleAnalysisSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-
-    if (editingAnalysis) {
-      const { error } = await supabase
-        .from("analyses")
-        .update({
-          name: analysisFormData.name,
-          type: analysisFormData.type,
-          collaborator: analysisFormData.collaborator,
-          deadline: analysisFormData.deadline,
-          value: analysisFormData.value,
-          status: analysisFormData.status
-        })
-        .eq("id", editingAnalysis.id);
-
-      if (error) {
-        toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
-      } else {
-        toast({ title: "Análise atualizada", description: "A análise foi atualizada com sucesso." });
-        fetchAnalyses();
-      }
-    } else {
-      const { error } = await supabase
-        .from("analyses")
-        .insert({
-          user_id: user.id,
-          name: analysisFormData.name,
-          type: analysisFormData.type,
-          collaborator: analysisFormData.collaborator,
-          deadline: analysisFormData.deadline,
-          value: analysisFormData.value,
-          status: analysisFormData.status
-        });
-
-      if (error) {
-        toast({ title: "Erro ao criar", description: error.message, variant: "destructive" });
-      } else {
-        toast({ title: "Análise criada", description: "A análise foi criada com sucesso." });
-        fetchAnalyses();
-      }
-    }
-
-    resetAnalysisForm();
-  };
-
-  const resetAnalysisForm = () => {
-    setAnalysisFormData({
-      id: "",
-      name: "",
-      type: "Soil",
-      collaborator: "",
-      deadline: 0,
-      value: "",
-      status: "Active"
-    });
-    setEditingAnalysis(null);
-    setShowAnalysisForm(false);
-  };
-
-  const handleDeleteAnalysis = async (id: string) => {
-    if (!user) return;
-
-    const { error } = await supabase
-      .from("analyses")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Análise excluída", description: "A análise foi excluída com sucesso." });
-      fetchAnalyses();
-    }
-  };
-
-  const handleAnalysisInputChange = (field: keyof Analysis, value: string | number) => {
+  const handleInputChange = (field: keyof Analysis, value: any) => {
     setAnalysisFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const totalAnalyses = analyses.length;
-  const totalAnalysesPages = Math.ceil(totalAnalyses / analysesPerPage);
-  const analysesStartIndex = (analysesPage - 1) * analysesPerPage;
-  const analysesEndIndex = analysesStartIndex + analysesPerPage;
-  const currentAnalyses = analyses.slice(analysesStartIndex, analysesEndIndex);
+  const handleSaveAnalysis = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingAnalysis) {
+        await api.put(`/analyses/${editingAnalysis.id}`, analysisFormData);
+        toast({ title: "Análise atualizada", description: "Dados atualizados com sucesso." });
+      } else {
+        await api.post('/analyses', analysisFormData);
+        toast({ title: "Análise cadastrada", description: "Análise adicionada com sucesso." });
+      }
+      setShowAnalysisForm(false);
+      setEditingAnalysis(null);
+      setAnalysisFormData({ id: "", name: "", type: "Soil", collaborator: "", deadline: 0, value: "", status: "Active" });
+      await fetchAnalyses();
+    } catch (error: any) {
+      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleEditAnalysis = (item: Analysis) => {
+    setEditingAnalysis(item);
+    setAnalysisFormData(item);
+    setShowAnalysisForm(true);
+  };
+
+  const handleDeleteAnalysis = async (id: string) => {
+    try {
+      await api.delete(`/analyses/${id}`);
+      toast({ title: "Análise removida", description: "Excluída com sucesso." });
+      await fetchAnalyses();
+    } catch (error: any) {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+    }
+  };
 
   return {
     analyses,
@@ -159,18 +105,11 @@ export const useAnalyses = () => {
     showAnalysisForm,
     setShowAnalysisForm,
     editingAnalysis,
-    setEditingAnalysis,
     analysisFormData,
-    setAnalysisFormData,
-    handleAnalysisSubmit,
-    resetAnalysisForm,
-    handleAnalysisInputChange,
+    handleInputChange,
+    handleSaveAnalysis,
+    handleEditAnalysis,
     handleDeleteAnalysis,
-    totalAnalyses,
-    totalAnalysesPages,
-    analysesStartIndex,
-    analysesEndIndex,
-    currentAnalyses,
-    fetchAnalyses
+    refetch: fetchAnalyses
   };
 };

@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect, useCallback } from 'react';
+import { api } from '@/services/api';
 
-interface Profile {
+export interface UserProfile {
   id: string;
   user_id: string;
   name: string | null;
@@ -11,85 +10,100 @@ interface Profile {
 }
 
 export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [user, setUser] = useState<any | null>(null);
+  const [session, setSession] = useState<any | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
-        } else {
-          setProfile(null);
-        }
+  const initAuth = useCallback(() => {
+    const localToken = localStorage.getItem('@FarmFlow:token');
+    const localUserStr = localStorage.getItem('@FarmFlow:user');
+
+    if (localToken && localUserStr) {
+      try {
+        const localUser = JSON.parse(localUserStr);
+        setUser(localUser);
+        setSession({ access_token: localToken, user: localUser });
+        setProfile({
+          id: localUser.id,
+          user_id: localUser.id,
+          name: localUser.name || 'Usuário',
+          role: localUser.role || 'admin',
+          avatar_url: localUser.avatar_url || null,
+        });
+      } catch {
+        localStorage.removeItem('@FarmFlow:token');
+        localStorage.removeItem('@FarmFlow:user');
+        setUser(null);
+        setSession(null);
+        setProfile(null);
       }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (!error && data) {
-      setProfile(data);
-    }
-  };
-
-  const signUp = async (email: string, password: string, name: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          name
-        }
-      }
-    });
-    
-    return { data, error };
-  };
-
-  const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    
-    return { data, error };
-  };
-
-  const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (!error) {
+    } else {
       setUser(null);
       setSession(null);
       setProfile(null);
     }
-    return { error };
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    initAuth();
+
+    const handleCustomAuthChange = () => {
+      initAuth();
+    };
+    window.addEventListener('@FarmFlow:authChange', handleCustomAuthChange);
+
+    return () => {
+      window.removeEventListener('@FarmFlow:authChange', handleCustomAuthChange);
+    };
+  }, [initAuth]);
+
+  const signUp = async (email: string, password: string, name: string) => {
+    try {
+      const created = await api.post<any>('/users', { name, email, password });
+      return { data: { user: created }, error: null };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      const res = await api.post<{ user: any; token: string }>('/sessions', {
+        email,
+        password,
+      });
+
+      if (res && res.token && res.user) {
+        localStorage.setItem('@FarmFlow:token', res.token);
+        localStorage.setItem('@FarmFlow:user', JSON.stringify(res.user));
+        setUser(res.user);
+        setSession({ access_token: res.token, user: res.user });
+        setProfile({
+          id: res.user.id,
+          user_id: res.user.id,
+          name: res.user.name,
+          role: res.user.role,
+          avatar_url: res.user.avatar_url || null,
+        });
+
+        window.dispatchEvent(new CustomEvent('@FarmFlow:authChange'));
+        return { data: { user: res.user, session: { access_token: res.token } }, error: null };
+      }
+      return { data: null, error: new Error('Credenciais inválidas.') };
+    } catch (backendErr: any) {
+      return { data: null, error: backendErr };
+    }
+  };
+
+  const signOut = async () => {
+    localStorage.removeItem('@FarmFlow:token');
+    localStorage.removeItem('@FarmFlow:user');
+    setUser(null);
+    setSession(null);
+    setProfile(null);
+    window.dispatchEvent(new CustomEvent('@FarmFlow:authChange'));
   };
 
   return {
@@ -97,9 +111,9 @@ export const useAuth = () => {
     session,
     profile,
     loading,
-    signUp,
     signIn,
+    signUp,
     signOut,
-    isAuthenticated: !!session
+    refreshAuth: initAuth,
   };
 };

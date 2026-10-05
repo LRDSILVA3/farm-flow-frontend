@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { IMaskInput } from "react-imask";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, AlertCircle } from "lucide-react";
 
 import { useState, useEffect } from "react";
 import { CustomerSelect } from "./CustomerSelect";
@@ -39,6 +38,7 @@ export const FarmForm = ({
 }: FarmFormProps) => {
   const { clients, loading: clientsLoading } = useClients();
   const [customers, setCustomers] = useState<Client[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!clientsLoading) {
@@ -58,11 +58,30 @@ export const FarmForm = ({
   };
 
   const handleAddPlotClick = () => {
-    if (!onAddPlot) {
-      return;
-    }
+    if (!onAddPlot) return;
     const farmId = editingFarm ? editingFarm.id : formData.id || 'temp';
     onAddPlot(farmId);
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newErrors: Record<string, string> = {};
+    if (!formData.name?.trim()) {
+      newErrors.name = "Nome da fazenda é obrigatório";
+    }
+    if (!formData.clientId) {
+      newErrors.clientId = "Selecione o proprietário";
+    }
+    if (!formData.area || parseFloat(formData.area) <= 0) {
+      newErrors.area = "Informe uma área válida em hectares";
+    }
+
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
+
+    onSubmit(e);
   };
 
   return (
@@ -73,16 +92,25 @@ export const FarmForm = ({
             {editingFarm ? "Editar Fazenda" : "Nova Fazenda"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4" role="form">
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleFormSubmit} className="space-y-4" role="form">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="name">Nome da Fazenda</Label>
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => onInputChange("name", e.target.value)}
-                required
+                onChange={(e) => {
+                  onInputChange("name", e.target.value);
+                  if (errors.name) setErrors(prev => ({ ...prev, name: "" }));
+                }}
+                placeholder="Ex: Fazenda Santa Maria"
+                className={errors.name ? "border-red-500 focus-visible:ring-red-500" : ""}
               />
+              {errors.name && (
+                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5" /> {errors.name}
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="owner">Proprietário</Label>
@@ -93,39 +121,54 @@ export const FarmForm = ({
                   if (selectedCustomer) {
                     onInputChange("clientId", selectedCustomer.id);
                     onInputChange("clientName", selectedCustomer.name);
+                    if (errors.clientId) setErrors(prev => ({ ...prev, clientId: "" }));
                   }
                 }}
                 customers={customers}
               />
+              {errors.clientId && (
+                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5" /> {errors.clientId}
+                </p>
+              )}
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="area">Área Total (ha)</Label>
               <Input
                 id="area"
                 type="number"
-                step="0.1"
+                step="0.01"
                 value={formData.area}
-                onChange={(e) => onInputChange("area", e.target.value)}
-                required
+                onChange={(e) => {
+                  onInputChange("area", e.target.value);
+                  if (errors.area) setErrors(prev => ({ ...prev, area: "" }));
+                }}
+                placeholder="0.00"
+                className={errors.area ? "border-red-500 focus-visible:ring-red-500" : ""}
               />
+              {errors.area && (
+                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5" /> {errors.area}
+                </p>
+              )}
             </div>
             <div>
-              <Label htmlFor="contact">Contato</Label>
+              <Label htmlFor="contact">Contato (Opcional)</Label>
               <IMaskInput
                 mask="(00) 00000-0000"
                 id="contact"
                 value={formData.contact}
                 onAccept={(value) => onInputChange("contact", value as string)}
-                required
+                placeholder="(00) 00000-0000"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <CityStateSelect
               city={formData.city}
               state={formData.state}
@@ -134,11 +177,12 @@ export const FarmForm = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {/* Ordem Padronizada: Status, LOTE primeiro, depois MATRÍCULA */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="status">Status</Label>
               <Select value={formData.status} onValueChange={(value) => onInputChange("status", value)}>
-                <SelectTrigger>
+                <SelectTrigger id="status">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -148,28 +192,27 @@ export const FarmForm = ({
               </Select>
             </div>
             <div>
-              <Label htmlFor="lot">Lote</Label>
+              <Label htmlFor="lot">Lote (Opcional)</Label>
               <Input
                 id="lot"
-                value={formData.lot}
+                value={formData.lot || ""}
                 onChange={(e) => onInputChange("lot", e.target.value)}
-                required
+                placeholder="Ex: Lote 14-B"
+              />
+            </div>
+            <div>
+              <Label htmlFor="registration">Matrícula (Opcional)</Label>
+              <Input
+                id="registration"
+                value={formData.registration || ""}
+                onChange={(e) => onInputChange("registration", e.target.value)}
+                placeholder="Ex: 12.345"
               />
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="registration">Matrícula</Label>
-            <Input
-              id="registration"
-              value={formData.registration}
-              onChange={(e) => onInputChange("registration", e.target.value)}
-              required
-            />
-          </div>
-
           {editingFarm && (
-            <div className="mt-6">
+            <div className="mt-6 border-t pt-4">
               <div className="flex justify-between items-center mb-4">
                 <h4 className="text-lg font-medium">Talhões da Fazenda</h4>
                 <Button
@@ -183,7 +226,7 @@ export const FarmForm = ({
                 </Button>
               </div>
               
-              {formData.plots.length > 0 ? (
+              {formData.plots && formData.plots.length > 0 ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -191,8 +234,8 @@ export const FarmForm = ({
                       <TableHead>Área (ha)</TableHead>
                       <TableHead>Cidade</TableHead>
                       <TableHead>Estado</TableHead>
-                      <TableHead>Matrícula</TableHead>
                       <TableHead>Lote</TableHead>
+                      <TableHead>Matrícula</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Ações</TableHead>
                     </TableRow>
@@ -201,11 +244,11 @@ export const FarmForm = ({
                     {formData.plots.map((plot) => (
                       <TableRow key={plot.id}>
                         <TableCell className="font-medium">{plot.name}</TableCell>
-                        <TableCell>{plot.area}</TableCell>
-                        <TableCell>{plot.city}</TableCell>
-                        <TableCell>{plot.state}</TableCell>
-                        <TableCell>{plot.registration}</TableCell>
-                        <TableCell>{plot.lot}</TableCell>
+                        <TableCell>{parseFloat(plot.area || "0").toFixed(2)} ha</TableCell>
+                        <TableCell>{plot.city || "-"}</TableCell>
+                        <TableCell>{plot.state || "-"}</TableCell>
+                        <TableCell>{plot.lot || "-"}</TableCell>
+                        <TableCell>{plot.registration || "-"}</TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(plot.status)}`}>
                             {plot.status}
@@ -228,14 +271,14 @@ export const FarmForm = ({
                   </TableBody>
                 </Table>
               ) : (
-                <p className="text-gray-500 text-center py-8">
+                <p className="text-gray-500 text-center py-6 text-sm">
                   Nenhum talhão cadastrado para esta fazenda
                 </p>
               )}
             </div>
           )}
           
-          <div className="flex justify-end space-x-2 pt-4">
+          <div className="flex justify-end space-x-2 pt-4 border-t">
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancelar
             </Button>

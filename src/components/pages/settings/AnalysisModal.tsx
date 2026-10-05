@@ -16,8 +16,21 @@ interface AnalysisModalProps {
   resetAnalysisForm: () => void;
 }
 
-const tiposAnalise = ["Macro", "Macro+S", "Macro+S+P_rem", "Foliar", "Compactação"];
-const colaboradoresDisponiveis = ["Laboratorio 1", "Laboratorio 2"];
+export const TIPOS_ANALISE_OFICIAIS = [
+  { value: "MACRO+S+P_REM", label: "MACRO+S+P_REM (Completa 0-20 cm)" },
+  { value: "MACRO+S", label: "MACRO+S (Profundidade 20-40 cm)" },
+  { value: "MACRO", label: "MACRO (Análise Simples)" },
+  { value: "ANALISE DE FOLIAR", label: "ANALISE DE FOLIAR (Nutrição Foliar)" },
+  { value: "ANÁLISE FÍSICA", label: "ANÁLISE FÍSICA (Granulometria / Textura)" },
+  { value: "ANÁLISE 20-40 CM", label: "ANÁLISE 20-40 CM (Subsuperficial)" }
+];
+
+const colaboradoresDisponiveis = [
+  "Laboratório Solo Forte",
+  "Laboratório AgroAnálises",
+  "IBRA Análises",
+  "Laboratório Coodetec"
+];
 
 export const AnalysisModal = ({
   showAnalysisForm,
@@ -47,8 +60,8 @@ export const AnalysisModal = ({
                 <SelectValue placeholder="Selecione o tipo de análise" />
               </SelectTrigger>
               <SelectContent>
-                {tiposAnalise.map((tipo) => (
-                  <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
+                {TIPOS_ANALISE_OFICIAIS.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

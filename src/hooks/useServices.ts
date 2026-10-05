@@ -1,7 +1,6 @@
 import { useState, useEffect, FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/services/api";
 
 export interface Service {
   id: string;
@@ -14,7 +13,6 @@ export interface Service {
 
 export const useServices = () => {
   const { toast } = useToast();
-  const { user } = useAuth();
   
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,32 +30,29 @@ export const useServices = () => {
   });
 
   const fetchServices = async () => {
-    if (!user) return;
-    
     setLoading(true);
-    const { data, error } = await supabase
-      .from("services")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      toast({ title: "Erro ao carregar serviços", description: error.message, variant: "destructive" });
-    } else {
-      setServices(data?.map(s => ({
-        id: s.id,
-        name: s.name,
-        valuePerAlqueire: s.value_per_alqueire || "",
-        status: s.status || "Ativo",
-        products: s.products || "",
-        isFixed: s.is_fixed || false
-      })) || []);
+    try {
+      const data = await api.get<any[]>('/services');
+      if (Array.isArray(data)) {
+        setServices(data.map(s => ({
+          id: s.id,
+          name: s.name,
+          valuePerAlqueire: s.value_per_alqueire || s.valuePerAlqueire || "",
+          status: s.status || "Ativo",
+          products: s.products || "",
+          isFixed: s.is_fixed || s.isFixed || false
+        })));
+      }
+    } catch (err: any) {
+      toast({ title: "Erro ao carregar serviços", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     fetchServices();
-  }, [user]);
+  }, []);
 
   const handleEditService = (service: Service) => {
     setEditingService(service);
@@ -67,45 +62,27 @@ export const useServices = () => {
 
   const handleServiceSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    try {
+      const payload = {
+        name: serviceFormData.name,
+        value_per_alqueire: serviceFormData.valuePerAlqueire,
+        status: serviceFormData.status,
+        products: serviceFormData.products,
+        is_fixed: serviceFormData.isFixed
+      };
 
-    if (editingService) {
-      const { error } = await supabase
-        .from("services")
-        .update({
-          name: serviceFormData.name,
-          value_per_alqueire: serviceFormData.valuePerAlqueire,
-          status: serviceFormData.status,
-          products: serviceFormData.products
-        })
-        .eq("id", editingService.id);
-
-      if (error) {
-        toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
-      } else {
+      if (editingService) {
+        await api.put(`/services/${editingService.id}`, payload);
         toast({ title: "Serviço atualizado", description: "O serviço foi atualizado com sucesso." });
-        fetchServices();
-      }
-    } else {
-      const { error } = await supabase
-        .from("services")
-        .insert({
-          user_id: user.id,
-          name: serviceFormData.name,
-          value_per_alqueire: serviceFormData.valuePerAlqueire,
-          status: serviceFormData.status,
-          products: serviceFormData.products
-        });
-
-      if (error) {
-        toast({ title: "Erro ao criar", description: error.message, variant: "destructive" });
       } else {
+        await api.post('/services', payload);
         toast({ title: "Serviço criado", description: "O serviço foi criado com sucesso." });
-        fetchServices();
       }
+      fetchServices();
+      resetServiceForm();
+    } catch (err: any) {
+      toast({ title: "Erro ao salvar serviço", description: err.message, variant: "destructive" });
     }
-
-    resetServiceForm();
   };
 
   const resetServiceForm = () => {
@@ -122,22 +99,16 @@ export const useServices = () => {
   };
 
   const handleDeleteService = async (id: string) => {
-    if (!user) return;
-
-    const { error } = await supabase
-      .from("services")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await api.delete(`/services/${id}`);
       toast({ title: "Serviço excluído", description: "O serviço foi excluído com sucesso." });
       fetchServices();
+    } catch (err: any) {
+      toast({ title: "Erro ao excluir serviço", description: err.message, variant: "destructive" });
     }
   };
 
-  const handleServiceInputChange = (field: keyof Service, value: string) => {
+  const handleServiceInputChange = (field: keyof Service, value: string | boolean) => {
     setServiceFormData(prev => ({ ...prev, [field]: value }));
   };
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +28,7 @@ const signupSchema = z.object({
 });
 
 const Auth = ({ onAuthSuccess }: AuthProps) => {
+  const { signIn, signUp } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [signupData, setSignupData] = useState({ 
@@ -58,37 +60,25 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     setIsLoading(true);
     
     try {
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { error } = await supabase.auth.signInWithPassword({
-        email: loginData.email,
-        password: loginData.password
-      });
+      const { data, error } = await signIn(loginData.email, loginData.password);
 
       if (error) {
-        if (error.message.includes("Invalid login credentials")) {
-          toast({
-            title: "Erro no login",
-            description: "Email ou senha incorretos",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Erro no login",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "Erro no login",
+          description: error.message || "Email ou senha incorretos",
+          variant: "destructive",
+        });
       } else {
         toast({
           title: "Login realizado com sucesso!",
-          description: "Bem-vindo ao sistema Preciza",
+          description: "Bem-vindo ao sistema FarmFlow",
         });
         onAuthSuccess();
       }
-    } catch (err) {
+    } catch (err: any) {
       toast({
         title: "Erro",
-        description: "Ocorreu um erro inesperado",
+        description: err?.message || "Ocorreu um erro inesperado",
         variant: "destructive",
       });
     } finally {
@@ -115,34 +105,14 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     setIsLoading(true);
     
     try {
-      const { supabase } = await import('@/integrations/supabase/client');
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { error } = await supabase.auth.signUp({
-        email: signupData.email,
-        password: signupData.password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            nome: signupData.nome
-          }
-        }
-      });
+      const { data, error } = await signUp(signupData.email, signupData.password, signupData.nome);
 
       if (error) {
-        if (error.message.includes("User already registered")) {
-          toast({
-            title: "Erro no cadastro",
-            description: "Este email já está cadastrado. Tente fazer login.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Erro no cadastro",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "Erro no cadastro",
+          description: error.message,
+          variant: "destructive",
+        });
       } else {
         toast({
           title: "Cadastro realizado com sucesso!",
@@ -150,10 +120,10 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
         });
         onAuthSuccess();
       }
-    } catch (err) {
+    } catch (err: any) {
       toast({
         title: "Erro",
-        description: "Ocorreu um erro inesperado",
+        description: err?.message || "Ocorreu um erro inesperado",
         variant: "destructive",
       });
     } finally {

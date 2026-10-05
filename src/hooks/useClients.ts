@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { api } from "@/services/api";
 
 export interface Client {
   id: string;
@@ -52,17 +52,14 @@ export const useClients = () => {
 
   const fetchClients = async () => {
     try {
-      const { data, error } = await supabase
-        .from("clients")
-        .select("*")
-        .order("name");
-
-      if (error) throw error;
-      setClients((data || []).map(mapFromDB));
+      const backendData = await api.get<any[]>('/clients');
+      if (Array.isArray(backendData)) {
+        setClients(backendData.map(mapFromDB));
+      }
     } catch (error: any) {
       toast({
         title: "Erro ao carregar clientes",
-        description: error.message,
+        description: error.message || "Erro na conexão com o servidor local.",
         variant: "destructive"
       });
     } finally {
@@ -76,60 +73,47 @@ export const useClients = () => {
 
   const addClient = async (client: Omit<Client, 'id'>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      const { data, error } = await supabase
-        .from("clients")
-        .insert({
-          user_id: user.id,
-          cpf: client.cpf,
-          name: client.name,
-          birth_date: client.birthDate || null,
-          email: client.email || null,
-          phone: client.phone || null,
-          zip_code: client.zipCode || null,
-          city: client.city || null,
-          state: client.state || null,
-          cad_pro: client.cadPro || null
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      setClients(prev => [...prev, mapFromDB(data)]);
+      const created = await api.post<any>('/clients', {
+        cpf: client.cpf,
+        name: client.name,
+        birth_date: client.birthDate || null,
+        email: client.email || null,
+        phone: client.phone || null,
+        zip_code: client.zipCode || null,
+        city: client.city || null,
+        state: client.state || null,
+        cad_pro: client.cadPro || null
+      });
+      await fetchClients();
       toast({
         title: "Cliente cadastrado",
         description: "O cliente foi cadastrado com sucesso."
       });
+      return created;
     } catch (error: any) {
       toast({
         title: "Erro ao cadastrar cliente",
-        description: error.message,
+        description: error.message || "Erro ao salvar cliente no banco.",
         variant: "destructive"
       });
+      return null;
     }
   };
 
   const updateClient = async (updatedClient: Client) => {
     try {
-      const { error } = await supabase
-        .from("clients")
-        .update({
-          cpf: updatedClient.cpf,
-          name: updatedClient.name,
-          birth_date: updatedClient.birthDate || null,
-          email: updatedClient.email || null,
-          phone: updatedClient.phone || null,
-          zip_code: updatedClient.zipCode || null,
-          city: updatedClient.city || null,
-          state: updatedClient.state || null,
-          cad_pro: updatedClient.cadPro || null
-        })
-        .eq("id", updatedClient.id);
-
-      if (error) throw error;
-      setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
+      await api.put<any>(`/clients/${updatedClient.id}`, {
+        cpf: updatedClient.cpf,
+        name: updatedClient.name,
+        birth_date: updatedClient.birthDate || null,
+        email: updatedClient.email || null,
+        phone: updatedClient.phone || null,
+        zip_code: updatedClient.zipCode || null,
+        city: updatedClient.city || null,
+        state: updatedClient.state || null,
+        cad_pro: updatedClient.cadPro || null
+      });
+      await fetchClients();
       toast({
         title: "Cliente atualizado",
         description: "O cliente foi atualizado com sucesso."
@@ -137,7 +121,24 @@ export const useClients = () => {
     } catch (error: any) {
       toast({
         title: "Erro ao atualizar cliente",
-        description: error.message,
+        description: error.message || "Erro ao atualizar cliente.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const deleteClient = async (clientId: string) => {
+    try {
+      await api.delete(`/clients/${clientId}`);
+      await fetchClients();
+      toast({
+        title: "Cliente removido",
+        description: "O cliente foi excluído com sucesso."
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao excluir cliente",
+        description: error.message || "Erro ao excluir cliente.",
         variant: "destructive"
       });
     }
@@ -157,6 +158,7 @@ export const useClients = () => {
     loading,
     addClient,
     updateClient,
+    deleteClient,
     startEditing,
     stopEditing,
     refetch: fetchClients

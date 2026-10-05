@@ -39,7 +39,9 @@ export const CustomerSelect = ({ value, onValueChange, customers }: CustomerSele
           aria-expanded={open}
           className="w-full justify-between font-normal"
         >
-          {selectedCustomer ? `${selectedCustomer.name} - ${selectedCustomer.cpf}` : "Selecione um cliente"}
+          <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
+            {selectedCustomer ? `${selectedCustomer.name} - ${selectedCustomer.cpf}` : "Selecione um cliente"}
+          </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>

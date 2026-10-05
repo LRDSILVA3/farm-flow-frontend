@@ -1,19 +1,19 @@
 import { useState, useEffect, FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/services/api";
 
 export interface Product {
   id: string;
   name: string;
-  unitValue: string;
+  supplier: string;
+  valuePerUnit: number;
+  unit: string;
   status: string;
 }
 
 export const useProducts = () => {
   const { toast } = useToast();
-  const { user } = useAuth();
-
+  
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [productsPage, setProductsPage] = useState(1);
@@ -23,35 +23,36 @@ export const useProducts = () => {
   const [productFormData, setProductFormData] = useState<Product>({
     id: "",
     name: "",
-    unitValue: "",
+    supplier: "",
+    valuePerUnit: 0,
+    unit: "",
     status: "Ativo"
   });
 
   const fetchProducts = async () => {
-    if (!user) return;
-
     setLoading(true);
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      toast({ title: "Erro ao carregar produtos", description: error.message, variant: "destructive" });
-    } else {
-      setProducts(data?.map(p => ({
-        id: p.id,
-        name: p.name,
-        unitValue: p.unit_value || "",
-        status: p.status || "Ativo"
-      })) || []);
+    try {
+      const data = await api.get<any[]>('/products');
+      if (Array.isArray(data)) {
+        setProducts(data.map(p => ({
+          id: p.id,
+          name: p.name,
+          supplier: p.supplier || "",
+          valuePerUnit: Number(p.value_per_unit || p.valuePerUnit || 0),
+          unit: p.unit || "",
+          status: p.status || "Ativo"
+        })));
+      }
+    } catch (err: any) {
+      toast({ title: "Erro ao carregar produtos", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     fetchProducts();
-  }, [user]);
+  }, []);
 
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
@@ -61,50 +62,36 @@ export const useProducts = () => {
 
   const handleProductSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    try {
+      const payload = {
+        name: productFormData.name,
+        supplier: productFormData.supplier,
+        value_per_unit: productFormData.valuePerUnit,
+        unit: productFormData.unit,
+        status: productFormData.status
+      };
 
-    if (editingProduct) {
-      const { error } = await supabase
-        .from("products")
-        .update({
-          name: productFormData.name,
-          unit_value: productFormData.unitValue,
-          status: productFormData.status
-        })
-        .eq("id", editingProduct.id);
-
-      if (error) {
-        toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
-      } else {
+      if (editingProduct) {
+        await api.put(`/products/${editingProduct.id}`, payload);
         toast({ title: "Produto atualizado", description: "O produto foi atualizado com sucesso." });
-        fetchProducts();
-      }
-    } else {
-      const { error } = await supabase
-        .from("products")
-        .insert({
-          user_id: user.id,
-          name: productFormData.name,
-          unit_value: productFormData.unitValue,
-          status: productFormData.status
-        });
-
-      if (error) {
-        toast({ title: "Erro ao criar", description: error.message, variant: "destructive" });
       } else {
+        await api.post('/products', payload);
         toast({ title: "Produto criado", description: "O produto foi criado com sucesso." });
-        fetchProducts();
       }
+      fetchProducts();
+      resetProductForm();
+    } catch (err: any) {
+      toast({ title: "Erro ao salvar produto", description: err.message, variant: "destructive" });
     }
-
-    resetProductForm();
   };
 
   const resetProductForm = () => {
     setProductFormData({
       id: "",
       name: "",
-      unitValue: "",
+      supplier: "",
+      valuePerUnit: 0,
+      unit: "",
       status: "Ativo"
     });
     setEditingProduct(null);
@@ -112,22 +99,16 @@ export const useProducts = () => {
   };
 
   const handleDeleteProduct = async (id: string) => {
-    if (!user) return;
-
-    const { error } = await supabase
-      .from("products")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await api.delete(`/products/${id}`);
       toast({ title: "Produto excluído", description: "O produto foi excluído com sucesso." });
       fetchProducts();
+    } catch (err: any) {
+      toast({ title: "Erro ao excluir produto", description: err.message, variant: "destructive" });
     }
   };
 
-  const handleProductInputChange = (field: keyof Product, value: string) => {
+  const handleProductInputChange = (field: keyof Product, value: string | number) => {
     setProductFormData(prev => ({ ...prev, [field]: value }));
   };
 
