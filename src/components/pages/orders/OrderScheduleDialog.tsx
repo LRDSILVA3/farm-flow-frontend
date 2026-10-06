@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Order } from '@/hooks/useOrders';
 import { Calendar, Plus, Clock, Users, Wrench, X, CheckCircle2 } from 'lucide-react';
 import { api } from '@/services/api';
+import { generateUUID } from '@/lib/utils';
 
 interface OrderScheduleDialogProps {
   order: Order | null;
@@ -88,7 +89,7 @@ export const OrderScheduleDialog: React.FC<OrderScheduleDialogProps> = ({
     if (!scheduledDate || !description.trim()) return;
 
     const newScheduleItem = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       scheduledDate,
       date: scheduledDate,
       description: description.trim(),

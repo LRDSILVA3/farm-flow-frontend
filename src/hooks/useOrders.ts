@@ -15,6 +15,7 @@ const sanitizeText = (str: string | null | undefined): string => {
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/api";
+import { generateUUID } from "@/lib/utils";
 
 export interface OrderExecution {
   id: string;
@@ -181,7 +182,7 @@ const mapFromDB = (db: OrderDB): Order => {
       const newPaymentStatus = isTotal ? "Pago" : "Parcial";
 
       const newPayment: OrderPayment = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         date: new Date().toISOString().split('T')[0],
         amount: payAmount,
         method: paymentDetails.method || "PIX",
@@ -308,7 +309,7 @@ export const useOrders = () => {
       }
     } catch {}
     return {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       action,
       userName,
       timestamp: new Date().toISOString(),
@@ -469,7 +470,7 @@ export const useOrders = () => {
       const equips = execution.equipmentNames || [];
 
       const newExecution: any = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         date: new Date().toISOString().split('T')[0],
         areaExecuted: execution.areaExecuted,
         hectares: execution.areaExecuted,
@@ -532,7 +533,7 @@ export const useOrders = () => {
       const equips = schedule.equipmentNames || [];
 
       const newSchedule: any = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         scheduledDate: schedule.scheduledDate,
         date: schedule.scheduledDate,
         description: schedule.description,
@@ -589,7 +590,7 @@ export const useOrders = () => {
       const newPaidAmount = previousPaid + payment.amount;
 
       const newPayment: OrderPayment = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         date: new Date().toISOString().split('T')[0],
         amount: payment.amount,
         method: payment.method,
