@@ -135,4 +135,25 @@ describe('FarmForm', () => {
         fireEvent.click(cancelButton);
         expect(mockOnCancel).toHaveBeenCalled();
     });
+
+    it('recalculates hectares when alqueires is entered', () => {
+        renderCreateForm();
+
+        const alqInput = screen.getByLabelText('Área Total (alq)');
+        fireEvent.change(alqInput, { target: { value: '20' } });
+
+        const haInput = screen.getByLabelText('Área Total (ha)');
+        expect(haInput).toHaveValue(48.4);
+        expect(mockOnInputChange).toHaveBeenCalledWith('area', '48.40');
+    });
+
+    it('recalculates alqueires when hectares is entered', () => {
+        renderCreateForm();
+
+        const haInput = screen.getByLabelText('Área Total (ha)');
+        fireEvent.change(haInput, { target: { value: '48.40' } });
+
+        const alqInput = screen.getByLabelText('Área Total (alq)');
+        expect(alqInput).toHaveValue(20);
+    });
 });

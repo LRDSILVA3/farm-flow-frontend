@@ -35,7 +35,7 @@ export const PlotsTable = ({ plots, onEditPlot, onDeletePlot }: PlotsTableProps)
       <TableHeader>
         <TableRow>
           <TableHead>Nome</TableHead>
-          <TableHead>Área (ha)</TableHead>
+          <TableHead>Área</TableHead>
           <TableHead>Cidade</TableHead>
           <TableHead>Estado</TableHead>
           <TableHead>Matrícula</TableHead>
@@ -48,7 +48,12 @@ export const PlotsTable = ({ plots, onEditPlot, onDeletePlot }: PlotsTableProps)
         {plots.map((plot) => (
           <TableRow key={plot.id}>
             <TableCell className="font-medium">{plot.name}</TableCell>
-            <TableCell>{plot.area}</TableCell>
+            <TableCell>
+              <span>{parseFloat(plot.area || "0").toFixed(2)} ha</span>{" "}
+              <span className="text-xs text-muted-foreground font-normal">
+                ({((parseFloat(plot.area || "0") || 0) / 2.42).toFixed(2)} alq)
+              </span>
+            </TableCell>
             <TableCell>{plot.city}</TableCell>
             <TableCell>{plot.state}</TableCell>
             <TableCell>{plot.registration}</TableCell>

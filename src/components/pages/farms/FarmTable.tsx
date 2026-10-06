@@ -56,7 +56,7 @@ export const FarmsTable = ({
           <TableRow>
             <TableHead>Nome da Fazenda</TableHead>
             <TableHead>Proprietário</TableHead>
-            <TableHead>Área (ha)</TableHead>
+            <TableHead>Área</TableHead>
             <TableHead>Localização</TableHead>
             <TableHead>Contato</TableHead>
             <TableHead>Status</TableHead>
@@ -69,7 +69,12 @@ export const FarmsTable = ({
             <TableRow key={farm.id}>
               <TableCell className="font-medium">{farm.name}</TableCell>
               <TableCell>{farm.clientName}</TableCell>
-              <TableCell>{farm.area}</TableCell>
+              <TableCell>
+                <span>{parseFloat(farm.area || "0").toFixed(2)} ha</span>{" "}
+                <span className="text-xs text-muted-foreground font-normal">
+                  ({((parseFloat(farm.area || "0") || 0) / 2.42).toFixed(2)} alq)
+                </span>
+              </TableCell>
               <TableCell>{farm.city} - {farm.state}</TableCell>
               <TableCell>{formatPhoneNumber(farm.contact)}</TableCell>
               <TableCell>

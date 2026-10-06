@@ -113,4 +113,25 @@ describe('PlotForm', () => {
         fireEvent.click(cancelButton);
         expect(mockOnCancel).toHaveBeenCalled();
     });
+
+    it('recalculates hectares when alqueires is entered', () => {
+        renderCreateForm();
+
+        const alqInput = screen.getByLabelText('Área (alq)');
+        fireEvent.change(alqInput, { target: { value: '10' } });
+
+        const haInput = screen.getByLabelText('Área (ha)');
+        expect(haInput).toHaveValue(24.2);
+        expect(mockSetPlotForm).toHaveBeenCalledWith(expect.objectContaining({ area: '24.20' }));
+    });
+
+    it('recalculates alqueires when hectares is entered', () => {
+        renderCreateForm();
+
+        const haInput = screen.getByLabelText('Área (ha)');
+        fireEvent.change(haInput, { target: { value: '24.20' } });
+
+        const alqInput = screen.getByLabelText('Área (alq)');
+        expect(alqInput).toHaveValue(10);
+    });
 });

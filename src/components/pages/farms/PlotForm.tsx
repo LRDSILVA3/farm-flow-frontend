@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,14 +23,101 @@ export const PlotForm = ({
 }: PlotFormProps) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const [haInput, setHaInput] = useState<string>(() => {
+    if (plotForm.area === undefined || plotForm.area === null || plotForm.area === "") return "";
+    const num = parseFloat(plotForm.area);
+    return isNaN(num) ? "" : num === 0 ? "0" : num.toFixed(2);
+  });
+  const [alqInput, setAlqInput] = useState<string>(() => {
+    if (plotForm.area === undefined || plotForm.area === null || plotForm.area === "") return "";
+    const num = parseFloat(plotForm.area);
+    return isNaN(num) ? "" : num === 0 ? "0" : (num / 2.42).toFixed(2);
+  });
+
+  useEffect(() => {
+    if (plotForm.area !== undefined && plotForm.area !== null && plotForm.area !== "") {
+      const num = parseFloat(plotForm.area);
+      if (!isNaN(num)) {
+        setHaInput(num === 0 ? "0" : num.toFixed(2));
+        setAlqInput(num === 0 ? "0" : (num / 2.42).toFixed(2));
+      } else {
+        setHaInput("");
+        setAlqInput("");
+      }
+    } else {
+      setHaInput("");
+      setAlqInput("");
+    }
+  }, [plotForm.id, plotForm.area]);
+
+  const handleHaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setHaInput(val);
+    if (errors.area) setErrors(prev => ({ ...prev, area: "" }));
+
+    if (val === "") {
+      setAlqInput("");
+      setPlotForm({ ...plotForm, area: "" });
+      return;
+    }
+
+    const numHa = parseFloat(val);
+    if (!isNaN(numHa)) {
+      setAlqInput(numHa > 0 ? Number((numHa / 2.42).toFixed(2)).toString() : "0");
+      setPlotForm({ ...plotForm, area: val });
+    }
+  };
+
+  const handleHaBlur = () => {
+    const numHa = parseFloat(haInput);
+    if (!isNaN(numHa) && numHa > 0) {
+      const formattedHa = numHa.toFixed(2);
+      const formattedAlq = (numHa / 2.42).toFixed(2);
+      setHaInput(formattedHa);
+      setAlqInput(formattedAlq);
+      setPlotForm({ ...plotForm, area: formattedHa });
+    }
+  };
+
+  const handleAlqChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setAlqInput(val);
+
+    if (val === "") {
+      setHaInput("");
+      setPlotForm({ ...plotForm, area: "" });
+      return;
+    }
+
+    const numAlq = parseFloat(val);
+    if (!isNaN(numAlq)) {
+      const calculatedHa = Number((numAlq * 2.42).toFixed(2));
+      setHaInput(calculatedHa.toFixed(2));
+      setPlotForm({ ...plotForm, area: calculatedHa.toFixed(2) });
+      if (errors.area) setErrors(prev => ({ ...prev, area: "" }));
+    }
+  };
+
+  const handleAlqBlur = () => {
+    const numAlq = parseFloat(alqInput);
+    if (!isNaN(numAlq) && numAlq > 0) {
+      const formattedAlq = numAlq.toFixed(2);
+      const calculatedHa = (numAlq * 2.42).toFixed(2);
+      setAlqInput(formattedAlq);
+      setHaInput(calculatedHa);
+      setPlotForm({ ...plotForm, area: calculatedHa });
+    }
+  };
+
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: Record<string, string> = {};
     if (!plotForm.name?.trim()) {
       newErrors.name = "Nome do talhão é obrigatório";
     }
-    if (!plotForm.area || parseFloat(plotForm.area) < 0) {
-      newErrors.area = "Informe uma área válida em hectares";
+    const numArea = parseFloat(plotForm.area || "0");
+    if (!plotForm.area || isNaN(numArea) || numArea <= 0) {
+      newErrors.area = "Informe uma área válida em hectares ou alqueires";
     }
 
     setErrors(newErrors);
@@ -38,6 +125,8 @@ export const PlotForm = ({
       return;
     }
 
+    // Garante rigorosamente 2 casas decimais ao salvar
+    setPlotForm({ ...plotForm, area: numArea.toFixed(2) });
     onSubmit(e);
   };
 
@@ -66,25 +155,41 @@ export const PlotForm = ({
           )}
         </div>
 
-        <div>
-          <Label htmlFor="plotArea">Área (ha)</Label>
-          <Input
-            id="plotArea"
-            type="number"
-            step="0.01"
-            value={plotForm.area}
-            onChange={(e) => {
-              setPlotForm({ ...plotForm, area: e.target.value });
-              if (errors.area) setErrors(prev => ({ ...prev, area: "" }));
-            }}
-            placeholder="0.00"
-            className={errors.area ? "border-red-500" : ""}
-          />
-          {errors.area && (
-            <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-              <AlertCircle className="w-3.5 h-3.5" /> {errors.area}
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label htmlFor="plotArea">Área (ha)</Label>
+            <Input
+              id="plotArea"
+              type="number"
+              step="0.01"
+              value={haInput}
+              onChange={handleHaChange}
+              onBlur={handleHaBlur}
+              placeholder="0.00"
+              className={errors.area ? "border-red-500" : ""}
+            />
+            {errors.area && (
+              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5" /> {errors.area}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="plotAreaAlq">Área (alq)</Label>
+            <Input
+              id="plotAreaAlq"
+              type="number"
+              step="0.01"
+              value={alqInput}
+              onChange={handleAlqChange}
+              onBlur={handleAlqBlur}
+              placeholder="0.00"
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">
+              1 alq = 2,42 ha
             </p>
-          )}
+          </div>
         </div>
 
         <div>

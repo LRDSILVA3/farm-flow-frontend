@@ -11,6 +11,7 @@
 - [x] **Inputs Condicionais Pedido:** Ocultar inputs de serviço genérico quando nenhum serviço avulso estiver selecionado.
 - [x] **Conversão ALQ vs HA no Pedido e Orçamento:** Sincronizar alqueires digitados no modal (`SoilSamplingServiceForm.tsx`) com a área do pedido em hectares, e corrigir a Folha de Pedido (`OrderPrintDialog.tsx`) para usar os alqueires corretos e fórmulas de `budget.xlsm`, eliminando confusão de unidades e descontos comerciais fantasmas.
 - [x] **Download Direto em PDF:** Adicionado botão de download instantâneo de `.pdf` oficial na Folha de Pedido (`OrderPrintDialog.tsx`) utilizando `jsPDF` e `html2canvas`.
+- [x] **Medida Dupla em Alqueires e Hectares (Fazenda e Talhão):** Implementada opção de inserir medidas tanto em Hectares (ha) quanto em Alqueires (alq) nos formulários de criação e edição de Fazendas (`FarmForm.tsx`) e Talhões (`PlotForm.tsx`) com recálculo bidirecional automático em tempo real (`1 alq = 2,42 ha`), validação rigorosa de 2 casas decimais ao salvar e carregar, suporte a `updatePlot` no hook e exibição de ambas as unidades nas tabelas, eliminando qualquer divergência de arredondamento (como 20 alq virando 19 e pouco).
 
 ## 📅 Agenda de Serviços e Execução de Campo
 - [x] **Equipe & Equipamentos:** Exibir os 2 primeiros itens e badge `+X` quando houver mais de dois na tabela da Agenda e de Pedidos.

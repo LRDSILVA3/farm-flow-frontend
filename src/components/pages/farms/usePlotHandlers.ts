@@ -15,7 +15,8 @@ export const useFarmHandlers = (
   addFarm?: (farm: Omit<Farm, 'id' | 'plots'>) => Promise<any>,
   updateFarm?: (farm: Farm) => Promise<void>,
   addPlot?: (farmId: string, plot: Omit<Plot, 'id'>) => Promise<void>,
-  deletePlot?: (farmId: string, plotId: string) => Promise<void>
+  deletePlot?: (farmId: string, plotId: string) => Promise<void>,
+  updatePlot?: (farmId: string, plotId: string, plot: Partial<Plot>) => Promise<any>
 ) => {
   const isMountedRef = useRef(true);
   
@@ -76,8 +77,14 @@ export const useFarmHandlers = (
   };
 
   const handleAddPlot = async (farmId: string, plotForm: Plot) => {
-    if (addPlot) {
-      await addPlot(farmId, plotForm);
+    if (plotForm.id) {
+      if (updatePlot) {
+        await updatePlot(farmId, plotForm.id, plotForm);
+      }
+    } else {
+      if (addPlot) {
+        await addPlot(farmId, plotForm);
+      }
     }
 
     setPlotForm({

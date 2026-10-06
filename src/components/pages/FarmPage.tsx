@@ -34,6 +34,7 @@ const FarmsPage = () => {
     addFarm,
     updateFarm,
     addPlot,
+    updatePlot,
     deletePlot,
     currentPage,
     setCurrentPage,
@@ -76,7 +77,8 @@ const FarmsPage = () => {
     addFarm,
     updateFarm,
     addPlot,
-    deletePlot
+    deletePlot,
+    updatePlot
   );
 
   const handleAddPlotWrapper = (farmId: string) => {

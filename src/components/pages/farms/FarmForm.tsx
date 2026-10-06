@@ -40,6 +40,93 @@ export const FarmForm = ({
   const [customers, setCustomers] = useState<Client[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const [haInput, setHaInput] = useState<string>(() => {
+    if (formData.area === undefined || formData.area === null || formData.area === "") return "";
+    const num = parseFloat(formData.area);
+    return isNaN(num) ? "" : num === 0 ? "0" : num.toFixed(2);
+  });
+  const [alqInput, setAlqInput] = useState<string>(() => {
+    if (formData.area === undefined || formData.area === null || formData.area === "") return "";
+    const num = parseFloat(formData.area);
+    return isNaN(num) ? "" : num === 0 ? "0" : (num / 2.42).toFixed(2);
+  });
+
+  // Sincroniza os inputs ao abrir o modal ou carregar fazenda para edição
+  useEffect(() => {
+    if (formData.area !== undefined && formData.area !== null && formData.area !== "") {
+      const num = parseFloat(formData.area);
+      if (!isNaN(num)) {
+        setHaInput(num === 0 ? "0" : num.toFixed(2));
+        setAlqInput(num === 0 ? "0" : (num / 2.42).toFixed(2));
+      } else {
+        setHaInput("");
+        setAlqInput("");
+      }
+    } else {
+      setHaInput("");
+      setAlqInput("");
+    }
+  }, [formData.id, formData.area, open]);
+
+  const handleHaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setHaInput(val);
+    if (errors.area) setErrors(prev => ({ ...prev, area: "" }));
+
+    if (val === "") {
+      setAlqInput("");
+      onInputChange("area", "");
+      return;
+    }
+
+    const numHa = parseFloat(val);
+    if (!isNaN(numHa)) {
+      setAlqInput(numHa > 0 ? Number((numHa / 2.42).toFixed(2)).toString() : "0");
+      onInputChange("area", val);
+    }
+  };
+
+  const handleHaBlur = () => {
+    const numHa = parseFloat(haInput);
+    if (!isNaN(numHa) && numHa > 0) {
+      const formattedHa = numHa.toFixed(2);
+      const formattedAlq = (numHa / 2.42).toFixed(2);
+      setHaInput(formattedHa);
+      setAlqInput(formattedAlq);
+      onInputChange("area", formattedHa);
+    }
+  };
+
+  const handleAlqChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setAlqInput(val);
+
+    if (val === "") {
+      setHaInput("");
+      onInputChange("area", "");
+      return;
+    }
+
+    const numAlq = parseFloat(val);
+    if (!isNaN(numAlq)) {
+      const calculatedHa = Number((numAlq * 2.42).toFixed(2));
+      setHaInput(calculatedHa.toFixed(2));
+      onInputChange("area", calculatedHa.toFixed(2));
+      if (errors.area) setErrors(prev => ({ ...prev, area: "" }));
+    }
+  };
+
+  const handleAlqBlur = () => {
+    const numAlq = parseFloat(alqInput);
+    if (!isNaN(numAlq) && numAlq > 0) {
+      const formattedAlq = numAlq.toFixed(2);
+      const calculatedHa = (numAlq * 2.42).toFixed(2);
+      setAlqInput(formattedAlq);
+      setHaInput(calculatedHa);
+      onInputChange("area", calculatedHa);
+    }
+  };
+
   useEffect(() => {
     if (!clientsLoading) {
       setCustomers(clients);
@@ -72,14 +159,18 @@ export const FarmForm = ({
     if (!formData.clientId) {
       newErrors.clientId = "Selecione o proprietário";
     }
-    if (!formData.area || parseFloat(formData.area) <= 0) {
-      newErrors.area = "Informe uma área válida em hectares";
+    const numArea = parseFloat(formData.area || "0");
+    if (!formData.area || isNaN(numArea) || numArea <= 0) {
+      newErrors.area = "Informe uma área válida em hectares ou alqueires";
     }
 
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
       return;
     }
+
+    // Garante rigorosamente 2 dígitos após a vírgula ao salvar
+    onInputChange("area", numArea.toFixed(2));
 
     onSubmit(e);
   };
@@ -134,18 +225,16 @@ export const FarmForm = ({
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="area">Área Total (ha)</Label>
               <Input
                 id="area"
                 type="number"
                 step="0.01"
-                value={formData.area}
-                onChange={(e) => {
-                  onInputChange("area", e.target.value);
-                  if (errors.area) setErrors(prev => ({ ...prev, area: "" }));
-                }}
+                value={haInput}
+                onChange={handleHaChange}
+                onBlur={handleHaBlur}
                 placeholder="0.00"
                 className={errors.area ? "border-red-500 focus-visible:ring-red-500" : ""}
               />
@@ -155,6 +244,23 @@ export const FarmForm = ({
                 </p>
               )}
             </div>
+
+            <div>
+              <Label htmlFor="areaAlq">Área Total (alq)</Label>
+              <Input
+                id="areaAlq"
+                type="number"
+                step="0.01"
+                value={alqInput}
+                onChange={handleAlqChange}
+                onBlur={handleAlqBlur}
+                placeholder="0.00"
+              />
+              <p className="text-[11px] text-muted-foreground mt-1">
+                1 alq paulista = 2,42 ha
+              </p>
+            </div>
+
             <div>
               <Label htmlFor="contact">Contato (Opcional)</Label>
               <IMaskInput
@@ -231,7 +337,7 @@ export const FarmForm = ({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Nome</TableHead>
-                      <TableHead>Área (ha)</TableHead>
+                      <TableHead>Área</TableHead>
                       <TableHead>Cidade</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead>Lote</TableHead>
@@ -244,7 +350,12 @@ export const FarmForm = ({
                     {formData.plots.map((plot) => (
                       <TableRow key={plot.id}>
                         <TableCell className="font-medium">{plot.name}</TableCell>
-                        <TableCell>{parseFloat(plot.area || "0").toFixed(2)} ha</TableCell>
+                        <TableCell>
+                          <span>{parseFloat(plot.area || "0").toFixed(2)} ha</span>{" "}
+                          <span className="text-xs text-muted-foreground font-normal">
+                            ({((parseFloat(plot.area || "0") || 0) / 2.42).toFixed(2)} alq)
+                          </span>
+                        </TableCell>
                         <TableCell>{plot.city || "-"}</TableCell>
                         <TableCell>{plot.state || "-"}</TableCell>
                         <TableCell>{plot.lot || "-"}</TableCell>

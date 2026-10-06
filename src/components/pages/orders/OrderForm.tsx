@@ -60,7 +60,9 @@ export const OrderForm = ({
     if (!formData.farmId) return 0;
     const selectedFarm = farms.find(farm => farm.id === formData.farmId);
     if (selectedFarm) {
-      const totalAreaHectares = selectedFarm.plots.reduce((sum, p) => sum + (parseFloat(p.area || "0") || 0), 0);
+      const plotsSum = selectedFarm.plots?.reduce((sum, p) => sum + (parseFloat(p.area || "0") || 0), 0) || 0;
+      const farmArea = parseFloat(selectedFarm.area || "0") || 0;
+      const totalAreaHectares = plotsSum > 0 ? plotsSum : farmArea;
       return Number((totalAreaHectares / 2.42).toFixed(2));
     }
     return 0;
@@ -153,7 +155,9 @@ export const OrderForm = ({
     setSelectedPlot("todos");
     const selectedFarm = farms.find(farm => farm.id === id);
     if (selectedFarm) {
-      const totalArea = selectedFarm.plots.reduce((sum, p) => sum + (parseFloat(p.area || "0") || 0), 0);
+      const plotsSum = selectedFarm.plots?.reduce((sum, p) => sum + (parseFloat(p.area || "0") || 0), 0) || 0;
+      const farmArea = parseFloat(selectedFarm.area || "0") || 0;
+      const totalArea = plotsSum > 0 ? plotsSum : farmArea;
       onInputChange("area", totalArea.toFixed(2));
       setIsConferenciaAllPlotsSelected(true);
     } else {
@@ -168,7 +172,9 @@ export const OrderForm = ({
     if (!selectedFarm) return;
 
     if (plotId === "todos") {
-      const totalArea = selectedFarm.plots.reduce((sum, p) => sum + (parseFloat(p.area || "0") || 0), 0);
+      const plotsSum = selectedFarm.plots?.reduce((sum, p) => sum + (parseFloat(p.area || "0") || 0), 0) || 0;
+      const farmArea = parseFloat(selectedFarm.area || "0") || 0;
+      const totalArea = plotsSum > 0 ? plotsSum : farmArea;
       onInputChange("area", totalArea.toFixed(2));
       setIsConferenciaAllPlotsSelected(true);
     } else {

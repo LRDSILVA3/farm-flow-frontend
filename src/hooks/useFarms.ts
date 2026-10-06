@@ -37,10 +37,16 @@ interface PlotDB {
   updated_at?: string;
 }
 
+const formatAreaTwoDecimals = (val: any): string => {
+  if (val === null || val === undefined || val === "") return "";
+  const num = typeof val === "number" ? val : parseFloat(val.toString());
+  return isNaN(num) ? "" : num.toFixed(2);
+};
+
 const mapPlotFromDB = (db: PlotDB): Plot => ({
   id: db.id,
   name: db.name,
-  area: db.area !== null && db.area !== undefined ? db.area.toString() : "",
+  area: formatAreaTwoDecimals(db.area),
   status: db.status || "Ativo",
   city: db.city || "",
   state: db.state || "",
@@ -55,7 +61,7 @@ const mapFarmFromDB = (db: any): Farm => {
     clientId: db.client_id || db.client?.id || "",
     name: db.name,
     clientName: db.client?.name || "",
-    area: db.area !== null && db.area !== undefined ? db.area.toString() : "",
+    area: formatAreaTwoDecimals(db.area),
     city: db.city || "",
     state: db.state || "",
     contact: db.contact || "",
@@ -232,6 +238,42 @@ export const useFarms = () => {
     }
   };
 
+  const updatePlot = async (farmId: string, plotId: string, plot: Partial<Plot>) => {
+    try {
+      const updatedPlot = await api.put<any>(`/farms/plots/${plotId}`, {
+        name: plot.name,
+        area: plot.area ? parseFloat(parseFloat(plot.area).toFixed(2)) : null,
+        status: plot.status || "Ativo",
+        city: plot.city || null,
+        state: plot.state || null,
+        registration: plot.registration || null,
+        lot: plot.lot || null
+      });
+      await fetchFarms();
+
+      const mapped = mapPlotFromDB(updatedPlot);
+      if (selectedFarm?.id === farmId) {
+        setSelectedFarm(prev => prev ? {
+          ...prev,
+          plots: prev.plots.map(p => p.id === plotId ? mapped : p)
+        } : null);
+      }
+
+      toast({
+        title: "Talhão atualizado",
+        description: "O talhão foi atualizado com sucesso."
+      });
+      return updatedPlot;
+    } catch (error: any) {
+      toast({
+        title: "Erro ao atualizar talhão",
+        description: error.message || "Falha ao atualizar talhão no banco.",
+        variant: "destructive"
+      });
+      return null;
+    }
+  };
+
   const deletePlot = async (farmId: string, plotId: string) => {
     try {
       await api.delete(`/farms/plots/${plotId}`);
@@ -278,6 +320,7 @@ export const useFarms = () => {
     updateFarm,
     deleteFarm,
     addPlot,
+    updatePlot,
     deletePlot,
     refetch: fetchFarms
   };
