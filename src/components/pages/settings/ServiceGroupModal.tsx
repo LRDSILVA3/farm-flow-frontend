@@ -31,7 +31,6 @@ const DEFAULT_OFFICIAL_SERVICES: ServiceOption[] = [
   { id: "serv-compacta", name: "Compactação de Solo" },
   { id: "serv-atv", name: "Aplicação ATV (Sistematização)" },
   { id: "serv-equaliza", name: "Sistema Equaliza (Multi-anual)" },
-  { id: "serv-condut", name: "Condutividade Elétrica" },
 ];
 
 export const ServiceGroupModal: React.FC<ServiceGroupModalProps> = ({

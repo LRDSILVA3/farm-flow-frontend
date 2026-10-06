@@ -92,7 +92,7 @@ export const CustomersForm = ({ editingClient, onSave, onUpdate, onCancel }: Cus
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{editingClient ? "Editar Cliente" : "Novo Client"}</CardTitle>
+        <CardTitle>{editingClient ? "Editar Cliente" : "Novo Cliente"}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -43,7 +43,7 @@ describe('CustomersPage', () => {
     fireEvent.click(newCustomerButton);
 
     // Check if the form is displayed
-    expect(screen.getByRole('heading', { name: /Novo Client/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Novo Cliente/i })).toBeInTheDocument();
 
     // Fill out the form
     fireEvent.input(screen.getByLabelText(/CPF/i), { target: { value: '12345678900' } });

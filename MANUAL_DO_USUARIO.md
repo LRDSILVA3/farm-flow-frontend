@@ -208,12 +208,3 @@ A aba **Configurações** permite personalizar tabelas de preço, maquinários e
 3. **Colaboradores:** Equipe técnica de campo e consultores autorizados.
 4. **Variáveis de Custo:** Parâmetros de combustível, diárias e insumos operacionais.
 5. **Cabeçalho de PDFs:** Personalização dos dados da empresa, telefone e logotipo exibidos nas folhas de pedido oficiais.
-
----
-
-## 📞 12. Suporte e Contato
-
-Em caso de dúvidas operacionais ou solicitação de novos acessos:
-- **E-mail:** `contato@preciza.com.br`
-- **Telefone:** `(45) 3242-2210`
-- **Endereço:** Rua Hortência, 112, Sala 02 — Corbélia - Paraná

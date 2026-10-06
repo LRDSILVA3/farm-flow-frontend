@@ -551,7 +551,7 @@ const AnalisesPrincipalPage = () => {
                   <span className="text-xs font-medium text-muted-foreground">Outro Tipo Personalizado:</span>
                   <div className="flex gap-2">
                     <Input
-                      placeholder="Nome do Tipo de Análise (Ex: Nematóide, Condutividade...)"
+                      placeholder="Nome do Tipo de Análise (Ex: Nematóide, Textura de Solo...)"
                       value={customType}
                       onChange={(e) => setCustomType(e.target.value)}
                       className="h-8 text-xs flex-1"
