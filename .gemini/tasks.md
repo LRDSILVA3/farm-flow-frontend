@@ -49,3 +49,4 @@
 - [x] Backend 100% Replicado com JWT, TypeORM e PostgreSQL.
 - [x] Testes Unitários de Serviços (13 suites, 37 testes passando no frontend; 22 suites, 89 testes no backend).
 - [x] Deploy do Backend Dockerizado no Servidor Local (HP sv1 - `192.168.1.20:3333`) com PostgreSQL 15, migrations TypeORM automáticas e seeds de variáveis e serviços oficiais executados.
+- [x] Deploy do Frontend Dockerizado no Servidor Local (HP sv1 - `192.168.1.20:3000`) com Nginx Alpine, roteamento SPA e conexão direta com a API do servidor (`192.168.1.20:3333`).
