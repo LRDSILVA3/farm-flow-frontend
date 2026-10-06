@@ -1,6 +1,17 @@
-// Direct REST API client for FARM-FLOW-BACKEND (Express / TypeORM)
+const getBaseUrl = (): string => {
+  // If explicitly configured at build time and not empty
+  if (typeof import.meta.env.VITE_API_URL === 'string' && import.meta.env.VITE_API_URL.trim() !== '') {
+    return import.meta.env.VITE_API_URL.replace(/\/+$/, '');
+  }
+  // If running locally in Vite dev mode (localhost:5173)
+  if (typeof window !== 'undefined' && window.location.port === '5173') {
+    return 'http://localhost:3333';
+  }
+  // In production (Docker / Nginx / Cloudflare tunnel), use relative URLs so Nginx proxies API calls
+  return '';
+};
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3333';
+const BASE_URL = getBaseUrl();
 
 export class ApiError extends Error {
   public status: number;
