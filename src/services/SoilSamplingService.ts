@@ -212,13 +212,18 @@ export class SoilSamplingService {
         ? (valorAnalisePorPontoFechado - valorTeoricoAnaliseUnit) / valorTeoricoAnaliseUnit
         : 0;
 
-    // Excel B17: % of Complete Analyses via cubic regression polynomial
+    // Excel B17 / I25: % de Analises Completa via regressão cúbica
     const poly =
       148.15 * Math.pow(fatorDescontoAnalise, 3) +
       55.556 * Math.pow(fatorDescontoAnalise, 2) +
       249.07 * fatorDescontoAnalise +
       100.06;
-    const percAnalisesCompleta = Math.max(0, Math.min(100, poly));
+
+    // Se não há desconto comercial (B9 >= B8), 100% das análises são completas e macro simples é 0
+    const percAnalisesCompleta =
+      desconto <= 0 || fatorDescontoAnalise >= 0
+        ? 100
+        : Math.max(0, Math.min(100, poly));
     const percAnalisesMacro = 100 - percAnalisesCompleta;
 
     // Excel B21 & B22: Number of Complete vs Macro analyses
