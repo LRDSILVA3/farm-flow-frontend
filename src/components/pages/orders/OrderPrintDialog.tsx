@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Order } from '@/hooks/useOrders';
@@ -69,6 +70,7 @@ export const OrderPrintDialog: React.FC<OrderPrintDialogProps> = ({
   const [lote, setLote] = useState('');
   const [matricula, setMatricula] = useState('');
   const [isEditingHeaders, setIsEditingHeaders] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const pdfConfig = getStoredPdfHeaderConfig();
   const [customItems, setCustomItems] = useState<TableItem[]>([]);
 
@@ -363,8 +365,6 @@ export const OrderPrintDialog: React.FC<OrderPrintDialogProps> = ({
   else if (combinedType.includes('atv')) titleSuffix = 'APLICAÇÃO ATV';
   else if (combinedType.includes('pulveriz')) titleSuffix = 'PULVERIZAÇÃO COM DRONE';
 
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-
   const handlePrint = () => {
     window.print();
   };
@@ -448,6 +448,9 @@ export const OrderPrintDialog: React.FC<OrderPrintDialogProps> = ({
               {isEditingHeaders ? 'Concluir Ajustes' : 'Editar Valores e Campos'}
             </Button>
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Folha de pedido e orçamento oficial para impressão e geração de PDF
+          </DialogDescription>
           <div className="flex items-center gap-2">
             <div className="inline-flex rounded-md shadow-sm border p-0.5 bg-muted">
               <button

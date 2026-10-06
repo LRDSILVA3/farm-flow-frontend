@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -277,6 +277,9 @@ export const OrderForm = ({
           <DialogTitle>
             {editingOrder ? "Editar Pedido" : "Novo Pedido"}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {editingOrder ? "Formulário de edição do pedido" : "Formulário de criação de novo pedido"}
+          </DialogDescription>
         </DialogHeader>
         <form key={open ? (editingOrder?.id || 'new-order-clean') : 'closed'} onSubmit={onSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -120,6 +121,9 @@ export const OrderExecutionDialog: React.FC<OrderExecutionDialogProps> = ({
             <Play className="h-5 w-5 text-primary" />
             Registrar Execução do Serviço
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Registrar execução do serviço e colaboradores envolvidos
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">

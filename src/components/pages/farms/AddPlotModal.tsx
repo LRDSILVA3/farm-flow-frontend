@@ -1,5 +1,5 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Farm, Plot } from "@/types/farm";
 import { PlotForm } from "./PlotForm";
 import { usePlotsModal } from "./usePlotModal";
@@ -35,6 +35,9 @@ export const AddPlotModal = ({
           <DialogTitle>
             Adicionar Talhão - {farm.name}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Formulário para adicionar talhão à fazenda {farm.name}
+          </DialogDescription>
         </DialogHeader>
 
         <PlotForm

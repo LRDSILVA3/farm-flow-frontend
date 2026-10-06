@@ -59,7 +59,15 @@ Servidor HP Local (Produção/Rede Local - sv1):
 - **Eliminação de Vazamento de Estado em Novo Pedido:**
   - Corrigido vazamento em [`SoilSamplingServiceForm.tsx`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/components/pages/orders/SoilSamplingServiceForm.tsx) onde o estado provisório inicial de 1 ponto (1 Completa) era salvo em `productsData` do pedido e interpretado como override manual ao digitar a área real (gerando 1 Completa e 16 Macro). Novos pedidos agora iniciam limpos e sincronizados com a planilha.
 
-### C. Deploy e Estabilização do Backend no Servidor HP
+### C. Correção de Erros de Execução no Frontend (React Error #310 e Radix Dialog Description)
+- **Minified React error #310 (Quebra das Regras dos Hooks):**
+  - **Causa Raiz:** Em [`OrderPrintDialog.tsx`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/components/pages/orders/OrderPrintDialog.tsx), o hook `const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);` estava posicionado após a verificação condicional `if (!order) return null;`. Quando `order` alternava entre `null` e o pedido selecionado (ao clicar no botão de impressão), o número de hooks invocados pelo componente variava entre renders, violando a regra fundamental do React e travando a renderização com o erro `#310`.
+  - **Correção:** O hook `useState` de `isGeneratingPdf` foi realocado para o topo do componente junto com os demais hooks (`useState`, `useMemo`, `useEffect`), garantindo execução incondicional em todas as renderizações.
+- **Warning de Acessibilidade Radix UI (`Missing Description or aria-describedby={undefined} for {DialogContent}`):**
+  - **Causa Raiz:** Modais baseados no Radix Dialog emitiam aviso no console por não possuírem elemento `<DialogDescription>` associado ao `<DialogContent>`.
+  - **Correção:** Adicionado `<DialogDescription className="sr-only">` em todos os modais da aplicação ([`OrderPrintDialog.tsx`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/components/pages/orders/OrderPrintDialog.tsx), [`FarmForm.tsx`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/components/pages/farms/FarmForm.tsx), [`OrderForm.tsx`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/components/pages/orders/OrderForm.tsx), [`AddPlotModal.tsx`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/components/pages/farms/AddPlotModal.tsx), [`PlotsModal.tsx`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/components/pages/farms/PlotsModal.tsx), [`OrderExecutionDialog.tsx`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/components/pages/orders/OrderExecutionDialog.tsx), [`OrderPaymentDialog.tsx`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/components/pages/orders/OrderPaymentDialog.tsx)), eliminando o warning sem impacto visual.
+
+### D. Deploy e Estabilização do Backend no Servidor HP
 - **Banco de Dados & Migrations:**
   - Executada migration `AddOrderFieldsEquipmentFieldsAndTransactions1790856601753` no PostgreSQL do servidor.
   - Criadas colunas faltantes em `orders` (`executions`, `schedules`, `payments`, `logs`, `executed_area`, `paid_amount`) e `equipment` (`serial_number`, `hourmeter`, `year`, `notes`).

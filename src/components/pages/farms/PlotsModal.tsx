@@ -1,5 +1,5 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Farm, Plot } from "@/types/farm";
@@ -44,6 +44,9 @@ export const PlotsModal = ({
           <DialogTitle>
             Talhões de {farm.name}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Lista e gerenciamento de talhões da fazenda {farm.name}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

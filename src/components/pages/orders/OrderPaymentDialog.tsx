@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -125,6 +126,9 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
             <DollarSign className="h-5 w-5 text-emerald-600" />
             Dar Baixa no Pedido / Cobrança
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Registrar baixa ou pagamento do pedido
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">

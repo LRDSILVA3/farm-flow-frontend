@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -182,6 +182,9 @@ export const FarmForm = ({
           <DialogTitle>
             {editingFarm ? "Editar Fazenda" : "Nova Fazenda"}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {editingFarm ? "Formulário de edição da fazenda" : "Formulário de cadastro de nova fazenda"}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleFormSubmit} className="space-y-4" role="form">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
