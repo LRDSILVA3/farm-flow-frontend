@@ -156,7 +156,25 @@ docker restart farmflow-backend
 
 ---
 
-## 5. Próximos Passos Sugeridos
+## 5. Rotina de Backup Automático Noturno no HD de 2TB
+
+- **Dispositivo de Armazenamento:** HD secundário de 2TB (`/dev/sdd`, ext4, 1.8TB utilizáveis).
+- **Ponto de Montagem Persistente:** `/mnt/backup_2tb` (configurado em `/etc/fstab` por UUID `abc067b1-4b1f-4794-ad81-78f4655153a9` com `nofail`).
+- **Diretório de Backups:** `/mnt/backup_2tb/farmflow_backups/`
+  - `/database/`: Dumps compactados do PostgreSQL (`farmflow_db_YYYY-MM-DD_HHMMSS.sql.gz`).
+  - `/code/`: Tarballs compactados do código-fonte, configurações e `.env` de backend e frontend (`farmflow_apps_YYYY-MM-DD_HHMMSS.tar.gz`).
+  - `/logs/`: Logs de auditoria mensais (`backup_YYYY-MM.log` e `cron.log`).
+- **Script de Execução:** `/usr/local/bin/farmflow_backup.sh` (executável com verificação automática de montagem).
+- **Agendamento no Cron:** `/etc/cron.d/farmflow_backup`
+  ```cron
+  0 3 * * * root /usr/local/bin/farmflow_backup.sh >> /mnt/backup_2tb/farmflow_backups/logs/cron.log 2>&1
+  ```
+  Executado toda madrugada às **03:00 AM**.
+- **Política de Retenção:** Rotação automática que remove backups com mais de **30 dias** (`find -mtime +30 -exec rm`), mantendo o HD sempre saudável e prevenindo acúmulo desnecessário.
+
+---
+
+## 6. Próximos Passos Sugeridos
 
 1. **Geração Direta de PDF nos Relatórios:**
    - Adicionar botão de exportação em PDF estruturado também nos Relatórios de Produtividade (`ReportsPage.tsx`).
