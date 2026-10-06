@@ -1,13 +1,10 @@
 const getBaseUrl = (): string => {
-  // If explicitly configured at build time and not empty
-  if (typeof import.meta.env.VITE_API_URL === 'string' && import.meta.env.VITE_API_URL.trim() !== '') {
-    return import.meta.env.VITE_API_URL.replace(/\/+$/, '');
-  }
-  // If running locally in Vite dev mode (localhost:5173)
+  // If running locally in Vite dev server (port 5173)
   if (typeof window !== 'undefined' && window.location.port === '5173') {
     return 'http://localhost:3333';
   }
-  // In production (Docker / Nginx / Cloudflare tunnel), use relative URLs so Nginx proxies API calls
+  // In production (Docker / Nginx / Cloudflare tunnel / Local network),
+  // always use relative URLs so Nginx proxies API calls securely and seamlessly
   return '';
 };
 
