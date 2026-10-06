@@ -157,7 +157,7 @@ export const PlotForm = ({
 
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <Label htmlFor="plotArea">Área (ha)</Label>
+            <Label htmlFor="plotArea">Área Total (ha)</Label>
             <Input
               id="plotArea"
               type="number"
@@ -176,7 +176,7 @@ export const PlotForm = ({
           </div>
 
           <div>
-            <Label htmlFor="plotAreaAlq">Área (alq)</Label>
+            <Label htmlFor="plotAreaAlq">Área Total (alq)</Label>
             <Input
               id="plotAreaAlq"
               type="number"
