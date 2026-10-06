@@ -5,102 +5,694 @@
   <title>Manual do Usuário — Preciza FarmFlow</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    @page {
+      size: A4 portrait;
+      margin: 10mm 12mm 10mm 12mm;
+    }
+    html, body {
+      background: #f3f4f6;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #1f2937;
+      margin: 0;
+      padding: 0;
+    }
+    .pdf-page {
+      background: white;
+      box-sizing: border-box;
+      min-height: 275mm;
+      max-height: 277mm;
+      padding: 16px 20px;
+      margin: 20px auto;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      width: 210mm;
+      page-break-after: always;
+      break-after: page;
+      overflow: hidden;
+    }
+    .pdf-page:last-child {
+      page-break-after: avoid !important;
+      break-after: avoid !important;
+    }
     @media print {
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 0 !important; background: white !important; }
-      .no-print { display: none !important; }
-      img { page-break-inside: avoid; max-height: 480px; }
-      h2 { page-break-after: avoid; }
+      body {
+        background: white !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .pdf-page {
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        width: 100% !important;
+        min-height: 275mm !important;
+        max-height: 277mm !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      .pdf-page:last-child {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+      .img-frame {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      img {
+        max-height: 380px !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
     }
   </style>
 </head>
-<body class="bg-gray-100 text-gray-800 p-6 md:p-12 font-sans antialiased">
-  <div class="max-w-4xl mx-auto mb-6 no-print flex justify-between items-center bg-white p-4 rounded-xl shadow border">
+<body class="p-4 md:p-8">
+  <div class="max-w-[210mm] mx-auto mb-6 no-print flex justify-between items-center bg-white p-4 rounded-xl shadow border">
     <div>
-      <h1 class="text-lg font-bold text-green-800">Preciza | Manual do Usuário Oficial</h1>
-      <p class="text-sm text-gray-500">Documentação completa ilustrada com capturas em tempo real.</p>
+      <h1 class="text-base font-bold text-emerald-800">Preciza | Manual do Usuário e Guia Operacional</h1>
+      <p class="text-xs text-gray-500">Diagramação de 1 tópico por página A4 (sem cortes ou quebras incorretas).</p>
     </div>
-    <button onclick="window.print()" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-2.5 rounded-lg shadow transition flex items-center gap-2">
+    <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg shadow text-xs transition flex items-center gap-1.5">
       🖨️ Imprimir / Salvar em PDF
     </button>
   </div>
 
-  <div class="max-w-4xl mx-auto bg-white p-8 md:p-12 rounded-2xl shadow-lg border">
-    <h1 class="text-3xl font-extrabold text-green-800 my-6 pb-2 border-b-2 border-green-600">Manual do Usuário e Guia Operacional — Preciza</h1><p class="italic text-gray-600 pl-4 border-l-2 border-gray-300 my-2">**Preciza Agricultura de Precisão**  </p><p class="italic text-gray-600 pl-4 border-l-2 border-gray-300 my-2">*Solução Integrada de Gestão de Clientes, Orçamentos Agronômicos, Operações de Campo e Controle Financeiro.*</p><hr class="my-8 border-gray-200" /><h2 class="text-2xl font-bold text-gray-800 mt-10 mb-4 pb-2 border-b border-gray-200">🌾 1. Apresentação e Boas-Vindas</h2><p class="my-2 text-gray-700 leading-relaxed">O <strong>Preciza CRM & Gestão Agronômica</strong> é uma plataforma desenvolvida sob medida para centralizar e profissionalizar todas as etapas do atendimento ao produtor rural: desde o primeiro contato comercial e cálculo automatizado de orçamentos técnicos até o acompanhamento do maquinário no campo, remessa de laudos laboratoriais e quitação financeira.</p><h3 class="text-xl font-semibold text-green-700 mt-6 mb-3">Principais Benefícios:</h3><ul class="space-y-1 my-3"><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>Cálculo Técnico Automatizado:</strong> Geração de propostas comerciais rigorosamente fiéis às tabelas e regras agronômicas oficiais.</li><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>Flexibilidade Total de Unidades (ha e alq):</strong> O sistema calcula automaticamente entre Hectares e Alqueires Paulistas (<code class="bg-gray-100 text-green-700 px-1 py-0.5 rounded font-mono text-sm">1 alqueire = 2,42 hectares</code>) em tempo real, sem arredondamentos errados.</li><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>Folha de Pedido Oficial em PDF:</strong> Emissão instantânea de orçamentos timbrados em formato comercial para envio imediato pelo WhatsApp ou impressão física.</li><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>Rastreabilidade de Campo:</strong> Controle de quem operou cada trator ou drone e qual área foi efetivamente concluída.</li><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>Controle Financeiro Transparente:</strong> Baixa rápida de pagamentos totais ou parciais integrada ao fluxo de caixa.</li></ul><hr class="my-8 border-gray-200" /><h2 class="text-2xl font-bold text-gray-800 mt-10 mb-4 pb-2 border-b border-gray-200">🔐 2. Como Acessar o Sistema</h2><p class="my-2 text-gray-700 leading-relaxed">O sistema é 100% web e pode ser acessado de qualquer computador, tablet ou celular conectado à internet, sem necessidade de instalar aplicativos pesados.</p>
-        <div class="my-6 p-2 bg-gray-50 border rounded-xl shadow-sm text-center">
-          <img src="screens/01_tela_login.png" alt="Tela de Acesso e Login" class="rounded-lg shadow border mx-auto max-h-[500px] object-contain w-full" />
-          <p class="text-xs text-gray-500 font-medium mt-2">Tela de Acesso e Login</p>
+  <div class="pdf-container">
+    
+    <div class="pdf-page">
+      <div class="page-header flex justify-between items-center border-b-2 border-emerald-600 pb-2.5 mb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="bg-emerald-700 text-white font-bold text-[10px] px-2 py-0.5 rounded uppercase tracking-wider">Visão Geral</span>
+          <h2 class="text-lg font-bold text-gray-900">1. Apresentação e Boas-Vindas</h2>
         </div>
-      <h3 class="text-xl font-semibold text-green-700 mt-6 mb-3">Passo a Passo de Acesso:</h3><p class="my-2 text-gray-700 leading-relaxed">1. Abra o navegador de sua preferência (Google Chrome, Microsoft Edge, Safari).</p><p class="my-2 text-gray-700 leading-relaxed">2. Acesse o link fornecido pela equipe Preciza:</p><p class="my-2 text-gray-700 leading-relaxed">   - <strong>Link de Acesso Online:</strong> <code class="bg-gray-100 text-green-700 px-1 py-0.5 rounded font-mono text-sm">https://statistical-institutes-wood-somehow.trycloudflare.com</code></p><p class="my-2 text-gray-700 leading-relaxed">   - *(Ou na rede interna do escritório: <code class="bg-gray-100 text-green-700 px-1 py-0.5 rounded font-mono text-sm">http://192.168.1.20:3000</code>)*</p><p class="my-2 text-gray-700 leading-relaxed">3. Digite o seu <strong>E-mail</strong> e <strong>Senha</strong> cadastrados.</p><p class="my-2 text-gray-700 leading-relaxed">4. Clique no botão verde <strong>Entrar</strong>.</p><hr class="my-8 border-gray-200" /><h2 class="text-2xl font-bold text-gray-800 mt-10 mb-4 pb-2 border-b border-gray-200">📊 3. Painel Principal (Dashboard de Operações)</h2><p class="my-2 text-gray-700 leading-relaxed">Assim que o login é efetuado, você tem acesso imediato à radiografia operacional da empresa em tempo real.</p>
-        <div class="my-6 p-2 bg-gray-50 border rounded-xl shadow-sm text-center">
-          <img src="screens/02_dashboard_inicial.png" alt="Painel Principal e Indicadores Operacionais" class="rounded-lg shadow border mx-auto max-h-[500px] object-contain w-full" />
-          <p class="text-xs text-gray-500 font-medium mt-2">Painel Principal e Indicadores Operacionais</p>
+        <div class="text-[11px] text-gray-400 font-medium tracking-wide">Preciza | Guia Operacional</div>
+      </div>
+
+      <div class="page-body flex-1">
+        
+      <p class="text-gray-700 leading-relaxed mb-4">
+        O <strong>Preciza CRM & Gestão Agronômica</strong> é uma plataforma desenvolvida sob medida para centralizar e profissionalizar todas as etapas do atendimento ao produtor rural: desde o primeiro contato comercial e cálculo automatizado de orçamentos técnicos até o acompanhamento do maquinário no campo, remessa de laudos laboratoriais e quitação financeira.
+      </p>
+      <div class="bg-emerald-50 border-l-4 border-emerald-600 p-4 rounded-r-lg mb-6">
+        <h4 class="font-bold text-emerald-950 mb-2">Principais Benefícios da Plataforma:</h4>
+        <ul class="space-y-2 text-sm text-emerald-900">
+          <li>• <strong>Cálculo Técnico Automatizado:</strong> Geração de propostas comerciais rigorosamente fiéis às tabelas e regras agronômicas oficiais da empresa.</li>
+          <li>• <strong>Flexibilidade Total de Unidades (ha e alq):</strong> O sistema calcula automaticamente entre Hectares e Alqueires Paulistas (<code class="bg-emerald-100 px-1 py-0.5 rounded font-mono">1 alq = 2,42 ha</code>) em tempo real, sem arredondamentos errados.</li>
+          <li>• <strong>Folha de Pedido Oficial em PDF:</strong> Emissão instantânea de orçamentos timbrados em formato comercial para envio imediato pelo WhatsApp ou impressão física.</li>
+          <li>• <strong>Rastreabilidade de Campo:</strong> Controle de quem operou cada trator ou drone e qual área foi efetivamente concluída.</li>
+          <li>• <strong>Controle Financeiro Transparente:</strong> Baixa rápida de pagamentos totais ou parciais integrada ao fluxo de caixa.</li>
+        </ul>
+      </div>
+      <div class="bg-gray-50 border rounded-xl p-5 text-sm text-gray-600">
+        <p class="font-semibold text-gray-800 mb-1">Como usar este guia:</p>
+        <p>Cada uma das páginas seguintes apresenta uma tela ou modal do sistema, acompanhada da imagem real correspondente e das orientações práticas de preenchimento para sua equipe.</p>
+      </div>
+    
+
+        
+      </div>
+
+      <div class="page-footer border-t border-gray-200 pt-2 mt-auto flex justify-between items-center text-[10px] text-gray-400">
+        <span>Preciza Agricultura de Precisão • Sistema FarmFlow</span>
+        <span>Página 1 de 17</span>
+      </div>
+    </div>
+  
+    <div class="pdf-page">
+      <div class="page-header flex justify-between items-center border-b-2 border-emerald-600 pb-2.5 mb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="bg-emerald-700 text-white font-bold text-[10px] px-2 py-0.5 rounded uppercase tracking-wider">Segurança & Acesso</span>
+          <h2 class="text-lg font-bold text-gray-900">2. Como Acessar o Sistema</h2>
         </div>
-      <h3 class="text-xl font-semibold text-green-700 mt-6 mb-3">O que você visualiza nesta tela:</h3><ul class="space-y-1 my-3"><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>Clientes e Fazendas:</strong> Total de produtores ativos e propriedades atendidas no sistema.</li><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>Pedidos Pendentes:</strong> Orçamentos que aguardam aprovação comercial ou fechamento.</li><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>Execuções Agendadas:</strong> Quantidade de serviços com equipe ou maquinário programados para os próximos dias.</li><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>Faturamento e Área Trabalhada:</strong> Volume financeiro já recebido e total de hectares com amostragem ou pulverização realizada.</li><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>Atalhos Rápidos:</strong> Botão <strong>+ Novo Pedido</strong> no canto superior para iniciar um orçamento em segundos.</li></ul><hr class="my-8 border-gray-200" /><h2 class="text-2xl font-bold text-gray-800 mt-10 mb-4 pb-2 border-b border-gray-200">👥 4. Gestão de Produtores e Clientes</h2><p class="my-2 text-gray-700 leading-relaxed">No menu lateral esquerdo, clique em <strong>Clientes</strong> para acessar a carteira de produtores rurais.</p>
-        <div class="my-6 p-2 bg-gray-50 border rounded-xl shadow-sm text-center">
-          <img src="screens/03_gestao_clientes.png" alt="Lista de Clientes Cadastrados" class="rounded-lg shadow border mx-auto max-h-[500px] object-contain w-full" />
-          <p class="text-xs text-gray-500 font-medium mt-2">Lista de Clientes Cadastrados</p>
+        <div class="text-[11px] text-gray-400 font-medium tracking-wide">Preciza | Guia Operacional</div>
+      </div>
+
+      <div class="page-body flex-1">
+        
+      <p class="text-gray-700 text-sm leading-relaxed mb-3">
+        O sistema é 100% web e pode ser acessado de qualquer computador, tablet ou celular conectado à internet, sem necessidade de instalar aplicativos pesados.
+      </p>
+      <div class="bg-gray-50 border p-3.5 rounded-lg text-xs space-y-1.5 mb-3 text-gray-700">
+        <div><strong>Passo 1:</strong> Abra o navegador de sua preferência (Google Chrome, Microsoft Edge, Safari).</div>
+        <div><strong>Passo 2:</strong> Acesse o link fornecido pela equipe Preciza: <code class="bg-white px-1.5 py-0.5 rounded border text-emerald-700 font-mono">https://statistical-institutes-wood-somehow.trycloudflare.com</code> (ou rede local: <code class="bg-white px-1.5 py-0.5 rounded border text-emerald-700 font-mono">http://192.168.1.20:3000</code>).</div>
+        <div><strong>Passo 3:</strong> Digite o seu <strong>E-mail</strong> e <strong>Senha</strong> cadastrados e clique no botão verde <strong>Entrar</strong>.</div>
+      </div>
+    
+
+        
+          <div class="img-frame bg-gray-50 border border-gray-200 rounded-xl p-2 text-center shadow-xs mt-2">
+            <img src="screens/01_tela_login.png" alt="Tela de Acesso e Login — Preciza FarmFlow" class="rounded-lg border shadow-xs mx-auto max-h-[385px] object-contain w-auto" />
+            <p class="text-[11px] text-gray-500 font-medium mt-1.5 italic">Tela de Acesso e Login — Preciza FarmFlow</p>
+          </div>
+        
+      </div>
+
+      <div class="page-footer border-t border-gray-200 pt-2 mt-auto flex justify-between items-center text-[10px] text-gray-400">
+        <span>Preciza Agricultura de Precisão • Sistema FarmFlow</span>
+        <span>Página 2 de 17</span>
+      </div>
+    </div>
+  
+    <div class="pdf-page">
+      <div class="page-header flex justify-between items-center border-b-2 border-emerald-600 pb-2.5 mb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="bg-emerald-700 text-white font-bold text-[10px] px-2 py-0.5 rounded uppercase tracking-wider">Visão Executiva</span>
+          <h2 class="text-lg font-bold text-gray-900">3. Painel Principal (Dashboard)</h2>
         </div>
-      <h3 class="text-xl font-semibold text-green-700 mt-6 mb-3">Funcionalidades:</h3><ul class="space-y-1 my-3"><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>Busca Rápida:</strong> Localize qualquer cliente pelo nome, CPF ou município.</li><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>Ações Rápidas:</strong> Botões para editar dados cadastrais ou visualizar diretamente as fazendas do produtor.</li></ul><h3 class="text-xl font-semibold text-green-700 mt-6 mb-3">Cadastrando um Novo Produtor:</h3><p class="my-2 text-gray-700 leading-relaxed">Ao clicar no botão verde <strong>+ Novo Cliente</strong>, abre-se o formulário de cadastro simplificado:</p>
-        <div class="my-6 p-2 bg-gray-50 border rounded-xl shadow-sm text-center">
-          <img src="screens/04_modal_cliente.png" alt="Formulário de Cadastro do Produtor" class="rounded-lg shadow border mx-auto max-h-[500px] object-contain w-full" />
-          <p class="text-xs text-gray-500 font-medium mt-2">Formulário de Cadastro do Produtor</p>
+        <div class="text-[11px] text-gray-400 font-medium tracking-wide">Preciza | Guia Operacional</div>
+      </div>
+
+      <div class="page-body flex-1">
+        
+      <p class="text-gray-700 text-sm leading-relaxed mb-3">
+        Assim que o login é efetuado, você tem acesso imediato à radiografia operacional da empresa em tempo real:
+      </p>
+      <div class="grid grid-cols-2 gap-2 text-xs mb-3 text-gray-700">
+        <div class="bg-emerald-50/60 border border-emerald-100 p-2.5 rounded"><strong>Clientes & Fazendas:</strong> Total de produtores ativos e propriedades atendidas no sistema.</div>
+        <div class="bg-emerald-50/60 border border-emerald-100 p-2.5 rounded"><strong>Pedidos Pendentes:</strong> Orçamentos aguardando aprovação comercial ou fechamento.</div>
+        <div class="bg-emerald-50/60 border border-emerald-100 p-2.5 rounded"><strong>Execuções Agendadas:</strong> Quantidade de serviços com equipe ou maquinário programados.</div>
+        <div class="bg-emerald-50/60 border border-emerald-100 p-2.5 rounded"><strong>Atalhos Rápidos:</strong> Botão verde <em>+ Novo Pedido</em> no topo para iniciar orçamentos em segundos.</div>
+      </div>
+    
+
+        
+          <div class="img-frame bg-gray-50 border border-gray-200 rounded-xl p-2 text-center shadow-xs mt-2">
+            <img src="screens/02_dashboard_inicial.png" alt="Painel Principal e Indicadores Operacionais em Tempo Real" class="rounded-lg border shadow-xs mx-auto max-h-[385px] object-contain w-auto" />
+            <p class="text-[11px] text-gray-500 font-medium mt-1.5 italic">Painel Principal e Indicadores Operacionais em Tempo Real</p>
+          </div>
+        
+      </div>
+
+      <div class="page-footer border-t border-gray-200 pt-2 mt-auto flex justify-between items-center text-[10px] text-gray-400">
+        <span>Preciza Agricultura de Precisão • Sistema FarmFlow</span>
+        <span>Página 3 de 17</span>
+      </div>
+    </div>
+  
+    <div class="pdf-page">
+      <div class="page-header flex justify-between items-center border-b-2 border-emerald-600 pb-2.5 mb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="bg-emerald-700 text-white font-bold text-[10px] px-2 py-0.5 rounded uppercase tracking-wider">Carteira de Clientes</span>
+          <h2 class="text-lg font-bold text-gray-900">4. Gestão de Produtores e Clientes</h2>
         </div>
-      <div class="p-4 my-4 bg-emerald-50 border-l-4 border-emerald-500 rounded-r text-emerald-950 font-medium"><p class="italic text-gray-600 pl-4 border-l-2 border-gray-300 my-2">**Preenchimento Ágil:** Apenas o **Nome** do produtor é obrigatório para iniciar o atendimento. Informações como CPF, telefone, data de nascimento e inscrição estadual (CAD/PRO) podem ser preenchidas a qualquer momento.</p><hr class="my-8 border-gray-200" /><h2 class="text-2xl font-bold text-gray-800 mt-10 mb-4 pb-2 border-b border-gray-200">🚜 5. Gestão de Fazendas e Talhões</h2><p class="my-2 text-gray-700 leading-relaxed">No menu lateral, a aba <strong>Fazendas</strong> permite cadastrar as propriedades atendidas e seus respectivos talhões.</p>
-        <div class="my-6 p-2 bg-gray-50 border rounded-xl shadow-sm text-center">
-          <img src="screens/05_gestao_fazendas.png" alt="Lista de Fazendas" class="rounded-lg shadow border mx-auto max-h-[500px] object-contain w-full" />
-          <p class="text-xs text-gray-500 font-medium mt-2">Lista de Fazendas</p>
+        <div class="text-[11px] text-gray-400 font-medium tracking-wide">Preciza | Guia Operacional</div>
+      </div>
+
+      <div class="page-body flex-1">
+        
+      <p class="text-gray-700 text-sm leading-relaxed mb-3">
+        No menu lateral esquerdo, clique em <strong>Clientes</strong> para acessar toda a carteira de produtores rurais cadastrados:
+      </p>
+      <ul class="text-xs space-y-1.5 text-gray-700 mb-3 ml-4 list-disc">
+        <li><strong>Busca Rápida em Tempo Real:</strong> Localize qualquer cliente digitando o nome, CPF ou município.</li>
+        <li><strong>Ações Imediatas:</strong> Botões dedicados para editar dados cadastrais ou visualizar diretamente as fazendas do produtor.</li>
+        <li><strong>Listagem Organizada:</strong> Contatos telefônicos, e-mail e localização visíveis de forma limpa.</li>
+      </ul>
+    
+
+        
+          <div class="img-frame bg-gray-50 border border-gray-200 rounded-xl p-2 text-center shadow-xs mt-2">
+            <img src="screens/03_gestao_clientes.png" alt="Tabela de Clientes Cadastrados com Pesquisa e Filtros" class="rounded-lg border shadow-xs mx-auto max-h-[385px] object-contain w-auto" />
+            <p class="text-[11px] text-gray-500 font-medium mt-1.5 italic">Tabela de Clientes Cadastrados com Pesquisa e Filtros</p>
+          </div>
+        
+      </div>
+
+      <div class="page-footer border-t border-gray-200 pt-2 mt-auto flex justify-between items-center text-[10px] text-gray-400">
+        <span>Preciza Agricultura de Precisão • Sistema FarmFlow</span>
+        <span>Página 4 de 17</span>
+      </div>
+    </div>
+  
+    <div class="pdf-page">
+      <div class="page-header flex justify-between items-center border-b-2 border-emerald-600 pb-2.5 mb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="bg-emerald-700 text-white font-bold text-[10px] px-2 py-0.5 rounded uppercase tracking-wider">Cadastro Ágil</span>
+          <h2 class="text-lg font-bold text-gray-900">4.1 Cadastrando um Novo Produtor</h2>
         </div>
-      <h3 class="text-xl font-semibold text-green-700 mt-6 mb-3">Cadastrando uma Nova Fazenda:</h3><p class="my-2 text-gray-700 leading-relaxed">Ao clicar em <strong>+ Nova Fazenda</strong>, você verá o recurso exclusivo de <strong>Conversão Inteligente de Medidas</strong>:</p>
-        <div class="my-6 p-2 bg-gray-50 border rounded-xl shadow-sm text-center">
-          <img src="screens/06_modal_fazenda.png" alt="Cadastro de Fazenda com Conversão de Hectares e Alqueires" class="rounded-lg shadow border mx-auto max-h-[500px] object-contain w-full" />
-          <p class="text-xs text-gray-500 font-medium mt-2">Cadastro de Fazenda com Conversão de Hectares e Alqueires</p>
+        <div class="text-[11px] text-gray-400 font-medium tracking-wide">Preciza | Guia Operacional</div>
+      </div>
+
+      <div class="page-body flex-1">
+        
+      <p class="text-gray-700 text-sm leading-relaxed mb-3">
+        Ao clicar no botão verde <strong>+ Novo Cliente</strong> no canto superior, abre-se o formulário de cadastro simplificado:
+      </p>
+      <div class="bg-emerald-50 border-l-4 border-emerald-600 p-3 rounded-r-lg text-xs text-emerald-950 mb-3">
+        <strong>💡 Preenchimento Ágil:</strong> Apenas o <strong>Nome</strong> do produtor é obrigatório para iniciar o atendimento. Informações como CPF, telefone, data de nascimento e inscrição estadual (CAD/PRO) podem ser preenchidas a qualquer momento.
+      </div>
+    
+
+        
+          <div class="img-frame bg-gray-50 border border-gray-200 rounded-xl p-2 text-center shadow-xs mt-2">
+            <img src="screens/04_modal_cliente.png" alt="Formulário de Cadastro do Produtor com Validação Inteligente" class="rounded-lg border shadow-xs mx-auto max-h-[385px] object-contain w-auto" />
+            <p class="text-[11px] text-gray-500 font-medium mt-1.5 italic">Formulário de Cadastro do Produtor com Validação Inteligente</p>
+          </div>
+        
+      </div>
+
+      <div class="page-footer border-t border-gray-200 pt-2 mt-auto flex justify-between items-center text-[10px] text-gray-400">
+        <span>Preciza Agricultura de Precisão • Sistema FarmFlow</span>
+        <span>Página 5 de 17</span>
+      </div>
+    </div>
+  
+    <div class="pdf-page">
+      <div class="page-header flex justify-between items-center border-b-2 border-emerald-600 pb-2.5 mb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="bg-emerald-700 text-white font-bold text-[10px] px-2 py-0.5 rounded uppercase tracking-wider">Propriedades</span>
+          <h2 class="text-lg font-bold text-gray-900">5. Gestão de Fazendas da Propriedade</h2>
         </div>
-      <p class="italic text-gray-600 pl-4 border-l-2 border-gray-300 my-2">[!IMPORTANT]</p><p class="italic text-gray-600 pl-4 border-l-2 border-gray-300 my-2">### 🔄 Conversão Automática entre Alqueires e Hectares</p><p class="italic text-gray-600 pl-4 border-l-2 border-gray-300 my-2">O produtor costuma falar em alqueires, mas o laudo técnico exige hectares? O sistema resolve isso na hora:</p><p class="italic text-gray-600 pl-4 border-l-2 border-gray-300 my-2">- **Digite em Alqueires (ex: 20 alq):** O sistema calcula imediatamente `48.40 ha`.</p><p class="italic text-gray-600 pl-4 border-l-2 border-gray-300 my-2">- **Digite em Hectares (ex: 48.40 ha):** O sistema converte para `20.00 alq`.</p><p class="italic text-gray-600 pl-4 border-l-2 border-gray-300 my-2">O cálculo utiliza rigorosamente a taxa do Alqueire Paulista (`1 alq = 2,42 ha`) com fixação de duas casas decimais, eliminando erros manuais.</p><h3 class="text-xl font-semibold text-green-700 mt-6 mb-3">Gerenciando Talhões:</h3><p class="my-2 text-gray-700 leading-relaxed">Ao clicar no ícone de talhões de qualquer fazenda, o sistema abre o modal de divisão de áreas:</p>
-        <div class="my-6 p-2 bg-gray-50 border rounded-xl shadow-sm text-center">
-          <img src="screens/07_modal_talhoes.png" alt="Gerenciamento de Talhões da Propriedade" class="rounded-lg shadow border mx-auto max-h-[500px] object-contain w-full" />
-          <p class="text-xs text-gray-500 font-medium mt-2">Gerenciamento de Talhões da Propriedade</p>
+        <div class="text-[11px] text-gray-400 font-medium tracking-wide">Preciza | Guia Operacional</div>
+      </div>
+
+      <div class="page-body flex-1">
+        
+      <p class="text-gray-700 text-sm leading-relaxed mb-3">
+        No menu lateral, a aba <strong>Fazendas</strong> permite cadastrar e visualizar todas as propriedades rurais atendidas:
+      </p>
+      <ul class="text-xs space-y-1.5 text-gray-700 mb-3 ml-4 list-disc">
+        <li><strong>Visão Geral de Áreas:</strong> Exibição transparente das medidas da fazenda em Hectares e Alqueires lado a lado.</li>
+        <li><strong>Vínculo Direto com o Produtor:</strong> Cada fazenda fica associada ao seu proprietário, facilitando orçamentos.</li>
+        <li><strong>Acesso a Talhões:</strong> Botão direto em cada linha da tabela para abrir o mapa de divisões da propriedade.</li>
+      </ul>
+    
+
+        
+          <div class="img-frame bg-gray-50 border border-gray-200 rounded-xl p-2 text-center shadow-xs mt-2">
+            <img src="screens/05_gestao_fazendas.png" alt="Lista de Fazendas Atendidas com Áreas em Hectares e Alqueires" class="rounded-lg border shadow-xs mx-auto max-h-[385px] object-contain w-auto" />
+            <p class="text-[11px] text-gray-500 font-medium mt-1.5 italic">Lista de Fazendas Atendidas com Áreas em Hectares e Alqueires</p>
+          </div>
+        
+      </div>
+
+      <div class="page-footer border-t border-gray-200 pt-2 mt-auto flex justify-between items-center text-[10px] text-gray-400">
+        <span>Preciza Agricultura de Precisão • Sistema FarmFlow</span>
+        <span>Página 6 de 17</span>
+      </div>
+    </div>
+  
+    <div class="pdf-page">
+      <div class="page-header flex justify-between items-center border-b-2 border-emerald-600 pb-2.5 mb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="bg-emerald-700 text-white font-bold text-[10px] px-2 py-0.5 rounded uppercase tracking-wider">Conversão ha / alq</span>
+          <h2 class="text-lg font-bold text-gray-900">5.1 Cadastro de Fazenda & Conversão Automática</h2>
         </div>
-      <ul class="space-y-1 my-3"><li class="ml-6 list-disc text-gray-700 leading-relaxed">Você pode cadastrar talhões individuais (ex: *Talhão Sede*, *Pivô 1*, *Baixada*).</li><li class="ml-6 list-disc text-gray-700 leading-relaxed">O sistema exibe sempre a área de cada talhão em <strong>Hectares e Alqueires</strong> simultaneamente.</li></ul><hr class="my-8 border-gray-200" /><h2 class="text-2xl font-bold text-gray-800 mt-10 mb-4 pb-2 border-b border-gray-200">📝 6. Criação de Pedidos e Orçamentos Técnicos</h2><p class="my-2 text-gray-700 leading-relaxed">A tela de <strong>Pedidos</strong> é o coração comercial do sistema. Nela ficam registradas todas as propostas, com status de aprovação, execução e pagamento.</p>
-        <div class="my-6 p-2 bg-gray-50 border rounded-xl shadow-sm text-center">
-          <img src="screens/08_pedidos_tabela.png" alt="Painel de Pedidos e Orçamentos Comerciais" class="rounded-lg shadow border mx-auto max-h-[500px] object-contain w-full" />
-          <p class="text-xs text-gray-500 font-medium mt-2">Painel de Pedidos e Orçamentos Comerciais</p>
+        <div class="text-[11px] text-gray-400 font-medium tracking-wide">Preciza | Guia Operacional</div>
+      </div>
+
+      <div class="page-body flex-1">
+        
+      <p class="text-gray-700 text-sm leading-relaxed mb-3">
+        Ao clicar em <strong>+ Nova Fazenda</strong>, o operador desfruta do recurso exclusivo de <strong>Conversão Bidirecional Inteligente</strong>:
+      </p>
+      <div class="bg-emerald-50 border-l-4 border-emerald-600 p-3 rounded-r-lg text-xs text-emerald-950 mb-3">
+        <p class="font-bold mb-1">🔄 Conversão Instantânea e Precisa:</p>
+        <p>• <strong>Digitando em Alqueires (ex: 20 alq):</strong> O sistema preenche automaticamente <code class="bg-white px-1 border rounded">48.40 ha</code>.</p>
+        <p>• <strong>Digitando em Hectares (ex: 48.40 ha):</strong> O sistema converte na hora para <code class="bg-white px-1 border rounded">20.00 alq</code>.</p>
+        <p class="mt-1 text-emerald-800">Taxa oficial do Alqueire Paulista (<code class="font-mono">1 alq = 2,42 ha</code>) com estrita precisão de 2 casas decimais.</p>
+      </div>
+    
+
+        
+          <div class="img-frame bg-gray-50 border border-gray-200 rounded-xl p-2 text-center shadow-xs mt-2">
+            <img src="screens/06_modal_fazenda.png" alt="Modal de Nova Fazenda com Recálculo Bidirecional de Área" class="rounded-lg border shadow-xs mx-auto max-h-[385px] object-contain w-auto" />
+            <p class="text-[11px] text-gray-500 font-medium mt-1.5 italic">Modal de Nova Fazenda com Recálculo Bidirecional de Área</p>
+          </div>
+        
+      </div>
+
+      <div class="page-footer border-t border-gray-200 pt-2 mt-auto flex justify-between items-center text-[10px] text-gray-400">
+        <span>Preciza Agricultura de Precisão • Sistema FarmFlow</span>
+        <span>Página 7 de 17</span>
+      </div>
+    </div>
+  
+    <div class="pdf-page">
+      <div class="page-header flex justify-between items-center border-b-2 border-emerald-600 pb-2.5 mb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="bg-emerald-700 text-white font-bold text-[10px] px-2 py-0.5 rounded uppercase tracking-wider">Mapeamento</span>
+          <h2 class="text-lg font-bold text-gray-900">5.2 Divisão e Gestão de Talhões</h2>
         </div>
-      <h3 class="text-xl font-semibold text-green-700 mt-6 mb-3">Elaborando um Novo Orçamento:</h3><p class="my-2 text-gray-700 leading-relaxed">Ao clicar em <strong>+ Novo Pedido</strong>, selecione o Cliente e a Fazenda. O sistema carrega instantaneamente a área da propriedade e ajusta as fórmulas conforme o serviço escolhido:</p>
-        <div class="my-6 p-2 bg-gray-50 border rounded-xl shadow-sm text-center">
-          <img src="screens/09_modal_novo_pedido_ap.png" alt="Formulário de Orçamento de Agricultura de Precisão" class="rounded-lg shadow border mx-auto max-h-[500px] object-contain w-full" />
-          <p class="text-xs text-gray-500 font-medium mt-2">Formulário de Orçamento de Agricultura de Precisão</p>
+        <div class="text-[11px] text-gray-400 font-medium tracking-wide">Preciza | Guia Operacional</div>
+      </div>
+
+      <div class="page-body flex-1">
+        
+      <p class="text-gray-700 text-sm leading-relaxed mb-3">
+        Ao clicar no ícone de talhões de qualquer fazenda, abre-se o modal de divisão de áreas da propriedade:
+      </p>
+      <ul class="text-xs space-y-1.5 text-gray-700 mb-3 ml-4 list-disc">
+        <li><strong>Divisão por Setores:</strong> Cadastre talhões específicos da fazenda (ex: <em>Talhão Sede</em>, <em>Pivô 1</em>, <em>Baixada</em>).</li>
+        <li><strong>Dupla Unidade Automática:</strong> Cada talhão exibe a área em Hectares e Alqueires simultaneamente (ex: <code class="bg-gray-100 px-1 py-0.5 rounded font-mono">48.40 ha (20.00 alq)</code>).</li>
+        <li><strong>Edição Rápida:</strong> Edite ou exclua talhões individualmente com salvamento instantâneo.</li>
+      </ul>
+    
+
+        
+          <div class="img-frame bg-gray-50 border border-gray-200 rounded-xl p-2 text-center shadow-xs mt-2">
+            <img src="screens/07_modal_talhoes.png" alt="Gerenciamento de Talhões da Fazenda com Áreas Formatadas" class="rounded-lg border shadow-xs mx-auto max-h-[385px] object-contain w-auto" />
+            <p class="text-[11px] text-gray-500 font-medium mt-1.5 italic">Gerenciamento de Talhões da Fazenda com Áreas Formatadas</p>
+          </div>
+        
+      </div>
+
+      <div class="page-footer border-t border-gray-200 pt-2 mt-auto flex justify-between items-center text-[10px] text-gray-400">
+        <span>Preciza Agricultura de Precisão • Sistema FarmFlow</span>
+        <span>Página 8 de 17</span>
+      </div>
+    </div>
+  
+    <div class="pdf-page">
+      <div class="page-header flex justify-between items-center border-b-2 border-emerald-600 pb-2.5 mb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="bg-emerald-700 text-white font-bold text-[10px] px-2 py-0.5 rounded uppercase tracking-wider">Comercial</span>
+          <h2 class="text-lg font-bold text-gray-900">6. Painel de Pedidos e Propostas</h2>
         </div>
-      <h3 class="text-xl font-semibold text-green-700 mt-6 mb-3">Opções Técnicas Disponíveis no Orçamento:</h3><p class="my-2 text-gray-700 leading-relaxed">1. <strong>Reanálise de Solo (Área já trabalhada?):</strong> Aplica a tabela de desconto específica para clientes recorrentes.</p><p class="my-2 text-gray-700 leading-relaxed">2. <strong>Emissão de Nota Fiscal:</strong> Alternância rápida com recálculo dos impostos aplicáveis.</p><p class="my-2 text-gray-700 leading-relaxed">3. <strong>Número de Pontos de Amostragem:</strong> O sistema sugere automaticamente a densidade de pontos recomendada conforme o tamanho da área e exibe em tempo real a relação de <code class="bg-gray-100 text-green-700 px-1 py-0.5 rounded font-mono text-sm">ha por ponto</code>.</p><p class="my-2 text-gray-700 leading-relaxed">4. <strong>Determinações do Laudo / Book de Fertilidade:</strong></p><p class="my-2 text-gray-700 leading-relaxed">   - Adubação Corretiva (Inclusa)</p><p class="my-2 text-gray-700 leading-relaxed">   - Adubo de Base</p><p class="my-2 text-gray-700 leading-relaxed">   - Enxofre</p><p class="my-2 text-gray-700 leading-relaxed">   - Micronutrientes</p><p class="my-2 text-gray-700 leading-relaxed">   - Análise 20-40cm (Gesso)</p><p class="my-2 text-gray-700 leading-relaxed">   - Análise Física de Solo</p><p class="my-2 text-gray-700 leading-relaxed">5. <strong>Condições Comerciais e Desconto:</strong> Permite negociar valor fechado ou percentual de desconto com recálculo automático do valor por alqueire.</p><hr class="my-8 border-gray-200" /><h2 class="text-2xl font-bold text-gray-800 mt-10 mb-4 pb-2 border-b border-gray-200">📄 7. Folha de Pedido Oficial (Impressão e PDF)</h2><p class="my-2 text-gray-700 leading-relaxed">Na tabela de pedidos, ao clicar no botão com ícone de <strong>Impressora</strong>, o sistema gera imediatamente a <strong>Folha de Pedido Oficial e Orçamento Comercial</strong>:</p>
-        <div class="my-6 p-2 bg-gray-50 border rounded-xl shadow-sm text-center">
-          <img src="screens/10_folha_pedido_orcamento.png" alt="Folha de Pedido Oficial Timbrada" class="rounded-lg shadow border mx-auto max-h-[500px] object-contain w-full" />
-          <p class="text-xs text-gray-500 font-medium mt-2">Folha de Pedido Oficial Timbrada</p>
+        <div class="text-[11px] text-gray-400 font-medium tracking-wide">Preciza | Guia Operacional</div>
+      </div>
+
+      <div class="page-body flex-1">
+        
+      <p class="text-gray-700 text-sm leading-relaxed mb-3">
+        A tela de <strong>Pedidos</strong> é o coração comercial do sistema. Nela ficam registradas todas as propostas, seus status de aprovação, execução e quitação:
+      </p>
+      <ul class="text-xs space-y-1.5 text-gray-700 mb-3 ml-4 list-disc">
+        <li><strong>Indicadores de Status:</strong> Acompanhe facilmente pedidos em status <em>Pendente</em>, <em>Em Andamento</em> ou <em>Concluído</em>.</li>
+        <li><strong>Situação Financeira:</strong> Visualize se o pagamento está <em>Aguardando</em>, <em>Parcial</em> ou <em>Pago</em>.</li>
+        <li><strong>Ações por Pedido:</strong> Botões de atalho para gerar folha timbrada em PDF, agendar execução ou editar.</li>
+      </ul>
+    
+
+        
+          <div class="img-frame bg-gray-50 border border-gray-200 rounded-xl p-2 text-center shadow-xs mt-2">
+            <img src="screens/08_pedidos_tabela.png" alt="Painel Geral de Pedidos e Propostas Comerciais" class="rounded-lg border shadow-xs mx-auto max-h-[385px] object-contain w-auto" />
+            <p class="text-[11px] text-gray-500 font-medium mt-1.5 italic">Painel Geral de Pedidos e Propostas Comerciais</p>
+          </div>
+        
+      </div>
+
+      <div class="page-footer border-t border-gray-200 pt-2 mt-auto flex justify-between items-center text-[10px] text-gray-400">
+        <span>Preciza Agricultura de Precisão • Sistema FarmFlow</span>
+        <span>Página 9 de 17</span>
+      </div>
+    </div>
+  
+    <div class="pdf-page">
+      <div class="page-header flex justify-between items-center border-b-2 border-emerald-600 pb-2.5 mb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="bg-emerald-700 text-white font-bold text-[10px] px-2 py-0.5 rounded uppercase tracking-wider">Engenharia de Custos</span>
+          <h2 class="text-lg font-bold text-gray-900">6.1 Formulário Técnico de Orçamento (AP)</h2>
         </div>
-      <h3 class="text-xl font-semibold text-green-700 mt-6 mb-3">Recursos da Folha de Pedido:</h3><ul class="space-y-1 my-3"><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>Cabeçalho Timbrado Oficial:</strong> Logomarca oficial da Preciza, CNPJ, endereço da matriz e telefones de contato.</li><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>Alternância de Vias:</strong></li></ul><p class="my-2 text-gray-700 leading-relaxed">  - <strong>Via Cliente:</strong> Documento limpo e formal para apresentação e assinatura do produtor rural.</p><p class="my-2 text-gray-700 leading-relaxed">  - <strong>Via Empresa:</strong> Cópia com campos de controle interno da operação.</p><ul class="space-y-1 my-3"><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>Itens e Discriminação Detalhada:</strong> Lista todos os serviços contratados, quantidade de alqueires, número de pontos amostrais, itens inclusos no pacote e valor total.</li><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>📥 Baixar PDF:</strong> Gera um arquivo <code class="bg-gray-100 text-green-700 px-1 py-0.5 rounded font-mono text-sm">.pdf</code> oficial com um clique para envio direto no WhatsApp do produtor rural.</li><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>🖨️ Imprimir:</strong> Envia diretamente para a impressora do escritório em folha A4.</li><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>✏️ Editar Valores e Campos:</strong> Permite ajustar observações, lote ou dados adicionais antes da impressão.</li></ul><hr class="my-8 border-gray-200" /><h2 class="text-2xl font-bold text-gray-800 mt-10 mb-4 pb-2 border-b border-gray-200">📅 8. Agenda de Serviços e Execução de Campo</h2><p class="my-2 text-gray-700 leading-relaxed">Após o pedido ser aprovado, ele entra na <strong>Agenda de Serviços Agrícolas</strong>.</p>
-        <div class="my-6 p-2 bg-gray-50 border rounded-xl shadow-sm text-center">
-          <img src="screens/11_agenda_execucao.png" alt="Agenda de Serviços e Execuções" class="rounded-lg shadow border mx-auto max-h-[500px] object-contain w-full" />
-          <p class="text-xs text-gray-500 font-medium mt-2">Agenda de Serviços e Execuções</p>
+        <div class="text-[11px] text-gray-400 font-medium tracking-wide">Preciza | Guia Operacional</div>
+      </div>
+
+      <div class="page-body flex-1">
+        
+      <p class="text-gray-700 text-sm leading-relaxed mb-3">
+        Ao clicar em <strong>+ Novo Pedido</strong> e escolher o serviço de Agricultura de Precisão, o sistema carrega o motor agronômico completo:
+      </p>
+      <div class="grid grid-cols-2 gap-2 text-xs mb-3 text-gray-700">
+        <div class="bg-gray-50 border p-2 rounded"><strong>Reanálise de Solo:</strong> Alternância que aplica desconto especial de fidelidade.</div>
+        <div class="bg-gray-50 border p-2 rounded"><strong>Densidade de Pontos:</strong> Sugestão automática de pontos e cálculo de <code class="text-emerald-700 font-mono">ha por ponto</code>.</div>
+        <div class="bg-gray-50 border p-2 rounded"><strong>Laudo / Book:</strong> Escolha de análises complementares (Enxofre, Gesso, Micronutrientes).</div>
+        <div class="bg-gray-50 border p-2 rounded"><strong>Gabarito Automático:</strong> 100% dos pontos como Análise Completa sem descontos artificiais.</div>
+      </div>
+    
+
+        
+          <div class="img-frame bg-gray-50 border border-gray-200 rounded-xl p-2 text-center shadow-xs mt-2">
+            <img src="screens/09_modal_novo_pedido_ap.png" alt="Modal de Orçamento Técnico com Parametrização Agronômica Completa" class="rounded-lg border shadow-xs mx-auto max-h-[385px] object-contain w-auto" />
+            <p class="text-[11px] text-gray-500 font-medium mt-1.5 italic">Modal de Orçamento Técnico com Parametrização Agronômica Completa</p>
+          </div>
+        
+      </div>
+
+      <div class="page-footer border-t border-gray-200 pt-2 mt-auto flex justify-between items-center text-[10px] text-gray-400">
+        <span>Preciza Agricultura de Precisão • Sistema FarmFlow</span>
+        <span>Página 10 de 17</span>
+      </div>
+    </div>
+  
+    <div class="pdf-page">
+      <div class="page-header flex justify-between items-center border-b-2 border-emerald-600 pb-2.5 mb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="bg-emerald-700 text-white font-bold text-[10px] px-2 py-0.5 rounded uppercase tracking-wider">Folha Timbrada</span>
+          <h2 class="text-lg font-bold text-gray-900">7. Emissão da Folha de Pedido Oficial em PDF</h2>
         </div>
-      <h3 class="text-xl font-semibold text-green-700 mt-6 mb-3">O que você pode acompanhar:</h3><ul class="space-y-1 my-3"><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>Barra de Progresso (% Executado):</strong> Mostra quantos hectares já foram realizados e quanto ainda resta fazer.</li><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>Filtros Operacionais:</strong> Filtre por Operador, Equipamento (Trator/Drone/Quadriciclo), Município ou Status.</li><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>Alocação de Equipes:</strong> Visualize quem é o responsável pela coleta ou pulverização.</li></ul><h3 class="text-xl font-semibold text-green-700 mt-6 mb-3">Registrando a Execução:</h3><p class="my-2 text-gray-700 leading-relaxed">Ao clicar no botão de execução, o operador ou coordenador informa o trabalho realizado no dia:</p><ul class="space-y-1 my-3"><li class="ml-6 list-disc text-gray-700 leading-relaxed">Pode registrar <strong>Execução Total</strong> (conclusão do serviço) ou <strong>Execução Parcial</strong> (ex: coletou 20 hectares hoje de um total de 48 ha).</li><li class="ml-6 list-disc text-gray-700 leading-relaxed">Aloca os operadores presentes e maquinários utilizados para controle de horímetro e produtividade.</li></ul><hr class="my-8 border-gray-200" /><h2 class="text-2xl font-bold text-gray-800 mt-10 mb-4 pb-2 border-b border-gray-200">💵 9. Controle Financeiro e Baixa de Pagamentos</h2><p class="my-2 text-gray-700 leading-relaxed">No menu lateral, acesse <strong>Financeiro</strong> para gerenciar contas a receber e fluxo de caixa.</p>
-        <div class="my-6 p-2 bg-gray-50 border rounded-xl shadow-sm text-center">
-          <img src="screens/13_financeiro_fluxo_caixa.png" alt="Painel Financeiro e Contas a Receber" class="rounded-lg shadow border mx-auto max-h-[500px] object-contain w-full" />
-          <p class="text-xs text-gray-500 font-medium mt-2">Painel Financeiro e Contas a Receber</p>
+        <div class="text-[11px] text-gray-400 font-medium tracking-wide">Preciza | Guia Operacional</div>
+      </div>
+
+      <div class="page-body flex-1">
+        
+      <p class="text-gray-700 text-sm leading-relaxed mb-3">
+        Ao clicar no ícone de impressora em qualquer pedido, o sistema gera a <strong>Folha de Pedido Oficial Timbrada da Preciza</strong>:
+      </p>
+      <div class="bg-emerald-50 border-l-4 border-emerald-600 p-3 rounded-r-lg text-xs text-emerald-950 mb-3">
+        <p class="font-bold mb-1">Pronta para Envio e Assinatura:</p>
+        <p>• <strong>Botão Baixar PDF:</strong> Salva o arquivo oficial no seu dispositivo com 1 clique para envio imediato no WhatsApp.</p>
+        <p>• <strong>Via Cliente / Via Empresa:</strong> Alterne entre a via comercial externa e a via técnica interna.</p>
+        <p>• <strong>Discriminação Comercial:</strong> Tabela com alqueires contratados, preço unitário, totalização e condições de pagamento.</p>
+      </div>
+    
+
+        
+          <div class="img-frame bg-gray-50 border border-gray-200 rounded-xl p-2 text-center shadow-xs mt-2">
+            <img src="screens/10_folha_pedido_orcamento.png" alt="Folha de Pedido Oficial Timbrada para Impressão ou Download em PDF" class="rounded-lg border shadow-xs mx-auto max-h-[385px] object-contain w-auto" />
+            <p class="text-[11px] text-gray-500 font-medium mt-1.5 italic">Folha de Pedido Oficial Timbrada para Impressão ou Download em PDF</p>
+          </div>
+        
+      </div>
+
+      <div class="page-footer border-t border-gray-200 pt-2 mt-auto flex justify-between items-center text-[10px] text-gray-400">
+        <span>Preciza Agricultura de Precisão • Sistema FarmFlow</span>
+        <span>Página 11 de 17</span>
+      </div>
+    </div>
+  
+    <div class="pdf-page">
+      <div class="page-header flex justify-between items-center border-b-2 border-emerald-600 pb-2.5 mb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="bg-emerald-700 text-white font-bold text-[10px] px-2 py-0.5 rounded uppercase tracking-wider">Operações</span>
+          <h2 class="text-lg font-bold text-gray-900">8. Agenda de Operações e Serviços no Campo</h2>
         </div>
-      <h3 class="text-xl font-semibold text-green-700 mt-6 mb-3">Indicadores Financeiros:</h3><ul class="space-y-1 my-3"><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>Faturamento Recebido:</strong> Valores já pagos e conciliados.</li><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>A Receber / Em Aberto:</strong> Saldo pendente de serviços contratados.</li><li class="ml-6 list-disc text-gray-700 leading-relaxed"><strong>Volume Total Contratado:</strong> Soma total de contratos ativos no sistema.</li></ul><h3 class="text-xl font-semibold text-green-700 mt-6 mb-3">Dando Baixa em um Pedido:</h3><p class="my-2 text-gray-700 leading-relaxed">Ao clicar no botão verde <strong>Dar Baixa</strong>, abre-se o modal de quitação:</p>
-        <div class="my-6 p-2 bg-gray-50 border rounded-xl shadow-sm text-center">
-          <img src="screens/14_modal_baixa.png" alt="Modal de Baixa Financeira" class="rounded-lg shadow border mx-auto max-h-[500px] object-contain w-full" />
-          <p class="text-xs text-gray-500 font-medium mt-2">Modal de Baixa Financeira</p>
+        <div class="text-[11px] text-gray-400 font-medium tracking-wide">Preciza | Guia Operacional</div>
+      </div>
+
+      <div class="page-body flex-1">
+        
+      <p class="text-gray-700 text-sm leading-relaxed mb-3">
+        Na aba <strong>Agenda</strong>, o coordenador de operações e os técnicos acompanham a fila de execução dos serviços:
+      </p>
+      <ul class="text-xs space-y-1.5 text-gray-700 mb-3 ml-4 list-disc">
+        <li><strong>Barra de Progresso (% Executado):</strong> Indica visualmente quanto da área já foi concluída e o saldo que resta fazer.</li>
+        <li><strong>Filtros Operacionais:</strong> Filtre por Operador, Equipamento (Trator, Quadriciclo, Drone), Município ou Status.</li>
+        <li><strong>Equipe Alocada:</strong> Identifique rapidamente quem é o técnico encarregado de cada área.</li>
+      </ul>
+    
+
+        
+          <div class="img-frame bg-gray-50 border border-gray-200 rounded-xl p-2 text-center shadow-xs mt-2">
+            <img src="screens/11_agenda_execucao.png" alt="Agenda Operacional com Rastreabilidade de Área e Equipe" class="rounded-lg border shadow-xs mx-auto max-h-[385px] object-contain w-auto" />
+            <p class="text-[11px] text-gray-500 font-medium mt-1.5 italic">Agenda Operacional com Rastreabilidade de Área e Equipe</p>
+          </div>
+        
+      </div>
+
+      <div class="page-footer border-t border-gray-200 pt-2 mt-auto flex justify-between items-center text-[10px] text-gray-400">
+        <span>Preciza Agricultura de Precisão • Sistema FarmFlow</span>
+        <span>Página 12 de 17</span>
+      </div>
+    </div>
+  
+    <div class="pdf-page">
+      <div class="page-header flex justify-between items-center border-b-2 border-emerald-600 pb-2.5 mb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="bg-emerald-700 text-white font-bold text-[10px] px-2 py-0.5 rounded uppercase tracking-wider">Apontamento</span>
+          <h2 class="text-lg font-bold text-gray-900">8.1 Apontamento de Campo e Execução</h2>
         </div>
-      <div class="p-4 my-4 bg-emerald-50 border-l-4 border-emerald-500 rounded-r text-emerald-950 font-medium"><p class="italic text-gray-600 pl-4 border-l-2 border-gray-300 my-2">### 💡 Baixa Total ou Parcial Inteligente</p><p class="italic text-gray-600 pl-4 border-l-2 border-gray-300 my-2">- **Liquidar Saldo Total:** Um clique no atalho verde preenche automaticamente o valor integral restante.</p><p class="italic text-gray-600 pl-4 border-l-2 border-gray-300 my-2">- **Pagamento Parcelado / Entrada:** O cliente pagou apenas uma parte? Digite o valor recebido e o sistema calcula instantaneamente o saldo que restará para a próxima parcela.</p><p class="italic text-gray-600 pl-4 border-l-2 border-gray-300 my-2">- **Forma de Pagamento:** Escolha entre PIX, Boleto, Cheque ou Dinheiro.</p><p class="italic text-gray-600 pl-4 border-l-2 border-gray-300 my-2">- **Sincronização Automática:** Ao confirmar a baixa, o valor entra automaticamente no fluxo de caixa da empresa.</p><hr class="my-8 border-gray-200" /><h2 class="text-2xl font-bold text-gray-800 mt-10 mb-4 pb-2 border-b border-gray-200">🧪 10. Gestão de Análises Laboratoriais</h2><p class="my-2 text-gray-700 leading-relaxed">Na aba <strong>Análises</strong>, a equipe técnica acompanha as amostras de solo e folhas enviadas aos laboratórios parceiros:</p>
-        <div class="my-6 p-2 bg-gray-50 border rounded-xl shadow-sm text-center">
-          <img src="screens/15_analises_laboratoriais.png" alt="Controle de Análises Laboratoriais" class="rounded-lg shadow border mx-auto max-h-[500px] object-contain w-full" />
-          <p class="text-xs text-gray-500 font-medium mt-2">Controle de Análises Laboratoriais</p>
+        <div class="text-[11px] text-gray-400 font-medium tracking-wide">Preciza | Guia Operacional</div>
+      </div>
+
+      <div class="page-body flex-1">
+        
+      <p class="text-gray-700 text-sm leading-relaxed mb-3">
+        Ao clicar no botão de execução na Agenda, abre-se o modal de apontamento do trabalho realizado no dia:
+      </p>
+      <div class="bg-emerald-50 border-l-4 border-emerald-600 p-3 rounded-r-lg text-xs text-emerald-950 mb-3">
+        <p class="font-bold mb-1">Execução Total ou Parcial Inteligente:</p>
+        <p>• O sistema já traz calculado o <strong>Saldo Restante</strong> da área contratada.</p>
+        <p>• <strong>Rateio por Equipe:</strong> Permite detalhar quanto cada operador executou com seu respectivo equipamento (ex: 20 ha com Quadriciclo A, 28.40 ha com Trator B).</p>
+        <p>• <strong>Conclusão Segura:</strong> O serviço concluído não vai direto para cobrança sem conferência.</p>
+      </div>
+    
+
+        
+          <div class="img-frame bg-gray-50 border border-gray-200 rounded-xl p-2 text-center shadow-xs mt-2">
+            <img src="screens/12_modal_execucao.png" alt="Modal de Registro de Execução com Saldo Restante e Rateio" class="rounded-lg border shadow-xs mx-auto max-h-[385px] object-contain w-auto" />
+            <p class="text-[11px] text-gray-500 font-medium mt-1.5 italic">Modal de Registro de Execução com Saldo Restante e Rateio</p>
+          </div>
+        
+      </div>
+
+      <div class="page-footer border-t border-gray-200 pt-2 mt-auto flex justify-between items-center text-[10px] text-gray-400">
+        <span>Preciza Agricultura de Precisão • Sistema FarmFlow</span>
+        <span>Página 13 de 17</span>
+      </div>
+    </div>
+  
+    <div class="pdf-page">
+      <div class="page-header flex justify-between items-center border-b-2 border-emerald-600 pb-2.5 mb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="bg-emerald-700 text-white font-bold text-[10px] px-2 py-0.5 rounded uppercase tracking-wider">Financeiro</span>
+          <h2 class="text-lg font-bold text-gray-900">9. Painel Financeiro & Contas a Receber</h2>
         </div>
-      <ul class="space-y-1 my-3"><li class="ml-6 list-disc text-gray-700 leading-relaxed">Controle de remessas e lotes por fazenda.</li><li class="ml-6 list-disc text-gray-700 leading-relaxed">Registro dos tipos de análise solicitados (<code class="bg-gray-100 text-green-700 px-1 py-0.5 rounded font-mono text-sm">Macro</code>, <code class="bg-gray-100 text-green-700 px-1 py-0.5 rounded font-mono text-sm">Macro+S</code>, <code class="bg-gray-100 text-green-700 px-1 py-0.5 rounded font-mono text-sm">Física</code>, <code class="bg-gray-100 text-green-700 px-1 py-0.5 rounded font-mono text-sm">Foliar</code>).</li><li class="ml-6 list-disc text-gray-700 leading-relaxed">Acompanhamento do status de recebimento de laudos técnicos para elaboração dos mapas de recomendação.</li></ul><hr class="my-8 border-gray-200" /><h2 class="text-2xl font-bold text-gray-800 mt-10 mb-4 pb-2 border-b border-gray-200">⚙️ 11. Configurações Operacionais da Empresa</h2><p class="my-2 text-gray-700 leading-relaxed">A aba <strong>Configurações</strong> permite personalizar tabelas de preço, maquinários e colaboradores:</p>
-        <div class="my-6 p-2 bg-gray-50 border rounded-xl shadow-sm text-center">
-          <img src="screens/16_configuracoes_operacionais.png" alt="Catálogo de Serviços e Configurações Operacionais" class="rounded-lg shadow border mx-auto max-h-[500px] object-contain w-full" />
-          <p class="text-xs text-gray-500 font-medium mt-2">Catálogo de Serviços e Configurações Operacionais</p>
+        <div class="text-[11px] text-gray-400 font-medium tracking-wide">Preciza | Guia Operacional</div>
+      </div>
+
+      <div class="page-body flex-1">
+        
+      <p class="text-gray-700 text-sm leading-relaxed mb-3">
+        No menu lateral, o módulo <strong>Financeiro</strong> centraliza o fluxo de caixa, faturamento e contas a receber:
+      </p>
+      <ul class="text-xs space-y-1.5 text-gray-700 mb-3 ml-4 list-disc">
+        <li><strong>Faturamento Recebido:</strong> Soma total dos valores já quitados e conciliados.</li>
+        <li><strong>Saldo em Aberto (A Receber):</strong> Montante contratado que aguarda pagamento dos produtores.</li>
+        <li><strong>Volume Total Contratado:</strong> Total acumulado de propostas e contratos vigentes no sistema.</li>
+      </ul>
+    
+
+        
+          <div class="img-frame bg-gray-50 border border-gray-200 rounded-xl p-2 text-center shadow-xs mt-2">
+            <img src="screens/13_financeiro_fluxo_caixa.png" alt="Painel Financeiro com Indicadores de Faturamento e Contas a Receber" class="rounded-lg border shadow-xs mx-auto max-h-[385px] object-contain w-auto" />
+            <p class="text-[11px] text-gray-500 font-medium mt-1.5 italic">Painel Financeiro com Indicadores de Faturamento e Contas a Receber</p>
+          </div>
+        
+      </div>
+
+      <div class="page-footer border-t border-gray-200 pt-2 mt-auto flex justify-between items-center text-[10px] text-gray-400">
+        <span>Preciza Agricultura de Precisão • Sistema FarmFlow</span>
+        <span>Página 14 de 17</span>
+      </div>
+    </div>
+  
+    <div class="pdf-page">
+      <div class="page-header flex justify-between items-center border-b-2 border-emerald-600 pb-2.5 mb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="bg-emerald-700 text-white font-bold text-[10px] px-2 py-0.5 rounded uppercase tracking-wider">Liquidação</span>
+          <h2 class="text-lg font-bold text-gray-900">9.1 Baixa Financeira (Total ou Parcial)</h2>
         </div>
-      <h3 class="text-xl font-semibold text-green-700 mt-6 mb-3">Abas de Configuração:</h3><p class="my-2 text-gray-700 leading-relaxed">1. <strong>Serviços:</strong> Catálogo de serviços agronômicos da empresa com preço base por alqueire (Amostragem de Solo, Pulverização com Drone, Aplicação com ATV, etc.).</p><p class="my-2 text-gray-700 leading-relaxed">2. <strong>Equipamentos:</strong> Cadastro da frota (caminhonetes, quadriciclos, tratores e drones) com controle de placa, horímetro e número de série.</p><p class="my-2 text-gray-700 leading-relaxed">3. <strong>Colaboradores:</strong> Equipe técnica de campo e consultores autorizados.</p><p class="my-2 text-gray-700 leading-relaxed">4. <strong>Variáveis de Custo:</strong> Parâmetros de combustível, diárias e insumos operacionais.</p><p class="my-2 text-gray-700 leading-relaxed">5. <strong>Cabeçalho de PDFs:</strong> Personalização dos dados da empresa, telefone e logotipo exibidos nas folhas de pedido oficiais.</p>
+        <div class="text-[11px] text-gray-400 font-medium tracking-wide">Preciza | Guia Operacional</div>
+      </div>
+
+      <div class="page-body flex-1">
+        
+      <p class="text-gray-700 text-sm leading-relaxed mb-3">
+        Ao clicar no botão verde <strong>Dar Baixa</strong> no financeiro, o operador abre o modal de quitação simplificado:
+      </p>
+      <div class="bg-emerald-50 border-l-4 border-emerald-600 p-3 rounded-r-lg text-xs text-emerald-950 mb-3">
+        <p class="font-bold mb-1">Flexibilidade de Pagamento:</p>
+        <p>• <strong>Liquidar Saldo Total:</strong> Um clique no atalho verde preenche automaticamente o valor integral restante.</p>
+        <p>• <strong>Baixa Parcial / Entrada:</strong> Digite o valor recebido e o sistema calcula instantaneamente o saldo remanescente.</p>
+        <p>• <strong>Formas de Pagamento:</strong> Selecione PIX, Boleto, Cheque ou Dinheiro com sincronização imediata no fluxo de caixa.</p>
+      </div>
+    
+
+        
+          <div class="img-frame bg-gray-50 border border-gray-200 rounded-xl p-2 text-center shadow-xs mt-2">
+            <img src="screens/14_modal_baixa.png" alt="Modal de Baixa de Pagamento com Suporte a Quitação Parcial ou Total" class="rounded-lg border shadow-xs mx-auto max-h-[385px] object-contain w-auto" />
+            <p class="text-[11px] text-gray-500 font-medium mt-1.5 italic">Modal de Baixa de Pagamento com Suporte a Quitação Parcial ou Total</p>
+          </div>
+        
+      </div>
+
+      <div class="page-footer border-t border-gray-200 pt-2 mt-auto flex justify-between items-center text-[10px] text-gray-400">
+        <span>Preciza Agricultura de Precisão • Sistema FarmFlow</span>
+        <span>Página 15 de 17</span>
+      </div>
+    </div>
+  
+    <div class="pdf-page">
+      <div class="page-header flex justify-between items-center border-b-2 border-emerald-600 pb-2.5 mb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="bg-emerald-700 text-white font-bold text-[10px] px-2 py-0.5 rounded uppercase tracking-wider">Laboratório</span>
+          <h2 class="text-lg font-bold text-gray-900">10. Gestão de Análises Laboratoriais</h2>
+        </div>
+        <div class="text-[11px] text-gray-400 font-medium tracking-wide">Preciza | Guia Operacional</div>
+      </div>
+
+      <div class="page-body flex-1">
+        
+      <p class="text-gray-700 text-sm leading-relaxed mb-3">
+        Na aba <strong>Análises</strong>, a equipe técnica acompanha as amostras de solo e folhas enviadas aos laboratórios parceiros:
+      </p>
+      <ul class="text-xs space-y-1.5 text-gray-700 mb-3 ml-4 list-disc">
+        <li><strong>Controle de Remessas:</strong> Acompanhamento de lotes por fazenda e produtor.</li>
+        <li><strong>Tipos Padronizados:</strong> Registro dos tipos de laudo contratados (<code class="bg-gray-100 px-1 py-0.5 rounded font-mono">Macro</code>, <code class="bg-gray-100 px-1 py-0.5 rounded font-mono">Macro+S</code>, <code class="bg-gray-100 px-1 py-0.5 rounded font-mono">Física</code>, <code class="bg-gray-100 px-1 py-0.5 rounded font-mono">Foliar</code>).</li>
+        <li><strong>Status de Laudos:</strong> Monitore o recebimento dos resultados para elaboração dos mapas de adubação e calagem.</li>
+      </ul>
+    
+
+        
+          <div class="img-frame bg-gray-50 border border-gray-200 rounded-xl p-2 text-center shadow-xs mt-2">
+            <img src="screens/15_analises_laboratoriais.png" alt="Painel de Controle de Remessas e Laudos Laboratoriais" class="rounded-lg border shadow-xs mx-auto max-h-[385px] object-contain w-auto" />
+            <p class="text-[11px] text-gray-500 font-medium mt-1.5 italic">Painel de Controle de Remessas e Laudos Laboratoriais</p>
+          </div>
+        
+      </div>
+
+      <div class="page-footer border-t border-gray-200 pt-2 mt-auto flex justify-between items-center text-[10px] text-gray-400">
+        <span>Preciza Agricultura de Precisão • Sistema FarmFlow</span>
+        <span>Página 16 de 17</span>
+      </div>
+    </div>
+  
+    <div class="pdf-page">
+      <div class="page-header flex justify-between items-center border-b-2 border-emerald-600 pb-2.5 mb-3.5">
+        <div class="flex items-center gap-2.5">
+          <span class="bg-emerald-700 text-white font-bold text-[10px] px-2 py-0.5 rounded uppercase tracking-wider">Configurações</span>
+          <h2 class="text-lg font-bold text-gray-900">11. Configurações Operacionais da Empresa</h2>
+        </div>
+        <div class="text-[11px] text-gray-400 font-medium tracking-wide">Preciza | Guia Operacional</div>
+      </div>
+
+      <div class="page-body flex-1">
+        
+      <p class="text-gray-700 text-sm leading-relaxed mb-3">
+        A aba <strong>Configurações</strong> permite personalizar com autonomia as tabelas de preços, frotas e colaboradores:
+      </p>
+      <ul class="text-xs space-y-1.5 text-gray-700 mb-3 ml-4 list-disc">
+        <li><strong>Catálogo de Serviços:</strong> Lista oficial dos 8 serviços agronômicos da empresa com preço base por alqueire.</li>
+        <li><strong>Equipamentos & Frota:</strong> Cadastro de caminhonetes, quadriciclos, tratores e drones com controle de horímetro e placa.</li>
+        <li><strong>Colaboradores & Variáveis de Custo:</strong> Gestão de agrônomos de campo e parâmetros de combustível e diárias.</li>
+      </ul>
+    
+
+        
+          <div class="img-frame bg-gray-50 border border-gray-200 rounded-xl p-2 text-center shadow-xs mt-2">
+            <img src="screens/16_configuracoes_operacionais.png" alt="Catálogo Oficial de Serviços Agronômicos e Parâmetros da Empresa" class="rounded-lg border shadow-xs mx-auto max-h-[385px] object-contain w-auto" />
+            <p class="text-[11px] text-gray-500 font-medium mt-1.5 italic">Catálogo Oficial de Serviços Agronômicos e Parâmetros da Empresa</p>
+          </div>
+        
+      </div>
+
+      <div class="page-footer border-t border-gray-200 pt-2 mt-auto flex justify-between items-center text-[10px] text-gray-400">
+        <span>Preciza Agricultura de Precisão • Sistema FarmFlow</span>
+        <span>Página 17 de 17</span>
+      </div>
+    </div>
+  
   </div>
 </body>
 </html>
