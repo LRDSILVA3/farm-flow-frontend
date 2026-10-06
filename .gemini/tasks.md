@@ -53,3 +53,4 @@
 - [x] Identidade Visual Preciza: Favicon SVG e ICO oficiais aplicados, metadados do Lovable removidos de `index.html`.
 - [x] Correção de Erro 500 em `/orders`: Migration `AddOrderFieldsEquipmentFieldsAndTransactions` executada, sincronizando colunas faltantes em `orders` (`executions`, `schedules`, etc.), `equipment` e tabelas financeiras/execuções.
 - [x] Compatibilidade HTTP/LAN: Polyfill global e utilitário `generateUUID` implementados para resolver `crypto.randomUUID is not a function` em acessos via IP de rede local não seguro (`http://192.168.1.20:3000`).
+- [x] Correção de Gabarito Inicial de Amostragem (AP): Corrigido vazamento de estado onde novo pedido inicializava com Completa travada em 1 e restante em Macro; agora reflete 100% de Análise Completa sugerida pela planilha `budget.xlsm` (sem botões de reverter indevidos).
