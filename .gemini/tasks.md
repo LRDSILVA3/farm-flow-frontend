@@ -50,3 +50,5 @@
 - [x] Testes Unitários de Serviços (13 suites, 37 testes passando no frontend; 22 suites, 89 testes no backend).
 - [x] Deploy do Backend Dockerizado no Servidor Local (HP sv1 - `192.168.1.20:3333`) com PostgreSQL 15, migrations TypeORM automáticas e seeds de variáveis e serviços oficiais executados.
 - [x] Deploy do Frontend Dockerizado no Servidor Local (HP sv1 - `192.168.1.20:3000`) com Nginx Alpine, roteamento SPA e conexão direta com a API do servidor (`192.168.1.20:3333`).
+- [x] Identidade Visual Preciza: Favicon SVG e ICO oficiais aplicados, metadados do Lovable removidos de `index.html`.
+- [x] Correção de Erro 500 em `/orders`: Migration `AddOrderFieldsEquipmentFieldsAndTransactions` executada, sincronizando colunas faltantes em `orders` (`executions`, `schedules`, etc.), `equipment` e tabelas financeiras/execuções.
