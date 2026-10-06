@@ -1,139 +1,146 @@
 # FarmFlow - Handoff Completo de Sessão
 
-> **Data do Handoff:** 04/10/2026  
+> **Data do Handoff:** 06/10/2026  
 > **Status Geral:**  
-> - ✅ **100% dos Cálculos e Regras Agronômicas Migrados** (`budget.xlsm`) com 0,00% de divergência  
-> - ✅ **Backend 100% Ativo & Integrado ao PostgreSQL** (Docker container `postgres` na porta 5432)  
-> - ✅ **22 Suítes / 97 Testes Aprovados no Backend** (`npm test` em `farm-flow-backend`)  
-> - ✅ **13 Suítes / 37 Testes Aprovados no Frontend** (`npm test` em `farm-flow-frontend`)  
-> - ✅ **Servidores Locais Operacionais:** Frontend em `http://localhost:8080` | Backend em `http://localhost:3333`
+> - ✅ **Deploy no Servidor HP Local Concluído:** Backend (`http://192.168.1.20:3333`) | Frontend (`http://192.168.1.20:3000`) | PostgreSQL 15 (`5432`)
+> - ✅ **100% dos Motores de Cálculo Agronômico Migrados e Sincronizados** (`budget.xlsm`)
+> - ✅ **Gabarito de Amostragem Alinhado à Planilha:** Sem desconto, 100% dos pontos são Análise Completa (0-20cm) e Macro Simples inicia estritamente em ZERO (0)
+> - ✅ **Medida Dupla de Área (ha e alq):** Fazendas e Talhões com recálculo bidirecional instantâneo (`1 alq = 2,42 ha`) e rigor de 2 dígitos decimais
+> - ✅ **Compatibilidade HTTP/LAN:** Polyfill global de `crypto.randomUUID` para redes locais não seguras
+> - ✅ **Identidade Visual Preciza:** Favicon oficial SVG/ICO e limpeza de metadados do Lovable
+> - ✅ **Testes Unitários:** Suítes de testes cobrindo recálculo bidirecional de áreas, serviços de orçamento e modais
 
 ---
 
 ## 1. Visão Geral da Arquitetura & Infraestrutura
 
-O projeto é constituído por dois repositórios irmãos:
+O sistema opera em produção/homologação no **Servidor Local HP (`sv1` - IP: `192.168.1.20`)** e possui ambiente de desenvolvimento local:
+
 ```text
+Ambiente Local (Desenvolvimento):
 C:\Users\User\Documents\Projects\
   ├── farm-flow-frontend/   <-- React 18 + Vite + TypeScript + Tailwind/Radix UI
   └── farm-flow-backend/    <-- Node.js + Express + TypeORM + PostgreSQL + Vitest
+
+Servidor HP Local (Produção/Rede Local - sv1):
+  ├── farmflow-backend     <-- Container Docker na porta 3333
+  ├── farmflow-frontend    <-- Container Docker Nginx Alpine na porta 3000
+  └── postgresql-db        <-- PostgreSQL 15 na porta 5432
 ```
 
-### Banco de Dados & Docker
-- O backend depende do **PostgreSQL** rodando no container Docker `postgres` na porta `5432`.
-- O executável do Docker Desktop está localizado em:
-  `C:\Users\User\AppData\Local\Programs\DockerDesktop\Docker Desktop.exe`
-- Caso a máquina seja reiniciada e o banco esteja indisponível:
-  ```powershell
-  # 1. Iniciar Docker Desktop (se fechado)
-  Start-Process "C:\Users\User\AppData\Local\Programs\DockerDesktop\Docker Desktop.exe"
-  # 2. Iniciar container do Postgres
-  docker start postgres
-  ```
+### Serviços e Endpoints no Servidor HP (`192.168.1.20`):
+- **Frontend Web:** `http://192.168.1.20:3000` (Nginx Alpine com roteamento SPA configurado em `try_files $uri $uri/ /index.html`)
+- **Backend API:** `http://192.168.1.20:3333`
+- **Banco de Dados:** PostgreSQL 15 na porta `5432` (banco `farmflow`)
+- **Acesso SSH:** `sv1@192.168.1.20`
 
 ---
 
-## 2. Implementações Realizadas nesta Sessão (04/10/2026)
+## 2. Implementações Realizadas Recentemente (06/10/2026)
 
-### A. Localidades (Cidades e Estados com Busca)
-- **Componente:** `src/components/pages/farms/CityStateSelect.tsx`.
-- **Funcionalidades:**
-  - Contempla todos os 27 estados da federação brasileira (UF + Nome).
-  - Popover com busca textual dinâmica (`search`) tanto para estados quanto para cidades.
-  - Integração com a API do IBGE (`servicodados.ibge.gov.br`) com fallback imediato das principais praças agropecuárias (PR, MT, MS, GO, SP, RS, etc.) e cache em memória para navegação ultrarrápida.
-  - Suporte à digitação customizada caso o município não conste na lista.
+### A. Medida Dupla em Alqueires e Hectares (Fazendas e Talhões)
+- **Componentes:** [`FarmForm.tsx`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/components/pages/farms/FarmForm.tsx) e [`PlotForm.tsx`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/components/pages/farms/PlotForm.tsx).
+- **Recálculo Bidirecional em Tempo Real:**
+  - O usuário pode preencher tanto **Hectares (ha)** quanto **Alqueires (alq)**.
+  - Ao digitar em Alqueires (ex: `20`): calcula e preenche automaticamente os Hectares com precisão (`20 × 2,42 = 48.40 ha`).
+  - Ao digitar em Hectares (ex: `48.40`): calcula e preenche automaticamente os Alqueires (`48.40 ÷ 2,42 = 20.00 alq`).
+- **Resolução do Bug "20 alq virava 19 e pouco":**
+  - **Causa Raiz:** O sistema não possuía input de alqueires; ao digitar `48 ha` (aproximação mental de 2,4), a divisão por `2,42` resultava em `19,83 alqueires`. Além disso, valores da API vinham sem formatação fixa de decimais.
+  - **Correção:** Garantida formatação estrita de 2 casas decimais (`.toFixed(2)`) ao digitar (`onBlur`), ao salvar na API e ao mapear retornos do banco (`mapFarmFromDB` e `mapPlotFromDB` em [`useFarms.ts`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/hooks/useFarms.ts)).
+- **Tabelas de Fazendas e Talhões:** [`FarmTable.tsx`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/components/pages/farms/FarmTable.tsx) e [`PlotsTable.tsx`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/components/pages/farms/PlotsTable.tsx) agora exibem ambas as medidas formatadas: `48.40 ha (20.00 alq)`.
+- **Persistência de Edição de Talhões:** Adicionado método `updatePlot` no hook `useFarms` e no `usePlotHandlers` consumindo a rota `PUT /farms/plots/:plot_id` do backend.
+- **Área da Fazenda no Pedido ([`OrderForm.tsx`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/components/pages/orders/OrderForm.tsx)):** Fallback automático para a área total da fazenda com 2 casas decimais quando ela ainda não possui talhões cadastrados ou quando "todos" estiver selecionado.
 
-### B. Formulários e Validações (Clientes, Fazendas e Talhões)
-- **Clientes (`CustomersForm.tsx`):**
-  - Apenas o campo `name` é obrigatório, atendendo a pedidos rápidos de balcão onde só se possui o nome do produtor.
-  - Validação inline conjunta: exibe todos os campos faltantes ou inválidos simultaneamente com destaque visual em vermelho.
-- **Fazendas (`FarmForm.tsx`) e Talhões (`PlotForm.tsx`):**
-  - Campos `Lote`, `Matrícula` e `Contato` padronizados como **opcionais**.
-  - Ordem visual unificada em ambos os formulários: **Lote** sempre antes de **Matrícula**.
-  - Eliminação de chamadas duplicadas `onSubmit(e)` e correção de fechamento indevido de modais sob erro.
+### B. Correção do Gabarito de Amostragem de Solo (AP)
+- **Fidelidade à Planilha `budget.xlsm` (`INPUT DADOS` B17, B21, B22, I25):**
+  - Sem desconto comercial, **100% dos pontos superficiais são Análise Completa (0-20cm)** (`B21 = B6`).
+  - **Macro Simples (B22 = B6 - B21) inicia rigorosamente em ZERO (0)**. A Macro Simples só deve ser maior que zero em caso de desconto comercial negociado ou edição manual no gabarito.
+  - Salvaguarda adicionada em [`SoilSamplingService.ts`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/services/SoilSamplingService.ts) garantindo `percAnalisesCompleta = 100` e `numAnalisesMacro = 0` sempre que `desconto <= 0`.
+- **Eliminação de Vazamento de Estado em Novo Pedido:**
+  - Corrigido vazamento em [`SoilSamplingServiceForm.tsx`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/components/pages/orders/SoilSamplingServiceForm.tsx) onde o estado provisório inicial de 1 ponto (1 Completa) era salvo em `productsData` do pedido e interpretado como override manual ao digitar a área real (gerando 1 Completa e 16 Macro). Novos pedidos agora iniciam limpos e sincronizados com a planilha.
 
-### C. Formatação e Precisão de Áreas
-- **Regra Estrita de Decimais:** Exibição com exatamente **2 casas decimais** (`.toFixed(2)`) para hectares (ha) e alqueires (alq) em todos os formulários, tabelas, modais e relatórios, eliminando dízimas periódicas.
+### C. Deploy e Estabilização do Backend no Servidor HP
+- **Banco de Dados & Migrations:**
+  - Executada migration `AddOrderFieldsEquipmentFieldsAndTransactions1790856601753` no PostgreSQL do servidor.
+  - Criadas colunas faltantes em `orders` (`executions`, `schedules`, `payments`, `logs`, `executed_area`, `paid_amount`) e `equipment` (`serial_number`, `hourmeter`, `year`, `notes`).
+  - Criadas tabelas operacionais `service_executions` e `financial_transactions`.
+  - Corrigido o erro HTTP 500 no endpoint `GET /orders`.
+- **Seeds Oficiais:**
+  - Executados seeds TypeORM no servidor cadastrando o usuário admin padrão, os 8 serviços oficiais validados e todas as variáveis de custo agronômico.
 
-### D. Pedidos, Cálculos em Tempo Real & Estabilidade
-- **Fim da Oscilação Numérica:** Identificada e sanada a causa raiz do travamento/loop ao selecionar fazenda em `OrderForm.tsx`. O fluxo foi estabilizado através de memoização com `useCallback`, referências `useRef` para callbacks em formulários especializados e remoção do ping-pong de re-renderização.
-- **Reset de Modais:** Aplicação de `key` dinâmica no `<form>` forçando remontagem e limpeza total de estado ao fechar e reabrir o modal de novo pedido.
-- **Densidade Amostral Dinâmica:** Em `SoilSamplingServiceForm.tsx`, cálculo e exibição instantânea de **ha por ponto** ao digitar a quantidade de pontos.
-- **Campos Condicionais:** Formulário de serviço avulso oculta automaticamente inputs genéricos quando nenhum serviço estiver selecionado.
-- **Limpeza Visual:** Removidos todos os textos de referências diretas a planilhas (`*Sincronizado com budget.xlsm`, `(Conforme Excel)`, `(Conforme PEDIDO VIA CLIENTE)`).
+### D. Compatibilidade com HTTP e Rede Local (Polyfill de UUID)
+- **Problema:** Em conexões HTTP não seguras (como o IP local `http://192.168.1.20:3000`), navegadores modernos desativam `crypto.randomUUID`.
+- **Solução:** Implementado polyfill global em `src/main.tsx` e função utilitária `generateUUID()` em `src/lib/utils.ts` compatível com a especificação RFC4122 v4.
 
-### E. Agenda de Serviços & Execução de Campo (`SchedulePage.tsx`)
-- **Exibição Concisa:** Equipe e equipamentos exibem os 2 primeiros itens e badge resumidor `+X` quando houver mais de dois alocados.
-- **Rateio por Operador e Equipamento:** Suporte para detalhar quanto cada operador e máquina executou em hectares (ex: 40 ha total -> 20 ha Operador A com Trator 1, 20 ha Operador B com Trator 2), persistido na tabela `service_executions`.
-- **Modal de Execução Inteligente:** Apresenta saldo restante em hectares e botões para **Salvar Execução Parcial** e **Salvar Total (Restante)**.
-- **Fluxo de Conclusão para o Financeiro:** Conclusões de pedidos exigem ação explícita ("Concluir / Enviar ao Financeiro"), permitindo encerramento parcial com valor proporcional e nota justificativa registrada no histórico.
-- **Filtros Completos:** Filtragem por Cliente, Fazenda, Serviço, Operador, Equipamento, Cidade, Estado, Status e busca textual.
-
-### F. Gabarito Agronômico & Análises Laboratoriais
-- **Definições Técnicas Oficiais Padronizadas:**
-  - `MACRO+S+P_REM`: Análise **COMPLETA** da camada superficial (0-20 cm) – Macronutrientes + Enxofre + P-Remanescente.
-  - `MACRO+S`: Análise em **PROFUNDIDADE** (20-40 cm) – Camada subsuperficial.
-  - `MACRO`: Análise **SIMPLES** (somente fertilidade básica).
-  - `ANALISE DE FOLIAR`: Análise de tecido foliar vegetal.
-- **Importação na Agenda (`SchedulePage.tsx`):**
-  - **Amostragem de Solo (AP):** Sugere automaticamente a quantidade total de pontos calculados na grade para `MACRO+S+P_REM` (ex: 41 amostras), 10% dos pontos para `MACRO+S` (ex: 4 amostras) e `0` para `MACRO` simples.
-  - **Conferência de Amostragem:** Sugere automaticamente `10` amostras de `MACRO+S+P_REM` e `1` amostra de `MACRO+S`.
-  - **Coleta Foliar:** Sugere `leafPoints` de `ANALISE DE FOLIAR`.
-  - Se as quantidades forem alteradas manualmente, o sistema aplica automaticamente a etiqueta **"Quantidade Alterada (Comercial)"** para alertar o financeiro e o laboratório.
-- **Módulo de Análises (`AnalysisPage.tsx` e `AnalysisModal.tsx`):** Tipos padronizados com rótulos explicativos e inclusão de análises em lote.
-
-### G. Financeiro & Fluxo de Caixa (`FinancialPage.tsx`)
-- **Máscara Monetária BRL:** Input de valor da baixa com máscara padrão brasileira (`.` milhar e `,` centavos) e botão rápido "Liquidar Saldo Total".
-- **Cálculo de Saldo Residual:** Modal de baixa calcula e informa em tempo real quanto restará a pagar no pedido.
-- **Aba Lançamentos (Entradas & Saídas):** Integrado `FinancialTransactionsTab.tsx` para gestão de fluxo de caixa operacional com categorias personalizadas, datas de vencimento/pagamento e status.
-- **Sincronização Automática:** Ao confirmar a baixa de um pedido, é gerado automaticamente um lançamento de entrada no fluxo de caixa.
-
-### H. Configurações, Equipamentos & RBAC
-- **Cabeçalho de PDFs:** Adicionada aba **Cabeçalho de PDFs** (`PdfHeaderTab.tsx`) para configuração corporativa de logo, dados fiscais e rodapé.
-- **Equipamentos (`EquipmentsTab.tsx`):** Tabela alinhada com as novas colunas Tipo (`Veículo`, `Ferramenta`, `Outro`) e Placa / Número de Série.
-- **Catálogo Oficial:** Removidos serviços legados (`pulverização` legado, `plantio`, `colheita`, `adubação`) em `usePlan.ts`, alinhando aos 8 serviços oficiais da empresa.
-- **RBAC (Permissões):** Perfis estruturados no `UserModal.tsx` e `useUser.ts` (Administrador, Gerente, Operador de Campo, Financeiro, Analista) com pré-preenchimento inteligente de permissões.
-- **Relatórios (`ReportsPage.tsx`):** Consolidação de produtividade por operador, uso de maquinário, volume por serviço e regionalização por cidade/estado com exportação em CSV.
+### E. Identidade Visual da Preciza
+- **Favicon Oficial:** Substituídos todos os ícones Lovable pelos arquivos SVG e ICO oficiais da Preciza Tecnologia no `index.html`.
+- **Metadados Limpos:** Título e metadados atualizados para "Preciza - Gestão Agronômica".
 
 ---
 
 ## 3. Estado dos Testes e Validação
 
 ### Frontend (`farm-flow-frontend`)
-- **Comando:** `$env:PATH = "C:\Users\User\AppData\Roaming\nvm\v20.20.2;" + $env:PATH; npm test -- --run`
-- **Status:** **13 suítes | 37 testes passando | 0 falhas**
+- **Comandos:**
+  ```powershell
+  $env:PATH = "C:\Users\User\AppData\Roaming\nvm\v20.20.2;" + $env:PATH;
+  npm test -- --run
+  ```
+- **Status:** **Suítes de testes passando sem regressões**, incluindo testes de recálculo bidirecional em `FarmForm.spec.tsx` e `PlotForm.spec.tsx`.
 
 ### Backend (`farm-flow-backend`)
-- **Comando:** `$env:PATH = "C:\Users\User\AppData\Roaming\nvm\v20.20.2;" + $env:PATH; npm --prefix "..\farm-flow-backend" test`
+- **Comando:**
+  ```powershell
+  $env:PATH = "C:\Users\User\AppData\Roaming\nvm\v20.20.2;" + $env:PATH;
+  npm --prefix "..\farm-flow-backend" test
+  ```
 - **Status:** **22 suítes | 97 testes passando | 0 falhas**
 
 ---
 
-## 4. Procedimentos de Inicialização do Ambiente
+## 4. Como Executar e Atualizar o Sistema
 
-Sempre que reiniciar o terminal ou abrir uma nova sessão:
-
+### A. Rodar Localmente (Desenvolvimento)
 ```powershell
 # 1. Configurar Node v20 via NVM no PATH
 $env:PATH = "C:\Users\User\AppData\Roaming\nvm\v20.20.2;" + $env:PATH;
 
-# 2. Garantir que o container do Postgres está ativo
+# 2. Iniciar container do Postgres local
 docker start postgres
 
-# 3. Iniciar o Backend (porta 3333)
+# 3. Iniciar Backend (porta 3333)
 npm --prefix "..\farm-flow-backend" run dev
 
-# 4. Iniciar o Frontend (porta 8080)
+# 4. Iniciar Frontend (porta 8080)
 npm run dev
+```
+
+### B. Atualizar o Servidor HP Local (`192.168.1.20`)
+```powershell
+# Acessar via SSH
+ssh sv1@192.168.1.20
+
+# Atualizar Frontend:
+cd ~/farm-flow-frontend
+git pull origin main
+docker build -t farm-flow-frontend:latest .
+docker stop farmflow-frontend && docker rm farmflow-frontend
+docker run -d --name farmflow-frontend -p 3000:80 --restart unless-stopped farm-flow-frontend:latest
+
+# Atualizar Backend (se houver mudanças):
+cd ~/farm-flow-backend
+git pull origin main
+npm run build
+docker restart farmflow-backend
 ```
 
 ---
 
 ## 5. Próximos Passos Sugeridos
 
-1. **Geração Direta de PDF via Servidor:**
-   - Adicionar geração direta de arquivos `.pdf` para o relatório consolidado e para a folha oficial de pedido (`OrderPrintDialog.tsx`) utilizando Puppeteer ou `jsPDF`/`html2pdf`.
-2. **Auditoria de Histórico de Pedidos:**
-   - Criar timeline visual registrando quem aprovou, editou, cancelou ou registrou rateios e baixas parciais.
-3. **Módulo de Estoque de Insumos & Amostras:**
-   - Controle de sacarias, caixas térmicas e reagentes químicos vinculados aos serviços de amostragem.
+1. **Geração Direta de PDF nos Relatórios:**
+   - Adicionar botão de exportação em PDF estruturado também nos Relatórios de Produtividade (`ReportsPage.tsx`).
+2. **Timeline de Auditoria de Pedidos:**
+   - Exibir na aba de detalhes do pedido uma linha do tempo com o histórico de alterações (criação, agendamento, execução parcial e liquidação financeira).
+3. **Controle de Estoque Físico de Amostras:**
+   - Rastreamento dos números de lacres e caixas de amostras de solo e foliar despachadas para o laboratório.
