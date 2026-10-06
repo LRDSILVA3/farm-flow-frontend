@@ -73,6 +73,18 @@ Servidor HP Local (Produção/Rede Local - sv1):
   - Criadas colunas faltantes em `orders` (`executions`, `schedules`, `payments`, `logs`, `executed_area`, `paid_amount`) e `equipment` (`serial_number`, `hourmeter`, `year`, `notes`).
   - Criadas tabelas operacionais `service_executions` e `financial_transactions`.
   - Corrigido o erro HTTP 500 no endpoint `GET /orders`.
+
+### E. Acesso Remoto Seguro (Túnel Cloudflare), Proxy Nginx & Manual do Usuário
+- **Acesso Online Unificado (Túnel Cloudflare):**
+  - Subido container `farmflow-tunnel` expondo o frontend via URL pública segura (`https://statistical-institutes-wood-somehow.trycloudflare.com`).
+  - Nginx configurado para fazer proxy reverso automático de todas as rotas da API (`/sessions`, `/users`, `/clients`, `/orders`, etc.) para o backend (`http://farmflow-backend:3333`) na rede Docker interna (`farm-flow-backend_default`).
+  - `src/services/api.ts` e `docker-compose.yml` ajustados para usar rotas relativas (`""`) em produção, eliminando erros de *Mixed Content* e permitindo login e uso de qualquer rede externa ou celular.
+- **Limpeza de Serviços & Ajustes de Interface:**
+  - Corrigido rótulo de "Novo Client" para "Novo Cliente" no formulário de produtores.
+  - Constatado que o serviço "Condutividade Elétrica" não existia na planilha `budget.xlsm` (serviço teste com 0 pedidos) e removido do PostgreSQL, dos seeds do backend e do catálogo padrão.
+- **Manual do Usuário Ilustrado:**
+  - Recapturadas todas as 16 telas e modais com layout renderizado e dados fiéis em produção (`docs/screens/`).
+  - Gerado `MANUAL_DO_USUARIO_PRECIZA.pdf` e `docs/MANUAL_DO_USUARIO_PRECIZA.html` completos para apresentação ao cliente.
 - **Seeds Oficiais:**
   - Executados seeds TypeORM no servidor cadastrando o usuário admin padrão, os 8 serviços oficiais validados e todas as variáveis de custo agronômico.
 
