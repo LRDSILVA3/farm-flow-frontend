@@ -52,3 +52,4 @@
 - [x] Deploy do Frontend Dockerizado no Servidor Local (HP sv1 - `192.168.1.20:3000`) com Nginx Alpine, roteamento SPA e conexão direta com a API do servidor (`192.168.1.20:3333`).
 - [x] Identidade Visual Preciza: Favicon SVG e ICO oficiais aplicados, metadados do Lovable removidos de `index.html`.
 - [x] Correção de Erro 500 em `/orders`: Migration `AddOrderFieldsEquipmentFieldsAndTransactions` executada, sincronizando colunas faltantes em `orders` (`executions`, `schedules`, etc.), `equipment` e tabelas financeiras/execuções.
+- [x] Compatibilidade HTTP/LAN: Polyfill global e utilitário `generateUUID` implementados para resolver `crypto.randomUUID is not a function` em acessos via IP de rede local não seguro (`http://192.168.1.20:3000`).
