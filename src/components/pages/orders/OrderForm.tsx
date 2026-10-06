@@ -418,18 +418,19 @@ export const OrderForm = ({
           {activeSpecializedService === "Amostragem de Solo (AP)" && (
             <SoilSamplingServiceForm
               initialAlqueires={
-                formData.productsData?.find((p: any) => p.id === 'servico_ap' || p.type === 'SERVICO_AP')?.quantity
+                editingOrder && formData.productsData?.find((p: any) => p.id === 'servico_ap' || p.type === 'SERVICO_AP')?.quantity
                   ? Number(formData.productsData.find((p: any) => p.id === 'servico_ap' || p.type === 'SERVICO_AP').quantity)
                   : calculatedAlqueires
               }
               initialNumPontos={
-                formData.productsData && formData.productsData.length > 0
+                editingOrder && formData.productsData && formData.productsData.length > 0
                   ? formData.productsData
                       .filter((p: any) => p.id === 'analises_completa' || p.id === 'analises_macro' || p.type === 'MACRO+S+P_REM' || p.type === 'MACRO')
-                      .reduce((sum: number, p: any) => sum + (parseInt(p.quantity?.toString() || "0") || 0), 0) || parseInt(formData.productsData?.[0]?.quantity?.toString() || "0")
+                      .reduce((sum: number, p: any) => sum + (parseInt(p.quantity?.toString() || "0") || 0), 0)
                   : 0
               }
-              initialProducts={formData.productsData}
+              initialProducts={editingOrder ? formData.productsData : undefined}
+              isEditing={!!editingOrder}
               onValuesChange={handleValuesChange}
               onAreaChange={(areaHa) => {
                 const cur = parseFloat(formData.area || "0") || 0;

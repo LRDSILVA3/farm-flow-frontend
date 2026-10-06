@@ -16,6 +16,7 @@ interface SoilSamplingServiceFormProps {
   initialAlqueires: number;
   initialNumPontos: number;
   initialProducts?: any[];
+  isEditing?: boolean;
   onValuesChange: (calculatedValue: number) => void;
   onAreaChange?: (areaHa: number) => void;
   onProductsChange?: (products: any[]) => void;
@@ -25,6 +26,7 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
   initialAlqueires,
   initialNumPontos,
   initialProducts,
+  isEditing = false,
   onValuesChange,
   onAreaChange,
   onProductsChange,
@@ -49,19 +51,24 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
   const [valorFechadoManual, setValorFechadoManual] = useState<number | null>(null);
 
   // Gabarito editável de distribuição de análises (INPUT DADOS Linhas 21-24)
+  // Em pedidos novos (!isEditing), inicia como null para seguir estritamente o sugerido da planilha
   const [customNumCompleta, setCustomNumCompleta] = useState<number | string | null>(() => {
+    if (!isEditing) return null;
     const found = initialProducts?.find((p: any) => p.id === 'analises_completa' || p.type === 'MACRO+S+P_REM');
     return found && typeof found.quantity === 'number' ? found.quantity : null;
   });
   const [customNumMacro, setCustomNumMacro] = useState<number | string | null>(() => {
+    if (!isEditing) return null;
     const found = initialProducts?.find((p: any) => p.id === 'analises_macro' || (p.type === 'MACRO' && p.id !== 'analises_completa'));
     return found && typeof found.quantity === 'number' ? found.quantity : null;
   });
   const [customNum20_40, setCustomNum20_40] = useState<number | string | null>(() => {
+    if (!isEditing) return null;
     const found = initialProducts?.find((p: any) => p.id === 'analises_20_40' || p.type === 'MACRO+S');
     return found && typeof found.quantity === 'number' ? found.quantity : null;
   });
   const [customNumFisicas, setCustomNumFisicas] = useState<number | string | null>(() => {
+    if (!isEditing) return null;
     const found = initialProducts?.find((p: any) => p.id === 'analise_fisica' || p.type === 'FISICA');
     return found && typeof found.quantity === 'number' ? found.quantity : null;
   });
@@ -88,9 +95,9 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
     onAreaChangeRef.current = onAreaChange;
   }, [onAreaChange]);
 
-  // Hidratar gabarito caso initialProducts seja alterado
+  // Hidratar gabarito caso initialProducts seja alterado (apenas na edição de pedido existente)
   useEffect(() => {
-    if (initialProducts && initialProducts.length > 0) {
+    if (isEditing && initialProducts && initialProducts.length > 0) {
       const fc = initialProducts.find((p: any) => p.id === 'analises_completa' || p.type === 'MACRO+S+P_REM');
       if (fc && typeof fc.quantity === 'number') setCustomNumCompleta(fc.quantity);
       const fm = initialProducts.find((p: any) => p.id === 'analises_macro' || (p.type === 'MACRO' && p.id !== 'analises_completa'));
@@ -104,7 +111,7 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
         setAlqueires(fAp.quantity);
       }
     }
-  }, [initialProducts]);
+  }, [isEditing, initialProducts]);
 
   const soilSamplingService = useMemo(() => {
     if (costVariables.length > 0) {
@@ -118,7 +125,14 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
     if (initialAlqueires > 0) {
       lastAreaHaRef.current = Number((initialAlqueires * 2.42).toFixed(2));
     }
-  }, [initialAlqueires]);
+    // Ao criar novo pedido ou alterar área inicial, resetar gabarito para seguir a planilha
+    if (!isEditing) {
+      setCustomNumCompleta(null);
+      setCustomNumMacro(null);
+      setCustomNum20_40(null);
+      setCustomNumFisicas(null);
+    }
+  }, [initialAlqueires, isEditing]);
 
   // Sincroniza a área do pedido com os alqueires digitados no modal
   useEffect(() => {
@@ -137,9 +151,11 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
       const formattedVencimento = vencimentoServico ? format(vencimentoServico, 'dd/MM/yyyy') : undefined;
       const alq = alqueires === null ? 0 : alqueires;
 
-      // Sugestão mínima de pontos se não informado
+      // Sugestão mínima de pontos se não informado (alinhado com planilha B15)
       const defaultPoints =
-        numPontos === null ? (alq < 5 ? Math.floor(alq) + 1 : Math.floor((alq * 2.42) / 3) + 1) : numPontos;
+        numPontos === null
+          ? (alq <= 0 ? 0 : alq < 5 ? Math.floor(alq) + 1 : alq < 10 ? Math.floor((alq * 2.42) / 2.5) + 1 : Math.floor((alq * 2.42) / 3) + 1)
+          : numPontos;
 
       const result = soilSamplingService.calculate({
         isReanalise,
