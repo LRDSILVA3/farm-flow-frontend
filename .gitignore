@@ -26,3 +26,7 @@ dist-ssr
 # Serena & Supabase temp
 .serena/
 supabase/.temp/
+
+# Arquivo de Acessos e Infraestrutura Local (Segredo)
+INFRAESTRUTURA_E_ACESSOS.md
+*.credentials*
