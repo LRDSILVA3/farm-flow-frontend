@@ -59,15 +59,6 @@ export const useAuth = () => {
     };
   }, [initAuth]);
 
-  const signUp = async (email: string, password: string, name: string) => {
-    try {
-      const created = await api.post<any>('/users', { name, email, password });
-      return { data: { user: created }, error: null };
-    } catch (err: any) {
-      return { data: null, error: err };
-    }
-  };
-
   const signIn = async (email: string, password: string) => {
     try {
       const res = await api.post<{ user: any; token: string }>('/sessions', {
@@ -112,7 +103,6 @@ export const useAuth = () => {
     profile,
     loading,
     signIn,
-    signUp,
     signOut,
     refreshAuth: initAuth,
   };
