@@ -201,8 +201,8 @@ export const OrderForm = ({
               <div key={index} className="grid grid-cols-4 gap-2 items-end">
                 <div>
                   <Label>Produto</Label>
-                  <Select 
-                    value={product.id} 
+                  <Select
+                    value={product.id}
                     onValueChange={(value) => {
                       const selectedProduct = availableProducts.find(p => p.id === value);
                       updateProduct(index, "id", value);
@@ -322,7 +322,7 @@ export const OrderForm = ({
               </div>
             </div>
           )}
-          
+
           <div>
             <Label htmlFor="type">Tipo do Pedido / Serviço</Label>
             <Select
@@ -353,7 +353,7 @@ export const OrderForm = ({
           </div>
 
           {renderFieldsByType()}
-          
+
           {formData.type === "Serviço" && Boolean(formData.serviceName) && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -434,8 +434,8 @@ export const OrderForm = ({
               initialNumPontos={
                 editingOrder && formData.productsData && formData.productsData.length > 0
                   ? formData.productsData
-                      .filter((p: any) => p.id === 'analises_completa' || p.id === 'analises_macro' || p.type === 'MACRO+S+P_REM' || p.type === 'MACRO')
-                      .reduce((sum: number, p: any) => sum + (parseInt(p.quantity?.toString() || "0") || 0), 0)
+                    .filter((p: any) => p.id === 'analises_completa' || p.id === 'analises_macro' || p.type === 'MACRO+S+P_REM' || p.type === 'MACRO')
+                    .reduce((sum: number, p: any) => sum + (parseInt(p.quantity?.toString() || "0") || 0), 0)
                   : 0
               }
               initialProducts={editingOrder ? formData.productsData : undefined}
@@ -477,7 +477,7 @@ export const OrderForm = ({
               />
             </div>
           )}
-          
+
           {editingOrder && (
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -509,8 +509,8 @@ export const OrderForm = ({
               </div>
             </div>
           )}
-          
-          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4 border-t">
+
+          <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 pb-1 border-t mt-2">
             <Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-auto">
               Cancelar
             </Button>

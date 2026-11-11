@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useSafeQueryClient } from "@/hooks/useSafeQueryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,21 +17,36 @@ import {
   Clock,
   AlertCircle,
   XCircle,
-  Sparkles,
 } from "lucide-react";
 import { useCounterAnimation } from "@/hooks/useCounterAnimation";
 import { api } from "@/services/api";
 
-const AnimatedValue = ({ value, prefix = "", suffix = "" }: { value: number; prefix?: string; suffix?: string }) => {
-  const animatedCount = useCounterAnimation(value, 2000);
-  
+const AnimatedValue = ({
+  value,
+  prefix = "",
+  suffix = "",
+  decimals = 0,
+}: {
+  value: number;
+  prefix?: string;
+  suffix?: string;
+  decimals?: number;
+}) => {
+  const animatedCount = useCounterAnimation(Math.round(value * Math.pow(10, decimals)), 1500);
+  const displayValue = decimals > 0 ? animatedCount / Math.pow(10, decimals) : animatedCount;
+
   const formatNumber = (num: number) => {
-    return num.toLocaleString('pt-BR');
+    return num.toLocaleString("pt-BR", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
   };
 
   return (
     <span>
-      {prefix}{formatNumber(animatedCount)}{suffix}
+      {prefix}
+      {formatNumber(displayValue)}
+      {suffix}
     </span>
   );
 };
@@ -60,120 +77,115 @@ interface OrderItem {
 
 interface DashboardHomeProps {
   onNavigate?: (pageId: string) => void;
+  canNavigate?: (pageId: string) => boolean;
 }
 
-const DashboardHome = ({ onNavigate }: DashboardHomeProps) => {
-  const [stats, setStats] = useState<DashboardStats>({
-    activeClients: 0,
-    registeredFarms: 0,
-    pendingOrders: 0,
-    scheduledExecutions: 0,
-    monthlyRevenue: 0,
-    workedHectares: 0
-  });
-  const [recentActivities, setRecentActivities] = useState<any[]>([]);
-  const [upcomingExecutions, setUpcomingExecutions] = useState<any[]>([]);
-  const [recentOrders, setRecentOrders] = useState<OrderItem[]>([]);
-  const [statusDistribution, setStatusDistribution] = useState<{
-    concluidos: number;
-    emAndamento: number;
-    pendentes: number;
-    cancelados: number;
-    total: number;
-  }>({ concluidos: 0, emAndamento: 0, pendentes: 0, cancelados: 0, total: 0 });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
-    try {
+const DashboardHome = ({ onNavigate, canNavigate = () => true }: DashboardHomeProps) => {
+  const queryClient = useSafeQueryClient();
+  const { data: rawData } = useQuery({
+    queryKey: ["dashboard-summary"],
+    queryFn: async () => {
       const [clients, farms, orders] = await Promise.all([
-        api.get<any[]>('/clients').catch(() => []),
-        api.get<any[]>('/farms').catch(() => []),
-        api.get<any[]>('/orders').catch(() => []),
+        api.get<any[]>("/clients").catch(() => []),
+        api.get<any[]>("/farms").catch(() => []),
+        api.get<any[]>("/orders").catch(() => []),
       ]);
+      return {
+        clients: Array.isArray(clients) ? clients : [],
+        farms: Array.isArray(farms) ? farms : [],
+        orders: Array.isArray(orders) ? (orders as OrderItem[]) : [],
+      };
+    },
+  }, queryClient);
 
-      const clientsList = Array.isArray(clients) ? clients : [];
-      const farmsList = Array.isArray(farms) ? farms : [];
-      const ordersList: OrderItem[] = Array.isArray(orders) ? orders : [];
+  const {
+    stats,
+    recentActivities,
+    upcomingExecutions,
+    recentOrders,
+    statusDistribution,
+  } = useMemo(() => {
+    const clientsList = rawData?.clients || [];
+    const farmsList = rawData?.farms || [];
+    const ordersList = rawData?.orders || [];
 
-      const pendingOrdersCount = ordersList.filter(o => o.status === 'Pendente' || o.status === 'Pending').length;
-      const concluidosCount = ordersList.filter(o => o.status === 'Concluído' || o.status === 'Concluido').length;
-      const emAndamentoCount = ordersList.filter(o => o.status === 'Em Andamento' || o.status === 'Aprovado').length;
-      const canceladosCount = ordersList.filter(o => o.status === 'Cancelado').length;
-      
-      let scheduledCount = 0;
-      let upcomingList: any[] = [];
-      ordersList.forEach(order => {
+    const pendingOrdersCount = ordersList.filter(
+      (o) => o.status === "Pendente" || o.status === "Pending"
+    ).length;
+    const concluidosCount = ordersList.filter(
+      (o) => o.status === "Concluído" || o.status === "Concluido"
+    ).length;
+    const emAndamentoCount = ordersList.filter(
+      (o) => o.status === "Em Andamento" || o.status === "Aprovado"
+    ).length;
+    const canceladosCount = ordersList.filter((o) => o.status === "Cancelado").length;
+
+    let scheduledCount = 0;
+    const upcomingList: any[] = [];
+    ordersList
+      .filter((o) => o.status !== "Cancelado")
+      .forEach((order) => {
         const scheds = Array.isArray((order as any).schedules) ? (order as any).schedules : [];
         scheduledCount += scheds.length;
         scheds.forEach((s: any) => {
+          const areaNum = Number(order.area) || 0;
           upcomingList.push({
             id: s.id || Math.random().toString(),
-            service: order.service_name || order.type || 'Serviço',
-            area: order.area ? `${order.area} ha` : '-',
-            farmName: order.farm?.name || 'Fazenda',
-            date: s.scheduledDate ? new Date(s.scheduledDate).toLocaleDateString('pt-BR') : 'A definir'
+            service: order.service_name || order.type || "Serviço",
+            area: areaNum > 0 ? `${areaNum.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ha` : "-",
+            farmName: order.farm?.name || "Fazenda",
+            date: s.scheduledDate ? new Date(s.scheduledDate).toLocaleDateString("pt-BR") : "A definir",
           });
         });
       });
 
-      const totalRevenue = ordersList
-        .filter(o => o.status === 'Concluído' || o.payment === 'Pago')
-        .reduce((sum, o) => sum + (Number(o.value) || 0), 0);
+    const totalRevenue = ordersList
+      .filter((o) => o.status !== "Cancelado" && (o.status === "Concluído" || o.payment === "Pago"))
+      .reduce((sum, o) => sum + (Number(o.value) || 0), 0);
 
-      const totalHectares = ordersList
-        .reduce((sum, o) => sum + (Number(o.executed_area) || 0), 0);
+    const totalHectares = ordersList
+      .filter((o) => o.status !== "Cancelado")
+      .reduce((sum, o) => sum + (Number(o.executed_area) || 0), 0);
 
-      setStats({
+    return {
+      stats: {
         activeClients: clientsList.length,
         registeredFarms: farmsList.length,
         pendingOrders: pendingOrdersCount,
         scheduledExecutions: scheduledCount,
         monthlyRevenue: totalRevenue,
-        workedHectares: Math.round(totalHectares * 10) / 10
-      });
-
-      setStatusDistribution({
+        workedHectares: Math.round(totalHectares * 10) / 10,
+      },
+      statusDistribution: {
         concluidos: concluidosCount,
         emAndamento: emAndamentoCount,
         pendentes: pendingOrdersCount,
         cancelados: canceladosCount,
-        total: ordersList.length
-      });
-
-      // Recent activities (recent clients or updates)
-      setRecentActivities(clientsList.slice(0, 5).map(c => ({
-        action: `Novo cliente: ${c.name}`,
-        time: c.created_at ? new Date(c.created_at).toLocaleDateString('pt-BR') : 'Recentemente',
-        user: c.name
-      })));
-
-      setUpcomingExecutions(upcomingList.slice(0, 4));
-      setRecentOrders(ordersList.slice(0, 5));
-
-    } catch (error) {
-      console.error("Erro ao carregar dados do dashboard:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+        total: ordersList.length,
+      },
+      recentActivities: clientsList.slice(0, 5).map((c) => ({
+        action: c.name,
+        time: c.created_at ? new Date(c.created_at).toLocaleDateString("pt-BR") : "Recentemente",
+        user: c.name,
+      })),
+      upcomingExecutions: upcomingList.slice(0, 4),
+      recentOrders: ordersList.slice(0, 5),
+    };
+  }, [rawData]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "Concluído":
       case "Concluido":
-        return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border-none font-medium">Concluído</Badge>;
+        return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border-none font-medium whitespace-nowrap">Concluído</Badge>;
       case "Em Andamento":
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 border-none font-medium">Em Andamento</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 border-none font-medium whitespace-nowrap">Em Andamento</Badge>;
       case "Aprovado":
-        return <Badge className="bg-indigo-100 text-indigo-800 hover:bg-indigo-200 border-none font-medium">Aprovado</Badge>;
+        return <Badge className="bg-indigo-100 text-indigo-800 hover:bg-indigo-200 border-none font-medium whitespace-nowrap">Aprovado</Badge>;
       case "Cancelado":
-        return <Badge className="bg-rose-100 text-rose-800 hover:bg-rose-200 border-none font-medium">Cancelado</Badge>;
+        return <Badge className="bg-rose-100 text-rose-800 hover:bg-rose-200 border-none font-medium whitespace-nowrap">Cancelado</Badge>;
       default:
-        return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200 border-none font-medium">Pendente</Badge>;
+        return <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200 border-none font-medium whitespace-nowrap">Pendente</Badge>;
     }
   };
 
@@ -214,6 +226,7 @@ const DashboardHome = ({ onNavigate }: DashboardHomeProps) => {
       title: "Faturamento Real",
       value: stats.monthlyRevenue,
       prefix: "R$ ",
+      decimals: 2,
       description: "Pedidos concluídos / pagos",
       icon: DollarSign,
       color: "text-emerald-600",
@@ -239,7 +252,7 @@ const DashboardHome = ({ onNavigate }: DashboardHomeProps) => {
           <p className="text-sm text-slate-500 mt-0.5">Visão geral em tempo real da Preciza Agricultura de Precisão</p>
         </div>
         <div className="flex items-center gap-2">
-          {onNavigate && (
+          {onNavigate && canNavigate("orders") && (
             <Button
               onClick={() => onNavigate("orders")}
               className="bg-green-700 hover:bg-green-800 text-white shadow-sm gap-2"
@@ -263,10 +276,11 @@ const DashboardHome = ({ onNavigate }: DashboardHomeProps) => {
             </CardHeader>
             <CardContent>
               <div className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                <AnimatedValue 
-                  value={card.value} 
-                  prefix={card.prefix || ""} 
-                  suffix={card.suffix || ""} 
+                <AnimatedValue
+                  value={card.value}
+                  prefix={card.prefix || ""}
+                  suffix={card.suffix || ""}
+                  decimals={(card as any).decimals || 0}
                 />
               </div>
               <p className="text-xs text-slate-500 mt-1 truncate">{card.description}</p>
@@ -285,7 +299,7 @@ const DashboardHome = ({ onNavigate }: DashboardHomeProps) => {
                 <CardTitle className="text-base font-semibold text-slate-900">Atividades Recentes</CardTitle>
                 <CardDescription className="text-xs text-slate-500">Últimos clientes cadastrados</CardDescription>
               </div>
-              {onNavigate && (
+              {onNavigate && canNavigate("customers") && (
                 <Button variant="ghost" size="sm" onClick={() => onNavigate("customers")} className="text-xs text-green-700 hover:text-green-800 p-0 h-auto font-medium">
                   Ver clientes <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
@@ -303,7 +317,10 @@ const DashboardHome = ({ onNavigate }: DashboardHomeProps) => {
                       <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 font-semibold text-xs flex items-center justify-center shrink-0">
                         {activity.user ? activity.user.slice(0, 2).toUpperCase() : "CL"}
                       </div>
-                      <span className="font-medium text-slate-800 truncate">{activity.action}</span>
+                      <div className="min-w-0">
+                        <p className="font-medium text-slate-800 truncate">{activity.action}</p>
+                        <p className="text-[11px] text-slate-500">Cliente cadastrado</p>
+                      </div>
                     </div>
                     <span className="text-slate-400 text-xs shrink-0 ml-2">{activity.time}</span>
                   </div>
@@ -321,7 +338,7 @@ const DashboardHome = ({ onNavigate }: DashboardHomeProps) => {
                 <CardTitle className="text-base font-semibold text-slate-900">Próximas Execuções</CardTitle>
                 <CardDescription className="text-xs text-slate-500">Serviços agendados no campo</CardDescription>
               </div>
-              {onNavigate && (
+              {onNavigate && canNavigate("schedule") && (
                 <Button variant="ghost" size="sm" onClick={() => onNavigate("schedule")} className="text-xs text-purple-700 hover:text-purple-800 p-0 h-auto font-medium">
                   Ver agenda <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
@@ -384,27 +401,33 @@ const DashboardHome = ({ onNavigate }: DashboardHomeProps) => {
             </div>
 
             {/* Quick Actions Shortcuts */}
-            <div className="pt-2 border-t border-slate-100 space-y-2">
-              <span className="text-xs font-semibold text-slate-500 block">Atalhos Operacionais</span>
-              <div className="grid grid-cols-2 gap-2">
-                {onNavigate && (
-                  <>
+            {onNavigate && (["customers", "farms", "schedule", "financial"].some((p) => canNavigate(p))) && (
+              <div className="pt-2 border-t border-slate-100 space-y-2">
+                <span className="text-xs font-semibold text-slate-500 block">Atalhos Operacionais</span>
+                <div className="grid grid-cols-2 gap-2">
+                  {canNavigate("customers") && (
                     <Button variant="outline" size="sm" onClick={() => onNavigate("customers")} className="text-xs justify-start h-8">
                       <Users className="h-3.5 w-3.5 mr-1.5 text-blue-600" /> + Cliente
                     </Button>
+                  )}
+                  {canNavigate("farms") && (
                     <Button variant="outline" size="sm" onClick={() => onNavigate("farms")} className="text-xs justify-start h-8">
                       <MapPin className="h-3.5 w-3.5 mr-1.5 text-green-600" /> + Fazenda
                     </Button>
+                  )}
+                  {canNavigate("schedule") && (
                     <Button variant="outline" size="sm" onClick={() => onNavigate("schedule")} className="text-xs justify-start h-8">
                       <Calendar className="h-3.5 w-3.5 mr-1.5 text-purple-600" /> Agenda
                     </Button>
+                  )}
+                  {canNavigate("financial") && (
                     <Button variant="outline" size="sm" onClick={() => onNavigate("financial")} className="text-xs justify-start h-8">
                       <DollarSign className="h-3.5 w-3.5 mr-1.5 text-emerald-600" /> Financeiro
                     </Button>
-                  </>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -417,7 +440,7 @@ const DashboardHome = ({ onNavigate }: DashboardHomeProps) => {
               <CardTitle className="text-base font-semibold text-slate-900">Últimos Pedidos Cadastrados</CardTitle>
               <CardDescription className="text-xs text-slate-500">Acompanhamento rápido de serviços recentes</CardDescription>
             </div>
-            {onNavigate && (
+            {onNavigate && canNavigate("orders") && (
               <Button variant="outline" size="sm" onClick={() => onNavigate("orders")} className="text-xs gap-1.5 font-medium">
                 Ver todos os pedidos <ArrowRight className="h-3.5 w-3.5" />
               </Button>
@@ -428,34 +451,63 @@ const DashboardHome = ({ onNavigate }: DashboardHomeProps) => {
           {recentOrders.length === 0 ? (
             <p className="text-center text-slate-400 py-6 text-sm">Nenhum pedido encontrado</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs sm:text-sm text-left">
-                <thead>
-                  <tr className="border-b border-slate-100 text-slate-400 text-xs font-medium">
-                    <th className="pb-2">Cliente</th>
-                    <th className="pb-2">Fazenda</th>
-                    <th className="pb-2">Serviço</th>
-                    <th className="pb-2">Área Total</th>
-                    <th className="pb-2">Valor</th>
-                    <th className="pb-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {recentOrders.map((order) => (
-                    <tr key={order.id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="py-2.5 font-medium text-slate-800">{order.client?.name || "-"}</td>
-                      <td className="py-2.5 text-slate-600">{order.farm?.name || "-"}</td>
-                      <td className="py-2.5 text-slate-700 font-medium">{order.service_name || order.type || "-"}</td>
-                      <td className="py-2.5 text-slate-600">{order.area ? `${order.area} ha` : "-"}</td>
-                      <td className="py-2.5 font-semibold text-slate-900">
-                        {order.value ? `R$ ${Number(order.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : "R$ 0,00"}
-                      </td>
-                      <td className="py-2.5">{getStatusBadge(order.status)}</td>
+            <>
+              {/* Visão Mobile em Cards */}
+              <div className="space-y-3 md:hidden">
+                {recentOrders.map((order) => (
+                  <div key={order.id} className="p-3 rounded-lg border border-slate-200 bg-slate-50/60 space-y-2 text-xs">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-slate-900 truncate">{order.client?.name || "-"}</p>
+                        <p className="text-slate-500 truncate">{order.farm?.name || "-"}</p>
+                      </div>
+                      {getStatusBadge(order.status)}
+                    </div>
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-200/70">
+                      <span className="text-slate-700 font-medium">{order.service_name || order.type || "-"}</span>
+                      <span className="text-slate-500">
+                        {order.area ? `${Number(order.area).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ha` : "-"}
+                      </span>
+                    </div>
+                    <div className="flex justify-end font-bold text-slate-900 text-sm">
+                      {order.value ? `R$ ${Number(order.value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ 0,00"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Visão Desktop em Tabela */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-xs sm:text-sm text-left">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-slate-400 text-xs font-medium">
+                      <th className="pb-2">Cliente</th>
+                      <th className="pb-2">Fazenda</th>
+                      <th className="pb-2">Serviço</th>
+                      <th className="pb-2">Área Total</th>
+                      <th className="pb-2">Valor</th>
+                      <th className="pb-2">Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {recentOrders.map((order) => (
+                      <tr key={order.id} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-2.5 font-medium text-slate-800">{order.client?.name || "-"}</td>
+                        <td className="py-2.5 text-slate-600">{order.farm?.name || "-"}</td>
+                        <td className="py-2.5 text-slate-700 font-medium">{order.service_name || order.type || "-"}</td>
+                        <td className="py-2.5 text-slate-600 whitespace-nowrap">
+                          {order.area ? `${Number(order.area).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ha` : "-"}
+                        </td>
+                        <td className="py-2.5 font-semibold text-slate-900 whitespace-nowrap">
+                          {order.value ? `R$ ${Number(order.value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` : "R$ 0,00"}
+                        </td>
+                        <td className="py-2.5">{getStatusBadge(order.status)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

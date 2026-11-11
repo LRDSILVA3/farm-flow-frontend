@@ -13,6 +13,7 @@ import { Client } from '@/hooks/useClients';
 import { Farm } from '@/hooks/useFarms';
 import { Printer, Edit2, Plus, Trash2, Download, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { formatDateBR } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -567,7 +568,7 @@ export const OrderPrintDialog: React.FC<OrderPrintDialogProps> = ({
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>CGC/CPF..................: <span className="font-normal">{client?.cpf || '-'}</span></div>
-                <div>Nascimento: <span className="font-normal">{client?.birthDate || '-'}</span></div>
+                <div>Nascimento: <span className="font-normal">{formatDateBR(client?.birthDate)}</span></div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>Inscr. Estadual.....: <span className="font-normal">{client?.cadPro || '-'}</span></div>
@@ -768,13 +769,13 @@ export const OrderPrintDialog: React.FC<OrderPrintDialogProps> = ({
                 </tbody>
                 <tfoot>
                   <tr className="bg-gray-100 font-bold border-t-2 border-black text-xs">
-                    <td colSpan={2} className="border-r border-black p-1.5 text-center text-sm">
-                      {formatBRL(unitPriceFooter)}
-                    </td>
-                    <td className="border-r border-black p-1.5 text-right px-2 text-sm tracking-wider">
+                    <td colSpan={3} className="border-r border-black p-1.5 text-right px-2 text-sm tracking-wider">
                       TOTAL
                     </td>
-                    <td colSpan={2} className="p-1.5 text-right px-2 text-base text-black">
+                    <td className="border-r border-black p-1.5 text-right px-2 text-sm">
+                      {formatBRL(unitPriceFooter)}
+                    </td>
+                    <td className="p-1.5 text-right px-2 text-base text-black">
                       {formatBRL(finalDisplayedTotal)}
                     </td>
                   </tr>

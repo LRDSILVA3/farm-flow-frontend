@@ -437,6 +437,7 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
             <Input
               id="ap-alqueires"
               type="number"
+              step="any"
               value={alqueires === null ? '' : alqueires}
               onChange={(e) => {
                 const value = e.target.value;
@@ -547,9 +548,12 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
           </Label>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             <div className="flex items-center space-x-2">
-              <Switch id="ap-corretiva" checked={true} disabled />
-              <Label htmlFor="ap-corretiva" className="text-xs text-muted-foreground cursor-not-allowed">
-                Adubação Corretiva <span className="font-medium text-foreground">(Incluso - R$ 52,30)</span>
+              <Switch id="ap-corretiva" checked={true} disabled className="data-[state=checked]:bg-emerald-600 disabled:opacity-90" />
+              <Label htmlFor="ap-corretiva" className="text-xs leading-snug">
+                Adubação Corretiva{" "}
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold text-[10px] whitespace-nowrap">
+                  Incluso - R$ 52,30
+                </span>
               </Label>
             </div>
             <div className="flex items-center space-x-2">

@@ -33,7 +33,7 @@ export const DEFAULT_PDF_HEADER: PdfHeaderConfig = {
   cityState: "CORBÉLIA - PARANÁ",
   cep: "85.420-000",
   versionCode: "Versão: 45791",
-  footerNotes: "Orçamento válido por 15 dias. Condições comerciais sujeitas a alteração sem aviso prévio.",
+  footerNotes: "Orçamento válido por 60 dias. Condições comerciais sujeitas a alteração sem aviso prévio.",
   logoUrl: ""
 };
 
@@ -105,10 +105,6 @@ export const PdfHeaderTab: React.FC = () => {
           <Button variant="outline" size="sm" onClick={handleReset} className="gap-1">
             <RotateCcw className="h-4 w-4" />
             Restaurar Padrão
-          </Button>
-          <Button size="sm" onClick={handleSave} className="bg-green-600 hover:bg-green-700 gap-1.5 shadow-sm">
-            <Save className="h-4 w-4" />
-            Salvar Cabeçalho
           </Button>
         </div>
       </div>

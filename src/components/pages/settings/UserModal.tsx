@@ -1,9 +1,15 @@
-
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Eye, EyeOff } from "lucide-react";
+import {
+  AVAILABLE_PERMISSIONS,
+  PermissionKey,
+  ROLE_OPTIONS,
+} from "@/constants/permissions";
 import { User } from "./useUser";
 
 interface UserModalProps {
@@ -14,20 +20,11 @@ interface UserModalProps {
   handleUserSubmit: (e: React.FormEvent) => void;
   resetUserForm: () => void;
   handleUserInputChange: (field: keyof User, value: string | string[]) => void;
-  handlePermissionChange: (permission: string, checked: boolean) => void;
+  handleRoleChange: (role: string) => void;
+  handlePermissionChange: (permission: PermissionKey, checked: boolean) => void;
+  handleSelectAllPermissions: () => void;
+  handleClearPermissions: () => void;
 }
-
-const availablePermissions = [
-  { id: "dashboard", name: "Dashboard" },
-  { id: "farms", name: "Fazendas" },
-  { id: "orders", name: "Pedidos" },
-  { id: "schedule", name: "Agenda" },
-  { id: "analysis", name: "Análises" },
-  { id: "financial", name: "Financeiro" },
-  { id: "customers", name: "Clientes" },
-  { id: "reports", name: "Relatórios & Auditoria" },
-  { id: "settings", name: "Configurações" }
-];
 
 export const UserModal: React.FC<UserModalProps> = ({
   showUserForm,
@@ -37,22 +34,46 @@ export const UserModal: React.FC<UserModalProps> = ({
   handleUserSubmit,
   resetUserForm,
   handleUserInputChange,
-  handlePermissionChange
+  handleRoleChange,
+  handlePermissionChange,
+  handleSelectAllPermissions,
+  handleClearPermissions,
 }) => {
+  const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (!showUserForm) {
+      setShowPassword(false);
+    }
+  }, [showUserForm]);
+
   return (
-    <Dialog open={showUserForm} onOpenChange={setShowUserForm}>
-      <DialogContent className="max-w-4xl">
+    <Dialog
+      open={showUserForm}
+      onOpenChange={(open) => {
+        if (!open) {
+          resetUserForm();
+        } else {
+          setShowUserForm(true);
+        }
+      }}
+    >
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {editingUser ? "Editar Usuário" : "Novo Usuário"}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Gerenciar dados de acesso, cargo, status e permissões do usuário
+          </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleUserSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleUserSubmit} autoComplete="off" className="space-y-4 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="userName">Nome Completo</Label>
               <Input
                 id="userName"
+                autoComplete="off"
                 value={userFormData.name}
                 onChange={(e) => handleUserInputChange("name", e.target.value)}
                 required
@@ -63,14 +84,43 @@ export const UserModal: React.FC<UserModalProps> = ({
               <Input
                 id="userEmail"
                 type="email"
+                autoComplete="off"
                 value={userFormData.email}
                 onChange={(e) => handleUserInputChange("email", e.target.value)}
                 required
               />
             </div>
           </div>
-          
-          <div className="grid grid-cols-2 gap-4">
+
+          <div>
+            <Label htmlFor="userPassword">
+              {editingUser ? "Nova Senha (opcional)" : "Senha de Acesso"}
+            </Label>
+            <div className="relative">
+              <Input
+                id="userPassword"
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                value={userFormData.password || ""}
+                onChange={(e) => handleUserInputChange("password", e.target.value)}
+                placeholder={editingUser ? "Deixe em branco para manter a senha atual" : "Mínimo 6 caracteres"}
+                required={!editingUser}
+                minLength={editingUser ? undefined : 6}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                aria-label={showPassword ? "Ocultar caracteres" : "Exibir caracteres"}
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="userPhone">Telefone</Label>
               <Input
@@ -82,25 +132,28 @@ export const UserModal: React.FC<UserModalProps> = ({
             </div>
             <div>
               <Label htmlFor="userRole">Cargo</Label>
-              <Select value={userFormData.role} onValueChange={(value) => handleUserInputChange("role", value)}>
-                <SelectTrigger>
+              <Select value={userFormData.role} onValueChange={handleRoleChange}>
+                <SelectTrigger id="userRole">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Administrador">Administrador</SelectItem>
-                  <SelectItem value="Gerente">Gerente</SelectItem>
-                  <SelectItem value="Operador de Campo">Operador de Campo</SelectItem>
-                  <SelectItem value="Financeiro">Financeiro</SelectItem>
-                  <SelectItem value="Analista">Analista</SelectItem>
+                  {ROLE_OPTIONS.map((roleName) => (
+                    <SelectItem key={roleName} value={roleName}>
+                      {roleName}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Ao alterar o cargo, o perfil padrão de permissões é preenchido automaticamente.
+              </p>
             </div>
           </div>
 
           <div>
             <Label htmlFor="userStatus">Status</Label>
             <Select value={userFormData.status} onValueChange={(value) => handleUserInputChange("status", value)}>
-              <SelectTrigger>
+              <SelectTrigger id="userStatus">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -110,10 +163,32 @@ export const UserModal: React.FC<UserModalProps> = ({
             </Select>
           </div>
 
-          <div>
-            <Label>Permissões</Label>
-            <div className="grid grid-cols-2 gap-4 mt-2">
-              {availablePermissions.map((permission) => (
+          <div className="space-y-2 border rounded-lg p-3 bg-slate-50/70">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Label className="font-semibold">Permissões de Acesso aos Módulos</Label>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs text-green-700 hover:text-green-800"
+                  onClick={handleSelectAllPermissions}
+                >
+                  Selecionar Todas
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs text-slate-600 hover:text-slate-900"
+                  onClick={handleClearPermissions}
+                >
+                  Limpar
+                </Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-1">
+              {AVAILABLE_PERMISSIONS.map((permission) => (
                 <div key={permission.id} className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -122,15 +197,15 @@ export const UserModal: React.FC<UserModalProps> = ({
                     onChange={(e) => handlePermissionChange(permission.id, e.target.checked)}
                     className="rounded border-gray-300"
                   />
-                  <Label htmlFor={`permission-${permission.id}`} className="text-sm font-normal">
+                  <Label htmlFor={`permission-${permission.id}`} className="text-sm font-normal cursor-pointer">
                     {permission.name}
                   </Label>
                 </div>
               ))}
             </div>
           </div>
-          
-          <div className="flex justify-end space-x-2">
+
+          <div className="flex justify-end space-x-2 pt-4 border-t">
             <Button type="button" variant="outline" onClick={resetUserForm}>
               Cancelar
             </Button>

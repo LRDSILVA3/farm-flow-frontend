@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { IMaskInput } from "react-imask";
 import { CityStateSelect } from "@/components/pages/farms/CityStateSelect";
 import { useToast } from "@/hooks/use-toast";
@@ -10,28 +10,59 @@ import { Client } from "../../../hooks/useClients";
 import { AlertCircle } from "lucide-react";
 
 interface CustomersFormProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   editingClient: Client | null;
   onSave: (Client: Omit<Client, 'id'>) => void;
   onUpdate: (Client: Client) => void;
   onCancel: () => void;
 }
 
-export const CustomersForm = ({ editingClient, onSave, onUpdate, onCancel }: CustomersFormProps) => {
+const EMPTY_CLIENT_FORM = {
+  cpf: "",
+  name: "",
+  birthDate: "",
+  email: "",
+  phone: "",
+  zipCode: "",
+  city: "",
+  state: "",
+  cadPro: ""
+};
+
+export const CustomersForm = ({
+  open,
+  onOpenChange,
+  editingClient,
+  onSave,
+  onUpdate,
+  onCancel
+}: CustomersFormProps) => {
   const { toast } = useToast();
 
-  const [formData, setFormData] = useState({
-    cpf: editingClient?.cpf || "",
-    name: editingClient?.name || "",
-    birthDate: editingClient?.birthDate || "",
-    email: editingClient?.email || "",
-    phone: editingClient?.phone || "",
-    zipCode: editingClient?.zipCode || "",
-    city: editingClient?.city || "",
-    state: editingClient?.state || "",
-    cadPro: editingClient?.cadPro || ""
-  });
-
+  const [formData, setFormData] = useState({ ...EMPTY_CLIENT_FORM });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (open) {
+      if (editingClient) {
+        setFormData({
+          cpf: editingClient.cpf || "",
+          name: editingClient.name || "",
+          birthDate: editingClient.birthDate || "",
+          email: editingClient.email || "",
+          phone: editingClient.phone || "",
+          zipCode: editingClient.zipCode || "",
+          city: editingClient.city || "",
+          state: editingClient.state || "",
+          cadPro: editingClient.cadPro || ""
+        });
+      } else {
+        setFormData({ ...EMPTY_CLIENT_FORM });
+      }
+      setErrors({});
+    }
+  }, [open, editingClient]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -90,12 +121,15 @@ export const CustomersForm = ({ editingClient, onSave, onUpdate, onCancel }: Cus
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{editingClient ? "Editar Cliente" : "Novo Cliente"}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{editingClient ? "Editar Cliente" : "Novo Cliente"}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {editingClient ? "Formulário para atualizar dados do cliente" : "Formulário para cadastrar novo cliente"}
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
           <div>
             <Label htmlFor="name">Nome</Label>
             <Input
@@ -191,16 +225,16 @@ export const CustomersForm = ({ editingClient, onSave, onUpdate, onCancel }: Cus
             onCityChange={handleCityChange}
           />
 
-          <div className="md:col-span-2 flex gap-2 pt-2">
-            <Button type="submit" className="bg-green-600 hover:bg-green-700">
-              {editingClient ? "Atualizar" : "Cadastrar"}
-            </Button>
+          <div className="md:col-span-2 flex justify-end gap-2 pt-4 border-t">
             <Button type="button" variant="outline" onClick={resetForm}>
               Cancelar
             </Button>
+            <Button type="submit" className="bg-green-600 hover:bg-green-700">
+              {editingClient ? "Atualizar" : "Cadastrar"}
+            </Button>
           </div>
         </form>
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 };

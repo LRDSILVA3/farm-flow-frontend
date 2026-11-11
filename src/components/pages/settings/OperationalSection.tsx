@@ -32,33 +32,33 @@ export const OperationalSection = () => {
   return (
     <>
       <Tabs defaultValue="services" className="space-y-4">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="services">
-            <Settings className="h-4 w-4 mr-2" />
+        <TabsList className="flex-wrap h-auto w-full justify-start gap-1 p-1">
+          <TabsTrigger value="services" className="text-xs px-2.5 py-1.5">
+            <Settings className="h-3.5 w-3.5 mr-1.5" />
             Serviços
           </TabsTrigger>
-          <TabsTrigger value="service-groups">
-            <Layers className="h-4 w-4 mr-2" />
+          <TabsTrigger value="service-groups" className="text-xs px-2.5 py-1.5">
+            <Layers className="h-3.5 w-3.5 mr-1.5" />
             Grupos de Serviços
           </TabsTrigger>
-          <TabsTrigger value="cost-variables">
-            <Calculator className="h-4 w-4 mr-2" />
+          <TabsTrigger value="cost-variables" className="text-xs px-2.5 py-1.5">
+            <Calculator className="h-3.5 w-3.5 mr-1.5" />
             Variáveis de Custo
           </TabsTrigger>
-          <TabsTrigger value="products">
-            <Package className="h-4 w-4 mr-2" />
+          <TabsTrigger value="products" className="text-xs px-2.5 py-1.5">
+            <Package className="h-3.5 w-3.5 mr-1.5" />
             Produtos
           </TabsTrigger>
-          <TabsTrigger value="equipment">
-            <Truck className="h-4 w-4 mr-2" />
+          <TabsTrigger value="equipment" className="text-xs px-2.5 py-1.5">
+            <Truck className="h-3.5 w-3.5 mr-1.5" />
             Equipamentos
           </TabsTrigger>
-          <TabsTrigger value="collaborators">
-            <Users className="h-4 w-4 mr-2" />
+          <TabsTrigger value="collaborators" className="text-xs px-2.5 py-1.5">
+            <Users className="h-3.5 w-3.5 mr-1.5" />
             Colaboradores
           </TabsTrigger>
-          <TabsTrigger value="analyses">
-            <FlaskConical className="h-4 w-4 mr-2" />
+          <TabsTrigger value="analyses" className="text-xs px-2.5 py-1.5">
+            <FlaskConical className="h-3.5 w-3.5 mr-1.5" />
             Análises
           </TabsTrigger>
         </TabsList>

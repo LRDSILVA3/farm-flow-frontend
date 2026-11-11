@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,6 +11,7 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { Edit, Search, Plus, Trash2, Layers, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/api";
+import { getLocalDateISO } from "@/lib/utils";
 
 interface AnalysisExecution {
   id: string;
@@ -64,7 +65,7 @@ const AnalisesPrincipalPage = () => {
   const [batchClientId, setBatchClientId] = useState("");
   const [batchFarmId, setBatchFarmId] = useState("");
   const [batchCollaborator, setBatchCollaborator] = useState("Laboratório Solo Forte");
-  const [batchSendDate, setBatchSendDate] = useState(new Date().toISOString().split('T')[0]);
+  const [batchSendDate, setBatchSendDate] = useState(getLocalDateISO());
   const [batchStatus, setBatchStatus] = useState<any>("Enviado");
   const [batchQuantities, setBatchQuantities] = useState<Record<string, number>>({
     "MACRO": 0,
@@ -446,6 +447,9 @@ const AnalisesPrincipalPage = () => {
               <Layers className="h-5 w-5 text-emerald-600" />
               Lançamento em Lote de Análises por Fazenda
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Formulário para envio em lote de amostras para análise laboratorial
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleBatchCreate} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3 bg-muted/20 border rounded-lg">
@@ -594,6 +598,9 @@ const AnalisesPrincipalPage = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Editar Análise</DialogTitle>
+            <DialogDescription className="sr-only">
+              Editar detalhes da remessa ou resultado da análise laboratorial
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleUpdate} className="space-y-4">
             <div>

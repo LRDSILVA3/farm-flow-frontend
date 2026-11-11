@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/api";
 import { Farm, Plot } from "@/types/farm";
+import { useSafeQueryClient } from "@/hooks/useSafeQueryClient";
 
 export type { Farm, Plot };
 
@@ -73,9 +75,34 @@ const mapFarmFromDB = (db: any): Farm => {
 };
 
 export const useFarms = () => {
-  const [farms, setFarms] = useState<Farm[]>([]);
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const queryClient = useSafeQueryClient();
+
+  const { data: farms = [], isLoading: loading, refetch } = useQuery({
+    queryKey: ["farms"],
+    queryFn: async () => {
+      try {
+        const backendData = await api.get<any[]>("/farms");
+        return Array.isArray(backendData) ? backendData.map(mapFarmFromDB) : [];
+      } catch (error: any) {
+        toast({
+          title: "Erro ao carregar fazendas",
+          description: error.message || "Erro de conexão com o servidor local.",
+          variant: "destructive",
+        });
+        throw error;
+      }
+    },
+  }, queryClient);
+
+  const setFarms = useCallback(
+    (updater: Farm[] | ((prev: Farm[]) => Farm[])) => {
+      queryClient.setQueryData<Farm[]>(["farms"], (prev = []) =>
+        typeof updater === "function" ? updater(prev) : updater
+      );
+    },
+    [queryClient]
+  );
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -111,26 +138,9 @@ export const useFarms = () => {
   });
 
   const fetchFarms = async () => {
-    try {
-      const backendData = await api.get<any[]>('/farms');
-      if (Array.isArray(backendData)) {
-        const mapped = backendData.map(mapFarmFromDB);
-        setFarms(mapped);
-      }
-    } catch (error: any) {
-      toast({
-        title: "Erro ao carregar fazendas",
-        description: error.message || "Erro de conexão com o servidor local.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
+    await queryClient.invalidateQueries({ queryKey: ["farms"] });
+    await refetch();
   };
-
-  useEffect(() => {
-    fetchFarms();
-  }, []);
 
   const addFarm = async (farm: Omit<Farm, 'id' | 'plots'>) => {
     try {

@@ -1,12 +1,14 @@
 import { api } from "@/services/api";
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useQuery } from "@tanstack/react-query";
+import { useSafeQueryClient } from "@/hooks/useSafeQueryClient";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import {
   TrendingUp,
@@ -22,9 +24,12 @@ import {
   Tag,
   ArrowUpRight,
   ArrowDownLeft,
-  RotateCcw
+  RotateCcw,
+  RefreshCw
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useOrders } from "@/hooks/useOrders";
+import { getLocalDateISO } from "@/lib/utils";
 
 export interface FinancialTransaction {
   id: string;
@@ -65,11 +70,13 @@ const STORAGE_KEY = 'farm_flow_financial_transactions_v2';
 
 export const FinancialTransactionsTab: React.FC = () => {
   const { toast } = useToast();
-  const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
+  const queryClient = useSafeQueryClient();
+  const { orders } = useOrders();
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | "income" | "expense">("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "paid">("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Modal Novo Lançamento
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -78,20 +85,20 @@ export const FinancialTransactionsTab: React.FC = () => {
     category: DEFAULT_EXPENSE_CATEGORIES[0],
     amount: '',
     description: '',
-    dueDate: new Date().toISOString().split('T')[0],
-    paidDate: new Date().toISOString().split('T')[0],
+    dueDate: getLocalDateISO(),
+    paidDate: getLocalDateISO(),
     status: 'paid' as 'pending' | 'paid',
     clientOrSupplier: '',
     paymentMethod: 'PIX',
     notes: ''
   });
 
-  // Carrega transações do backend com fallback para o storage local
-  useEffect(() => {
-    const fetchFromApi = async () => {
+  const { data: transactions = [] } = useQuery<FinancialTransaction[]>({
+    queryKey: ["financial-transactions"],
+    queryFn: async () => {
       try {
         const data = await api.get<any[]>('/financial/transactions');
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           const mapped: FinancialTransaction[] = data.map(d => ({
             id: d.id,
             type: d.type,
@@ -101,78 +108,78 @@ export const FinancialTransactionsTab: React.FC = () => {
             dueDate: d.due_date || d.dueDate || '',
             paidDate: d.payment_date || d.paidDate || undefined,
             status: d.status || 'pending',
-            clientOrSupplier: d.notes || d.clientOrSupplier || '',
+            clientOrSupplier: d.clientOrSupplier || d.notes || '',
+            orderId: d.order_id || d.orderId || undefined,
             paymentMethod: d.payment_method || d.paymentMethod || 'PIX',
             createdAt: d.created_at || new Date().toISOString()
           }));
-          setTransactions(mapped);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(mapped));
-          return;
+          return mapped;
         }
+        return [];
       } catch (err) {
         console.warn('Usando transações locais:', err);
+        try {
+          const stored = localStorage.getItem(STORAGE_KEY);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) {
+              // Ignora dados fictícios legados (tx-1, tx-2, tx-3)
+              return parsed.filter((t: any) => !['tx-1', 'tx-2', 'tx-3'].includes(t.id));
+            }
+          }
+        } catch {}
+        return [];
       }
+    },
+  }, queryClient);
 
-      // Se API vazia ou offline, tenta carregar local
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          setTransactions(JSON.parse(stored));
-          return;
-        }
-      } catch {}
+  const unsyncedPaidOrders = useMemo(() => {
+    const syncedOrderIds = new Set(transactions.map(t => t.orderId).filter(Boolean));
+    return orders.filter(
+      o => o.status !== "Cancelado" && (o.paidAmount || 0) > 0 && !syncedOrderIds.has(o.id)
+    );
+  }, [orders, transactions]);
 
-      // Exemplos iniciais realistas
-      const initial: FinancialTransaction[] = [
-        {
-          id: "tx-1",
-          type: "income",
-          category: "Serviços Agrícolas",
-          amount: 19320.34,
-          description: "Recebimento Entrada - Amostragem de Solo Fazenda Santa Maria",
-          dueDate: "2026-10-01",
-          paidDate: "2026-10-01",
-          status: "paid",
-          clientOrSupplier: "João da Silva",
-          paymentMethod: "PIX",
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: "tx-2",
-          type: "expense",
-          category: "Combustível e Lubrificantes",
-          amount: 850.00,
-          description: "Abastecimento Quadriciclos ATV e Caminhonete",
-          dueDate: "2026-10-02",
-          paidDate: "2026-10-02",
-          status: "paid",
-          clientOrSupplier: "Posto Central Corbélia",
-          paymentMethod: "Cartão",
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: "tx-3",
-          type: "expense",
-          category: "Manutenção de Equipamentos e Maquinário",
-          amount: 1200.00,
-          description: "Revisão e Troca de Bicos de Pulverização Drone",
-          dueDate: "2026-10-10",
-          status: "pending",
-          clientOrSupplier: "AgroPeças Paraná",
-          paymentMethod: "Boleto",
-          createdAt: new Date().toISOString()
-        }
-      ];
-
-      setTransactions(initial);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
-    };
-
-    fetchFromApi();
-  }, []);
+  const handleSyncOrders = async () => {
+    if (unsyncedPaidOrders.length === 0) return;
+    setIsSyncing(true);
+    try {
+      for (const o of unsyncedPaidOrders) {
+        const payDate = o.payments?.[o.payments.length - 1]?.date || getLocalDateISO();
+        const method = o.payments?.[o.payments.length - 1]?.method || "PIX";
+        await api.post('/financial/transactions', {
+          order_id: o.id,
+          client_id: o.clientId || null,
+          type: 'income',
+          category: 'Serviços Agrícolas',
+          amount: o.paidAmount,
+          description: `Recebimento Pedido #${o.id.slice(0, 8)} - ${o.serviceName || o.type}`,
+          due_date: payDate,
+          payment_date: payDate,
+          status: 'paid',
+          payment_method: method,
+          notes: o.client?.name || 'Cliente'
+        });
+      }
+      await queryClient.invalidateQueries({ queryKey: ["financial-transactions"] });
+      toast({
+        title: "Recebimentos sincronizados!",
+        description: `${unsyncedPaidOrders.length} recebimento(s) importado(s) para o fluxo de caixa.`
+      });
+    } catch (err: any) {
+      toast({
+        title: "Erro ao sincronizar",
+        description: err.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const saveTransactions = (updated: FinancialTransaction[]) => {
-    setTransactions(updated);
+    queryClient.setQueryData(["financial-transactions"], updated);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     } catch {}
@@ -228,9 +235,9 @@ export const FinancialTransactionsTab: React.FC = () => {
     });
   }, [transactions, typeFilter, statusFilter, categoryFilter, searchTerm]);
 
-  const handleSaveTransaction = (e: React.FormEvent) => {
+  const handleSaveTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanAmount = formData.amount.replace(/[R$s.]/g, '').replace(',', '.');
+    const cleanAmount = formData.amount.replace(/[R$\s.]/g, '').replace(',', '.');
     const num = parseFloat(cleanAmount);
     if (isNaN(num) || num <= 0) {
       toast({ title: "Valor inválido", description: "Informe um valor maior que zero.", variant: "destructive" });
@@ -257,20 +264,24 @@ export const FinancialTransactionsTab: React.FC = () => {
       createdAt: new Date().toISOString()
     };
 
-    saveTransactions([newTx, ...transactions]);
+    try {
+      await api.post('/financial/transactions', {
+        description: newTx.description,
+        type: newTx.type,
+        category: newTx.category,
+        amount: newTx.amount,
+        due_date: newTx.dueDate,
+        payment_date: newTx.paidDate || null,
+        status: newTx.status,
+        payment_method: newTx.paymentMethod,
+        notes: newTx.clientOrSupplier || newTx.notes
+      });
+      await queryClient.invalidateQueries({ queryKey: ["financial-transactions"] });
+    } catch (err) {
+      console.warn('Erro ao salvar transação no backend:', err);
+      saveTransactions([newTx, ...transactions]);
+    }
 
-    // Envia para o backend PostgreSQL
-    api.post('/financial/transactions', {
-      description: newTx.description,
-      type: newTx.type,
-      category: newTx.category,
-      amount: newTx.amount,
-      due_date: newTx.dueDate,
-      payment_date: newTx.paidDate || null,
-      status: newTx.status,
-      payment_method: newTx.paymentMethod,
-      notes: newTx.clientOrSupplier || newTx.notes
-    }).catch(err => console.warn('Erro ao salvar transação no backend:', err));
     toast({
       title: "Lançamento salvo com sucesso!",
       description: `${formData.type === 'income' ? 'Receita' : 'Despesa'} de ${formatBRL(num)} registrada.`
@@ -282,8 +293,8 @@ export const FinancialTransactionsTab: React.FC = () => {
       category: DEFAULT_EXPENSE_CATEGORIES[0],
       amount: '',
       description: '',
-      dueDate: new Date().toISOString().split('T')[0],
-      paidDate: new Date().toISOString().split('T')[0],
+      dueDate: getLocalDateISO(),
+      paidDate: getLocalDateISO(),
       status: 'paid',
       clientOrSupplier: '',
       paymentMethod: 'PIX',
@@ -291,11 +302,15 @@ export const FinancialTransactionsTab: React.FC = () => {
     });
   };
 
-  const handleToggleStatus = (id: string) => {
+  const handleToggleStatus = async (id: string) => {
     const target = transactions.find(t => t.id === id);
+    const todayLocal = getLocalDateISO();
     if (target) {
       const nextStatus = target.status === 'paid' ? 'pending' : 'paid';
-      api.put(`/financial/transactions/${id}`, { status: nextStatus }).catch(() => {});
+      await api.put(`/financial/transactions/${id}`, {
+        status: nextStatus,
+        payment_date: nextStatus === 'paid' ? todayLocal : null
+      }).catch(() => {});
     }
     const updated = transactions.map(t => {
       if (t.id === id) {
@@ -303,7 +318,7 @@ export const FinancialTransactionsTab: React.FC = () => {
         return {
           ...t,
           status: nextStatus as 'pending' | 'paid',
-          paidDate: nextStatus === 'paid' ? new Date().toISOString().split('T')[0] : undefined
+          paidDate: nextStatus === 'paid' ? todayLocal : undefined
         };
       }
       return t;
@@ -387,10 +402,24 @@ export const FinancialTransactionsTab: React.FC = () => {
             <h3 className="text-base font-bold">Lançamentos de Contas a Pagar e Receber</h3>
             <p className="text-xs text-muted-foreground">Fluxo financeiro detalhado de entradas e saídas operacionais</p>
           </div>
-          <Button onClick={() => setIsModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-9">
-            <Plus className="h-4 w-4 mr-1.5" />
-            Novo Lançamento
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {unsyncedPaidOrders.length > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleSyncOrders}
+                disabled={isSyncing}
+                className="text-xs h-9 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                Sincronizar Recebimentos ({unsyncedPaidOrders.length})
+              </Button>
+            )}
+            <Button onClick={() => setIsModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-9">
+              <Plus className="h-4 w-4 mr-1.5" />
+              Novo Lançamento
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 pt-2 border-t">
@@ -553,6 +582,7 @@ export const FinancialTransactionsTab: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
+                          aria-label="Excluir lançamento"
                           onClick={() => handleDelete(t.id)}
                           className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
                         >
@@ -576,6 +606,9 @@ export const FinancialTransactionsTab: React.FC = () => {
               <DollarSign className="h-5 w-5 text-emerald-600" />
               Novo Lançamento Financeiro
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Formulário para cadastro de receita ou despesa financeira
+            </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSaveTransaction} className="space-y-3">
@@ -639,12 +672,12 @@ export const FinancialTransactionsTab: React.FC = () => {
                   value={formData.amount}
                   onChange={(e) => {
                     // Máscara com separador e centavos
-                    let v = e.target.value.replace(/D/g, '');
+                    const v = e.target.value.replace(/\D/g, '');
                     if (!v) {
                       setFormData({ ...formData, amount: '' });
                       return;
                     }
-                    const num = (parseInt(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                    const num = (parseInt(v, 10) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
                     setFormData({ ...formData, amount: num });
                   }}
                   required

@@ -141,28 +141,242 @@ export const OrdersTable = ({
     ? orders.find((o) => o.id === selectedOrderForPrint.id) || selectedOrderForPrint
     : null;
 
+  const formatHa = (n: number) =>
+    n.toLocaleString("pt-BR", {
+      minimumFractionDigits: n % 1 === 0 ? 0 : 1,
+      maximumFractionDigits: 2,
+    });
+
+  const renderOrderActions = (order: Order) => {
+    const isCanceled = order.status === "Cancelado";
+    return (
+      <div className="flex items-center justify-end gap-0.5 flex-wrap">
+        {/* Botão Aprovar (se Pendente) */}
+        {order.status === "Pendente" && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label="Aprovar Pedido"
+                className="h-7 w-7 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                onClick={() => {
+                  if (confirm("Deseja aprovar este pedido?")) {
+                    onApprove(order.id);
+                  }
+                }}
+              >
+                <CheckCircle2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Aprovar Pedido</TooltipContent>
+          </Tooltip>
+        )}
+
+        {/* Botão Executar (oculto se Cancelado) */}
+        {!isCanceled && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label="Registrar Execução"
+                className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                onClick={() => setSelectedOrderForExec(order)}
+              >
+                <Play className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Registrar Execução (100% ou Parcial)</TooltipContent>
+          </Tooltip>
+        )}
+
+        {/* Botão Agendamento (oculto se Cancelado) */}
+        {!isCanceled && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label="Agendamentos e Etapas"
+                className="h-7 w-7 p-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                onClick={() => setSelectedOrderForSched(order)}
+              >
+                <Calendar className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Agendamentos / Etapas ({order.schedules?.length || 0})</TooltipContent>
+          </Tooltip>
+        )}
+
+        {/* Botão Cobrar / Pagamento (oculto se Cancelado) */}
+        {!isCanceled && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label="Cobrança e Pagamentos"
+                className="h-7 w-7 p-0 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                onClick={() => setSelectedOrderForPay(order)}
+              >
+                <DollarSign className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Cobrança / Pagamentos ({order.payment})</TooltipContent>
+          </Tooltip>
+        )}
+
+        {/* Botão Imprimir Folha de Pedido */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label="Imprimir Folha de Pedido"
+              className="h-7 w-7 p-0 text-slate-700 hover:text-slate-900 hover:bg-slate-100"
+              onClick={() => setSelectedOrderForPrint(order)}
+            >
+              <Printer className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Imprimir Folha de Pedido / Orçamento</TooltipContent>
+        </Tooltip>
+
+        {/* Botão Histórico de Ações */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label="Histórico de Ações"
+              className="h-7 w-7 p-0 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+              onClick={() => setSelectedOrderForHistory(order)}
+            >
+              <History className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Histórico de Ações / Auditoria</TooltipContent>
+        </Tooltip>
+
+        {/* Botão Editar */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label="Editar Pedido"
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+              onClick={() => onEdit(order)}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Editar Pedido</TooltipContent>
+        </Tooltip>
+
+        {/* Botão Cancelar */}
+        {!isCanceled && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label="Cancelar Pedido"
+                className="h-7 w-7 p-0 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
+                onClick={() => {
+                  if (confirm("Tem certeza que deseja cancelar este pedido?")) {
+                    onCancel(order.id);
+                  }
+                }}
+              >
+                <Ban className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Cancelar Pedido</TooltipContent>
+          </Tooltip>
+        )}
+      </div>
+    );
+  };
+
   return (
     <TooltipProvider>
       <div className="space-y-4">
-        <div className="overflow-x-auto w-full -mx-4 sm:mx-0 px-4 sm:px-0">
-          <Table className="min-w-[850px] w-full text-xs sm:text-sm">
+        {/* Visão Mobile em Cards */}
+        <div className="space-y-3 md:hidden">
+          {currentOrders.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground text-sm">
+              Nenhum pedido encontrado.
+            </div>
+          ) : (
+            currentOrders.map((order) => {
+              const totalArea = parseFloat(order.area) || 0;
+              const executedArea = order.executedArea || 0;
+              const percentExec = totalArea > 0 ? Math.min(100, (executedArea / totalArea) * 100) : 0;
+
+              return (
+                <div key={order.id} className="p-3.5 rounded-lg border bg-card space-y-2.5 shadow-xs">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm text-foreground truncate">{getClientName(order)}</p>
+                      <p className="text-xs text-muted-foreground truncate">{getFarmName(order)}</p>
+                    </div>
+                    <span className={cn("px-2.5 py-0.5 rounded-full text-xs font-medium border whitespace-nowrap shrink-0", getStatusBadge(order.status))}>
+                      {order.status}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="inline-block font-medium px-2 py-0.5 rounded bg-muted leading-snug">
+                      {formatServiceName(order.serviceName || order.type)}
+                    </span>
+                    <span className={cn("px-2 py-0.5 rounded-full text-[11px] font-medium border whitespace-nowrap", getPaymentBadge(order.payment))}>
+                      {order.payment}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-1 border-t text-xs">
+                    <div>
+                      <span className="text-muted-foreground block text-[11px]">Área / Execução</span>
+                      <span className="font-medium">
+                        {totalArea > 0 ? `${formatHa(executedArea)} / ${formatHa(totalArea)} ha (${percentExec.toFixed(0)}%)` : "-"}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-muted-foreground block text-[11px]">Valor</span>
+                      <span className="font-bold text-sm text-foreground">{order.value || "R$ 0,00"}</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t flex justify-end">
+                    {renderOrderActions(order)}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Visão Desktop em Tabela */}
+        <div className="hidden md:block overflow-x-auto w-full">
+          <Table className="w-full text-xs sm:text-sm">
           <TableHeader>
             <TableRow>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Fazenda</TableHead>
-              <TableHead>Serviço</TableHead>
-              <TableHead>Área</TableHead>
-              <TableHead>Execução</TableHead>
-              <TableHead>Valor</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Pagamento</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              <TableHead className="px-2.5">Cliente / Fazenda</TableHead>
+              <TableHead className="px-2.5">Serviço</TableHead>
+              <TableHead className="px-2.5">Área</TableHead>
+              <TableHead className="px-2.5">Execução</TableHead>
+              <TableHead className="px-2.5">Valor</TableHead>
+              <TableHead className="px-2.5">Status</TableHead>
+              <TableHead className="px-2.5">Pagamento</TableHead>
+              <TableHead className="px-2.5 text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {currentOrders.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   Nenhum pedido encontrado.
                 </TableCell>
               </TableRow>
@@ -174,30 +388,27 @@ export const OrdersTable = ({
 
                 return (
                   <TableRow key={order.id} className="hover:bg-muted/40">
-                    <TableCell className="font-medium text-foreground">
-                      {getClientName(order)}
+                    <TableCell className="px-2.5 py-3">
+                      <div className="font-medium text-foreground leading-tight">{getClientName(order)}</div>
+                      <div className="text-xs text-muted-foreground leading-tight mt-0.5">{getFarmName(order)}</div>
                     </TableCell>
 
-                    <TableCell className="text-muted-foreground">
-                      {getFarmName(order)}
-                    </TableCell>
-
-                    <TableCell>
-                      <span className="font-medium text-xs px-2 py-0.5 rounded bg-muted">
+                    <TableCell className="px-2.5 py-3">
+                      <span className="inline-block font-medium text-xs px-2 py-0.5 rounded bg-muted leading-snug whitespace-nowrap">
                         {formatServiceName(order.serviceName || order.type)}
                       </span>
                     </TableCell>
 
-                    <TableCell>
-                      {totalArea > 0 ? totalArea.toFixed(1) + ' ha' : '-'}
+                    <TableCell className="px-2.5 py-3 whitespace-nowrap">
+                      {totalArea > 0 ? `${totalArea.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ha` : "-"}
                     </TableCell>
 
-                    <TableCell>
+                    <TableCell className="px-2.5 py-3">
                       <div className="w-28 space-y-1">
-                        <div className="flex justify-between text-[11px]">
+                        <div className="flex justify-between text-[11px] gap-1">
                           <span className="font-semibold text-xs">{percentExec.toFixed(0)}%</span>
-                          <span className="text-muted-foreground text-[10px]">
-                            {executedArea.toFixed(0)}/{totalArea.toFixed(0)} ha
+                          <span className="text-muted-foreground text-[10px] whitespace-nowrap">
+                            {formatHa(executedArea)}/{formatHa(totalArea)} ha
                           </span>
                         </div>
                         <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
@@ -212,156 +423,24 @@ export const OrdersTable = ({
                       </div>
                     </TableCell>
 
-                    <TableCell className="font-semibold text-foreground">
+                    <TableCell className="px-2.5 py-3 font-semibold text-foreground whitespace-nowrap">
                       {order.value || 'R$ 0,00'}
                     </TableCell>
 
-                    <TableCell>
-                      <span className={cn("px-2.5 py-1 rounded-full text-xs font-medium border", getStatusBadge(order.status))}>
+                    <TableCell className="px-2.5 py-3">
+                      <span className={cn("inline-block px-2.5 py-1 rounded-full text-xs font-medium border whitespace-nowrap", getStatusBadge(order.status))}>
                         {order.status}
                       </span>
                     </TableCell>
 
-                    <TableCell>
-                      <span className={cn("px-2.5 py-1 rounded-full text-xs font-medium border", getPaymentBadge(order.payment))}>
+                    <TableCell className="px-2.5 py-3">
+                      <span className={cn("inline-block px-2.5 py-1 rounded-full text-xs font-medium border whitespace-nowrap", getPaymentBadge(order.payment))}>
                         {order.payment}
                       </span>
                     </TableCell>
 
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        {/* Botão Aprovar (se Pendente) */}
-                        {order.status === "Pendente" && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                                onClick={() => {
-                                  if (confirm("Deseja aprovar este pedido?")) {
-                                    onApprove(order.id);
-                                  }
-                                }}
-                              >
-                                <CheckCircle2 className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Aprovar Pedido</TooltipContent>
-                          </Tooltip>
-                        )}
-
-                        {/* Botão Executar (100% ou Parcial) */}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                              onClick={() => setSelectedOrderForExec(order)}
-                            >
-                              <Play className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Registrar Execução (100% ou Parcial)</TooltipContent>
-                        </Tooltip>
-
-                        {/* Botão Agendamento */}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                              onClick={() => setSelectedOrderForSched(order)}
-                            >
-                              <Calendar className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Agendamentos / Etapas ({order.schedules?.length || 0})</TooltipContent>
-                        </Tooltip>
-
-                        {/* Botão Cobrar / Pagamento */}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                              onClick={() => setSelectedOrderForPay(order)}
-                            >
-                              <DollarSign className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Cobrança / Pagamentos ({order.payment})</TooltipContent>
-                        </Tooltip>
-
-                                                {/* Botão Imprimir Folha de Pedido */}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-slate-700 hover:text-slate-900 hover:bg-slate-100"
-                              onClick={() => setSelectedOrderForPrint(order)}
-                            >
-                              <Printer className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Imprimir Folha de Pedido / Orçamento</TooltipContent>
-                        </Tooltip>
-
-                        {/* Botão Histórico de Ações */}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
-                              onClick={() => setSelectedOrderForHistory(order)}
-                            >
-                              <History className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Histórico de Ações / Auditoria</TooltipContent>
-                        </Tooltip>
-
-                        {/* Botão Editar */}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                              onClick={() => onEdit(order)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Editar Pedido</TooltipContent>
-                        </Tooltip>
-
-                        {/* Botão Cancelar */}
-                        {order.status !== "Cancelado" && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
-                                onClick={() => {
-                                  if (confirm("Tem certeza que deseja cancelar este pedido?")) {
-                                    onCancel(order.id);
-                                  }
-                                }}
-                              >
-                                <Ban className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Cancelar Pedido</TooltipContent>
-                          </Tooltip>
-                        )}
-                      </div>
+                    <TableCell className="px-2.5 py-3 text-right whitespace-nowrap">
+                      {renderOrderActions(order)}
                     </TableCell>
                   </TableRow>
                 );

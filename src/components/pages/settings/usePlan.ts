@@ -1,5 +1,6 @@
 
 import { useState, FormEvent } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export interface Plan {
   id: number;
@@ -12,29 +13,50 @@ export interface Plan {
   creationDate: string;
 }
 
+const STORAGE_KEY_PLANS = "farm_flow_app_plans_v1";
+
+const DEFAULT_PLANS: Plan[] = [
+  {
+    id: 1,
+    name: "Plano Básico",
+    description: "Pacote básico de serviços agrícolas",
+    recurrence: "mensal",
+    status: "Ativo",
+    value: 299.90,
+    servicesIds: [1, 2],
+    creationDate: "15/01/2024"
+  },
+  {
+    id: 2,
+    name: "Plano Completo",
+    description: "Pacote completo com todos os serviços",
+    recurrence: "mensal",
+    status: "Ativo",
+    value: 599.90,
+    servicesIds: [1, 2, 3, 4],
+    creationDate: "10/01/2024"
+  }
+];
+
 export const usePlan = () => {
-  const [plans] = useState<Plan[]>([
-    {
-      id: 1,
-      name: "Plano Básico",
-      description: "Pacote básico de serviços agrícolas",
-      recurrence: "mensal",
-      status: "Ativo",
-      value: 299.90,
-      servicesIds: [1, 2],
-      creationDate: "15/01/2024"
-    },
-    {
-      id: 2,
-      name: "Plano Completo",
-      description: "Pacote completo com todos os serviços",
-      recurrence: "mensal",
-      status: "Ativo",
-      value: 599.90,
-      servicesIds: [1, 2, 3, 4],
-      creationDate: "10/01/2024"
-    }
-  ]);
+  const { toast } = useToast();
+  const [plans, setPlans] = useState<Plan[]>(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_PLANS);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+    return DEFAULT_PLANS;
+  });
+
+  const persistPlans = (next: Plan[]) => {
+    setPlans(next);
+    try {
+      localStorage.setItem(STORAGE_KEY_PLANS, JSON.stringify(next));
+    } catch {}
+  };
 
   // Catálogo de serviços oficiais sincronizados com o modelo de negócio
   const [services] = useState([
@@ -78,7 +100,18 @@ export const usePlan = () => {
 
   const handlePlanSubmit = (e: FormEvent) => {
     e.preventDefault();
-    console.log("Plan saved:", planFormData);
+    if (editingPlan) {
+      persistPlans(plans.map(p => p.id === editingPlan.id ? { ...planFormData, id: editingPlan.id } : p));
+      toast({ title: "Plano atualizado", description: "As alterações foram salvas." });
+    } else {
+      const created: Plan = {
+        ...planFormData,
+        id: Date.now(),
+        creationDate: new Date().toLocaleDateString("pt-BR")
+      };
+      persistPlans([created, ...plans]);
+      toast({ title: "Plano criado", description: "O novo plano foi cadastrado." });
+    }
     resetPlanForm();
   };
 

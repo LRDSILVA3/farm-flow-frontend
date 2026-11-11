@@ -11,6 +11,7 @@ interface CustomersTableProps {
   clients: Client[];
   onEdit: (client: Client) => void;
   onNavigateToFarms: (cpf: string) => void;
+  canNavigateToFarms?: boolean;
   currentPage: number;
   itemsPerPage: number;
   onPageChange: (page: number) => void;
@@ -21,6 +22,7 @@ export const CustomersTable = ({
   clients,
   onEdit,
   onNavigateToFarms,
+  canNavigateToFarms = true,
   currentPage,
   itemsPerPage,
   onPageChange,
@@ -60,17 +62,21 @@ export const CustomersTable = ({
                     size="sm"
                     onClick={() => onEdit(client)}
                     title="Editar cliente"
+                    aria-label="Editar cliente"
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onNavigateToFarms(client.cpf)}
-                    title="Ver fazendas do cliente"
-                  >
-                    <MapPin className="h-4 w-4" />
-                  </Button>
+                  {canNavigateToFarms && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onNavigateToFarms(client.cpf)}
+                      title="Ver fazendas do cliente"
+                      aria-label="Ver fazendas do cliente"
+                    >
+                      <MapPin className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </TableCell>
             </TableRow>

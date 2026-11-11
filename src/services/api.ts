@@ -1,6 +1,9 @@
 const getBaseUrl = (): string => {
-  // If running locally in Vite dev server (port 5173)
-  if (typeof window !== 'undefined' && window.location.port === '5173') {
+  // In local Vite dev server (either port 5173 or 8080), point directly to local Express API
+  if (
+    typeof window !== 'undefined' &&
+    (import.meta.env.DEV || window.location.port === '5173')
+  ) {
     return 'http://localhost:3333';
   }
   // In production (Docker / Nginx / Cloudflare tunnel / Local network),

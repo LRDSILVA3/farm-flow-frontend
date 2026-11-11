@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -29,6 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/api";
 import { SoilSamplingService } from "@/services/SoilSamplingService";
 import { useCostVariables } from "@/hooks/useCostVariables";
+import { getLocalDateISO } from "@/lib/utils";
 
 interface CollaboratorOption {
   id: string;
@@ -338,7 +339,7 @@ export const SchedulePage = () => {
             rawOrder: o,
             partialExecutions: rawExecutions.map(e => ({
               id: e.id || String(Date.now()),
-              date: e.date || new Date().toISOString().split('T')[0],
+              date: e.date || getLocalDateISO(),
               executedArea: String(e.areaExecuted || e.hectares || e.executedArea || "0"),
               equipmentNames: Array.isArray(e.equipmentNames) ? e.equipmentNames : (e.equipmentName ? [e.equipmentName] : []),
               collaborators: Array.isArray(e.collaborators) ? e.collaborators : (e.collaboratorName ? [e.collaboratorName] : []),
@@ -387,7 +388,11 @@ export const SchedulePage = () => {
       if (filterService !== "all" && e.serviceName !== filterService) return false;
       if (filterState !== "all" && e.state !== filterState) return false;
       if (filterCity !== "all" && e.city !== filterCity) return false;
-      if (filterStatus !== "all" && e.status !== filterStatus) return false;
+      if (filterStatus === "all") {
+        if (e.status === "Cancelado") return false;
+      } else if (e.status !== filterStatus) {
+        return false;
+      }
 
       if (filterCollaborator !== "all" && !e.collaborators.includes(filterCollaborator)) return false;
       if (filterEquipment !== "all" && !e.equipmentNames.includes(filterEquipment)) return false;
@@ -404,7 +409,7 @@ export const SchedulePage = () => {
     const remaining = Math.max(0, totalArea - alreadyDone);
 
     setPartialExecutionForm({
-      date: new Date().toISOString().split('T')[0],
+      date: getLocalDateISO(),
       executedArea: remaining > 0 ? remaining.toFixed(2) : "",
       equipmentNames: [...execution.equipmentNames],
       collaborators: [...execution.collaborators],
@@ -829,7 +834,7 @@ export const SchedulePage = () => {
           farm_id: selectedExecution.farmId || null,
           quantity: item.currentQty,
           status: "Pendente",
-          date: new Date().toISOString().split('T')[0],
+          date: getLocalDateISO(),
           results: {
             serviceName: selectedExecution.serviceName,
             clientName: selectedExecution.clientName,
@@ -997,29 +1002,151 @@ export const SchedulePage = () => {
         </div>
       </Card>
 
-      {/* Tabela Principal */}
-      <Card>
+      {/* Visão Mobile em Cards */}
+      <div className="space-y-3 md:hidden">
+        {filteredExecutions.length === 0 ? (
+          <Card className="p-8 text-center text-muted-foreground text-sm">
+            Nenhum agendamento encontrado com os filtros selecionados.
+          </Card>
+        ) : (
+          filteredExecutions.map((execution) => {
+            const totalArea = parseFloat(execution.area) || 0;
+            const executedArea = (execution.partialExecutions || []).reduce(
+              (sum, p) => sum + (parseFloat(p.executedArea) || 0),
+              0
+            );
+            const percent = totalArea > 0 ? Math.min(100, Math.round((executedArea / totalArea) * 100)) : 0;
+            const remainingArea = Math.max(0, totalArea - executedArea);
+            const isCanceled = execution.status === "Cancelado";
+
+            return (
+              <Card key={execution.id} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="font-semibold text-sm text-foreground truncate">{execution.clientName}</div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {execution.farmName}
+                      {execution.city && execution.city !== "-" ? ` • ${execution.city}/${execution.state || "PR"}` : ""}
+                    </div>
+                  </div>
+                  <Badge
+                    className={`text-xs whitespace-nowrap shrink-0 ${
+                      execution.status === "Concluído"
+                        ? "bg-green-100 text-green-800"
+                        : execution.status === "Em Andamento"
+                        ? "bg-blue-100 text-blue-800"
+                        : isCanceled
+                        ? "bg-red-100 text-red-800"
+                        : "bg-amber-100 text-amber-800"
+                    }`}
+                  >
+                    {execution.status}
+                  </Badge>
+                </div>
+
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-foreground">{execution.serviceName}</span>
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <Clock className="h-3.5 w-3.5 text-primary" />
+                    {execution.scheduledDate ? new Date(execution.scheduledDate + 'T00:00:00').toLocaleDateString('pt-BR') : "Não definida"}
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs font-medium">
+                    <span>{executedArea.toFixed(2)} / {totalArea.toFixed(2)} ha</span>
+                    <span className="font-bold text-primary">{percent}%</span>
+                  </div>
+                  <Progress value={percent} className="h-1.5" />
+                  <div className="text-[10px] text-muted-foreground">
+                    {remainingArea > 0 ? `Faltam ${remainingArea.toFixed(2)} ha` : "100% concluído"}
+                  </div>
+                </div>
+
+                {(execution.collaborators.length > 0 || execution.equipmentNames.length > 0) && (
+                  <div className="space-y-1.5 pt-2 border-t text-[11px]">
+                    {execution.collaborators.length > 0 && (
+                      <div className="flex flex-wrap gap-1 items-center">
+                        <span className="text-muted-foreground mr-1">Equipe:</span>
+                        {execution.collaborators.map((c, idx) => (
+                          <Badge key={idx} variant="secondary" className="rounded-md text-[11px] font-normal py-0 px-1.5">
+                            {c}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    {execution.equipmentNames.length > 0 && (
+                      <div className="flex flex-wrap gap-1 items-center">
+                        <span className="text-muted-foreground mr-1">Equip.:</span>
+                        {execution.equipmentNames.map((eq, idx) => (
+                          <Badge key={idx} variant="outline" className="rounded-md text-[11px] font-normal py-0 px-1.5">
+                            {eq}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-1.5 pt-2 border-t justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                    onClick={() => openIncludeAnalysesModal(execution)}
+                  >
+                    <FlaskConical className="h-3.5 w-3.5 mr-1" />
+                    Análises
+                  </Button>
+                  {!isCanceled && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-2.5 text-xs font-medium"
+                      onClick={() => openExecutionModal(execution)}
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1 text-emerald-600" />
+                      Execução
+                    </Button>
+                  )}
+                  {!isCanceled && execution.status !== "Concluído" && (
+                    <Button
+                      size="sm"
+                      className="h-8 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                      onClick={() => openFinanceCompletionModal(execution)}
+                    >
+                      <DollarSign className="h-3.5 w-3.5 mr-1" />
+                      Concluir
+                    </Button>
+                  )}
+                </div>
+              </Card>
+            );
+          })
+        )}
+      </div>
+
+      {/* Tabela Principal Desktop */}
+      <Card className="hidden md:block">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="w-full text-xs">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Cliente / Fazenda</TableHead>
-                  <TableHead>Cidade / UF</TableHead>
-                  <TableHead>Serviço</TableHead>
-                  <TableHead>Área Total</TableHead>
-                  <TableHead>Progresso da Execução</TableHead>
-                  <TableHead>Data Agendada</TableHead>
-                  <TableHead>Equipe</TableHead>
-                  <TableHead>Equipamentos</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead className="px-2.5">Cliente / Fazenda</TableHead>
+                  <TableHead className="px-2.5">Serviço</TableHead>
+                  <TableHead className="px-2.5">Execução (ha)</TableHead>
+                  <TableHead className="px-2.5">Data</TableHead>
+                  <TableHead className="px-2.5">Equipe</TableHead>
+                  <TableHead className="px-2.5">Equipamentos</TableHead>
+                  <TableHead className="px-2.5">Status</TableHead>
+                  <TableHead className="px-2.5 text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredExecutions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       Nenhum agendamento encontrado com os filtros selecionados.
                     </TableCell>
                   </TableRow>
@@ -1032,47 +1159,42 @@ export const SchedulePage = () => {
                     );
                     const percent = totalArea > 0 ? Math.min(100, Math.round((executedArea / totalArea) * 100)) : 0;
                     const remainingArea = Math.max(0, totalArea - executedArea);
+                    const isCanceled = execution.status === "Cancelado";
 
                     return (
                       <TableRow key={execution.id} className="hover:bg-muted/40">
-                        <TableCell>
-                          <div className="font-semibold text-foreground text-sm">{execution.clientName}</div>
-                          <div className="text-xs text-muted-foreground">{execution.farmName}</div>
-                        </TableCell>
-
-                        <TableCell className="text-xs">
-                          <span className="font-medium">{execution.city || "-"}</span>
-                          {execution.state && execution.state !== "-" && (
-                            <span className="text-muted-foreground ml-1">/ {execution.state}</span>
+                        <TableCell className="px-2.5 py-3">
+                          <div className="font-semibold text-foreground text-xs sm:text-sm leading-tight">{execution.clientName}</div>
+                          <div className="text-xs text-muted-foreground leading-tight mt-0.5">{execution.farmName}</div>
+                          {execution.city && execution.city !== "-" && (
+                            <div className="text-[11px] text-muted-foreground/80 mt-0.5">
+                              {execution.city} / {execution.state || "PR"}
+                            </div>
                           )}
                         </TableCell>
 
-                        <TableCell className="font-medium text-xs">
+                        <TableCell className="px-2.5 py-3 font-medium text-xs max-w-[140px]">
                           {execution.serviceName}
                         </TableCell>
 
-                        <TableCell className="text-xs font-semibold">
-                          {totalArea.toFixed(2)} ha
-                        </TableCell>
-
                         {/* Coluna de Progresso em Hectares */}
-                        <TableCell>
-                          <div className="space-y-1 min-w-[130px]">
-                            <div className="flex justify-between text-xs font-medium">
-                              <span>{executedArea.toFixed(2)} / {totalArea.toFixed(2)} ha</span>
+                        <TableCell className="px-2.5 py-3">
+                          <div className="space-y-1 min-w-[120px] max-w-[140px]">
+                            <div className="flex justify-between text-[11px] font-medium gap-1">
+                              <span className="whitespace-nowrap">{executedArea.toFixed(1)} / {totalArea.toFixed(1)} ha</span>
                               <span className="font-bold text-primary">{percent}%</span>
                             </div>
                             <Progress value={percent} className="h-1.5" />
                             <div className="text-[10px] text-muted-foreground">
-                              {remainingArea > 0 ? `Faltam ${remainingArea.toFixed(2)} ha` : "100% concluído"}
+                              {remainingArea > 0 ? `Faltam ${remainingArea.toFixed(1)} ha` : "100% concluído"}
                             </div>
                           </div>
                         </TableCell>
 
-                        <TableCell className="text-xs">
+                        <TableCell className="px-2.5 py-3 text-xs whitespace-nowrap">
                           {execution.scheduledDate ? (
                             <span className="flex items-center gap-1 font-medium">
-                              <Clock className="h-3.5 w-3.5 text-primary" />
+                              <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
                               {new Date(execution.scheduledDate + 'T00:00:00').toLocaleDateString('pt-BR')}
                             </span>
                           ) : (
@@ -1081,18 +1203,18 @@ export const SchedulePage = () => {
                         </TableCell>
 
                         {/* Equipe com Limite de 2 + Badge (+X) */}
-                        <TableCell>
+                        <TableCell className="px-2.5 py-3 max-w-[135px]">
                           {execution.collaborators && execution.collaborators.length > 0 ? (
                             <div className="flex flex-wrap gap-1 items-center">
                               {execution.collaborators.slice(0, 2).map((collab, idx) => (
-                                <Badge key={idx} variant="secondary" className="text-[11px] font-normal py-0 px-1.5">
+                                <Badge key={idx} variant="secondary" className="rounded-md text-[11px] font-normal py-0 px-1.5 whitespace-nowrap">
                                   {collab}
                                 </Badge>
                               ))}
                               {execution.collaborators.length > 2 && (
                                 <Badge
                                   variant="outline"
-                                  className="text-[11px] font-semibold py-0 px-1.5 cursor-help bg-muted/60"
+                                  className="rounded-md text-[11px] font-semibold py-0 px-1.5 cursor-help bg-muted/60"
                                   title={execution.collaborators.slice(2).join(', ')}
                                 >
                                   +{execution.collaborators.length - 2}
@@ -1105,18 +1227,18 @@ export const SchedulePage = () => {
                         </TableCell>
 
                         {/* Equipamentos com Limite de 2 + Badge (+X) */}
-                        <TableCell>
+                        <TableCell className="px-2.5 py-3 max-w-[170px]">
                           {execution.equipmentNames && execution.equipmentNames.length > 0 ? (
                             <div className="flex flex-wrap gap-1 items-center">
                               {execution.equipmentNames.slice(0, 2).map((eq, idx) => (
-                                <Badge key={idx} variant="outline" className="text-[11px] font-normal py-0 px-1.5">
+                                <Badge key={idx} variant="outline" className="rounded-md text-[11px] font-normal py-0 px-1.5 leading-snug max-w-[155px] truncate" title={eq}>
                                   {eq}
                                 </Badge>
                               ))}
                               {execution.equipmentNames.length > 2 && (
                                 <Badge
                                   variant="outline"
-                                  className="text-[11px] font-semibold py-0 px-1.5 cursor-help bg-muted/60"
+                                  className="rounded-md text-[11px] font-semibold py-0 px-1.5 cursor-help bg-muted/60"
                                   title={execution.equipmentNames.slice(2).join(', ')}
                                 >
                                   +{execution.equipmentNames.length - 2}
@@ -1128,13 +1250,15 @@ export const SchedulePage = () => {
                           )}
                         </TableCell>
 
-                        <TableCell>
+                        <TableCell className="px-2.5 py-3">
                           <Badge
-                            className={`text-xs ${
+                            className={`text-xs whitespace-nowrap ${
                               execution.status === "Concluído"
                                 ? "bg-green-100 text-green-800"
                                 : execution.status === "Em Andamento"
                                 ? "bg-blue-100 text-blue-800"
+                                : isCanceled
+                                ? "bg-red-100 text-red-800"
                                 : "bg-amber-100 text-amber-800"
                             }`}
                           >
@@ -1143,13 +1267,13 @@ export const SchedulePage = () => {
                         </TableCell>
 
                         {/* Ações da Agenda */}
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1.5">
+                        <TableCell className="px-2.5 py-3 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1">
                             {/* Incluir Análises Recomendadas */}
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-8 px-2 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                              className="h-7 px-2 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
                               onClick={() => openIncludeAnalysesModal(execution)}
                               title="Importar análises recomendadas da planilha"
                             >
@@ -1158,21 +1282,23 @@ export const SchedulePage = () => {
                             </Button>
 
                             {/* Registrar Execução em Campo */}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 px-2.5 text-xs font-medium"
-                              onClick={() => openExecutionModal(execution)}
-                            >
-                              <Plus className="h-3.5 w-3.5 mr-1 text-emerald-600" />
-                              Execução
-                            </Button>
+                            {!isCanceled && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 px-2 text-xs font-medium"
+                                onClick={() => openExecutionModal(execution)}
+                              >
+                                <Plus className="h-3.5 w-3.5 mr-1 text-emerald-600" />
+                                Execução
+                              </Button>
+                            )}
 
                             {/* Concluir e Enviar para Financeiro */}
-                            {execution.status !== "Concluído" && (
+                            {!isCanceled && execution.status !== "Concluído" && (
                               <Button
                                 size="sm"
-                                className="h-8 px-2.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                                className="h-7 px-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
                                 onClick={() => openFinanceCompletionModal(execution)}
                                 title="Concluir serviço e enviar ao financeiro"
                               >
@@ -1200,6 +1326,9 @@ export const SchedulePage = () => {
               <CheckCircle2 className="h-5 w-5 text-emerald-600" />
               Apontamento de Campo — {selectedExecution?.clientName}
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Registro de área executada em campo e rateio por operador e equipamento
+            </DialogDescription>
           </DialogHeader>
 
           {selectedExecution && (() => {
@@ -1409,6 +1538,9 @@ export const SchedulePage = () => {
               <DollarSign className="h-5 w-5 text-emerald-600" />
               Concluir Serviço e Faturar
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Fechamento do valor final e envio do pedido ao financeiro
+            </DialogDescription>
           </DialogHeader>
 
           {selectedExecution && (
@@ -1485,6 +1617,9 @@ export const SchedulePage = () => {
               <FlaskConical className="h-5 w-5 text-indigo-600" />
               Importar Análises do Serviço
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Confirmar e lançar análises laboratoriais recomendadas para o pedido
+            </DialogDescription>
           </DialogHeader>
 
           {selectedExecution && (

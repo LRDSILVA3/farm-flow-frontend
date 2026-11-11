@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/api";
+import { useSafeQueryClient } from "@/hooks/useSafeQueryClient";
 
 export interface Client {
   id: string;
@@ -45,31 +47,31 @@ const mapFromDB = (db: ClientDB): Client => ({
 });
 
 export const useClients = () => {
-  const [clients, setClients] = useState<Client[]>([]);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const queryClient = useSafeQueryClient();
+
+  const { data: clients = [], isLoading: loading, refetch } = useQuery({
+    queryKey: ["clients"],
+    queryFn: async () => {
+      try {
+        const backendData = await api.get<any[]>("/clients");
+        return Array.isArray(backendData) ? backendData.map(mapFromDB) : [];
+      } catch (error: any) {
+        toast({
+          title: "Erro ao carregar clientes",
+          description: error.message || "Erro na conexão com o servidor local.",
+          variant: "destructive",
+        });
+        throw error;
+      }
+    },
+  }, queryClient);
 
   const fetchClients = async () => {
-    try {
-      const backendData = await api.get<any[]>('/clients');
-      if (Array.isArray(backendData)) {
-        setClients(backendData.map(mapFromDB));
-      }
-    } catch (error: any) {
-      toast({
-        title: "Erro ao carregar clientes",
-        description: error.message || "Erro na conexão com o servidor local.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
+    await queryClient.invalidateQueries({ queryKey: ["clients"] });
+    await refetch();
   };
-
-  useEffect(() => {
-    fetchClients();
-  }, []);
 
   const addClient = async (client: Omit<Client, 'id'>) => {
     try {

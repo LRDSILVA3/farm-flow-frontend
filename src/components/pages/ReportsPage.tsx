@@ -12,9 +12,12 @@ import {
   TrendingUp,
   MapPin,
   Printer,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ShieldCheck
 } from "lucide-react";
 import { api } from "@/services/api";
+import { getLocalDateISO } from "@/lib/utils";
+import { AuditLogsPanel } from "./audit/AuditLogsPanel";
 
 export const ReportsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -84,6 +87,9 @@ export const ReportsPage: React.FC = () => {
 
   const filteredOrders = useMemo(() => {
     return orders.filter(o => {
+      if (o.status === "Cancelado" || o.status === "Cancelled") {
+        return false;
+      }
       const serviceName = o.serviceName || o.service_name || o.type || "";
       if (serviceFilter !== "all" && !serviceName.toLowerCase().includes(serviceFilter.toLowerCase())) {
         return false;
@@ -116,31 +122,75 @@ export const ReportsPage: React.FC = () => {
     };
   }, [filteredOrders]);
 
+  const ordersWithApiSplits = useMemo(() => {
+    return new Set(
+      (apiExecutions || [])
+        .map((e: any) => e.order_id || e.orderId)
+        .filter(Boolean)
+    );
+  }, [apiExecutions]);
+
   const collaboratorProductivity = useMemo(() => {
     const map = new Map<string, { name: string; totalHa: number; ordersCount: number; services: Set<string> }>();
+
+    const creditOperator = (name: string, ha: number, serviceName?: string) => {
+      const cleanName = (name || "").trim();
+      if (!cleanName) return;
+      if (!map.has(cleanName)) {
+        map.set(cleanName, { name: cleanName, totalHa: 0, ordersCount: 0, services: new Set() });
+      }
+      const item = map.get(cleanName)!;
+      item.totalHa += ha;
+      item.ordersCount += 1;
+      if (serviceName) item.services.add(serviceName);
+    };
 
     collaborators.forEach(c => {
       map.set(c.name, { name: c.name, totalHa: 0, ordersCount: 0, services: new Set() });
     });
 
     savedSplits.forEach((split: any) => {
-      const name = split.operator || "Não informado";
-      const ha = parseFloat(split.areaHa) || 0;
-      if (!map.has(name)) {
-        map.set(name, { name, totalHa: 0, ordersCount: 0, services: new Set() });
-      }
-      const item = map.get(name)!;
-      item.totalHa += ha;
-      item.ordersCount += 1;
-      if (split.serviceName) item.services.add(split.serviceName);
+      creditOperator(split.operator || "Não informado", parseFloat(split.areaHa) || 0, split.serviceName);
     });
 
     filteredOrders.forEach(o => {
-      if (o.collaborator && map.has(o.collaborator)) {
-        const item = map.get(o.collaborator)!;
-        if (item.totalHa === 0) {
-          item.totalHa += (parseFloat(o.area) || 0);
-          item.ordersCount += 1;
+      if (ordersWithApiSplits.has(o.id)) return;
+      const serviceName = o.serviceName || o.service_name || o.type || "";
+      const schedules = Array.isArray(o.schedules) ? o.schedules : [];
+      const latestSchedule = schedules[schedules.length - 1];
+      const fallbackOps: string[] = Array.isArray(latestSchedule?.collaborators)
+        ? latestSchedule.collaborators
+        : latestSchedule?.collaboratorName
+        ? [latestSchedule.collaboratorName]
+        : o.collaborator
+        ? [o.collaborator]
+        : [];
+
+      const execs = Array.isArray(o.executions) ? o.executions : [];
+      if (execs.length > 0) {
+        execs.forEach((exec: any) => {
+          if (Array.isArray(exec.splits) && exec.splits.length > 0) {
+            exec.splits.forEach((sp: any) => {
+              creditOperator(sp.collaboratorName || sp.operator || "Não informado", parseFloat(sp.areaHa) || 0, serviceName);
+            });
+            return;
+          }
+          const execHa = parseFloat(exec.areaExecuted ?? exec.hectares ?? exec.executedArea ?? "0") || 0;
+          const execOps: string[] = Array.isArray(exec.collaborators) && exec.collaborators.length > 0
+            ? exec.collaborators
+            : exec.collaboratorName
+            ? [exec.collaboratorName]
+            : fallbackOps;
+          if (execHa > 0 && execOps.length > 0) {
+            const share = execHa / execOps.length;
+            execOps.forEach(op => creditOperator(op, share, serviceName));
+          }
+        });
+      } else if (o.status === "Concluído" || o.status === "Finalizado" || Number(o.executed_area) > 0) {
+        const doneHa = Number(o.executed_area) > 0 ? Number(o.executed_area) : (parseFloat(o.area) || 0);
+        if (doneHa > 0 && fallbackOps.length > 0) {
+          const share = doneHa / fallbackOps.length;
+          fallbackOps.forEach(op => creditOperator(op, share, serviceName));
         }
       }
     });
@@ -148,10 +198,21 @@ export const ReportsPage: React.FC = () => {
     return Array.from(map.values())
       .filter((v, idx, arr) => arr.findIndex(x => x.name === v.name) === idx)
       .sort((a, b) => b.totalHa - a.totalHa);
-  }, [collaborators, savedSplits, filteredOrders]);
+  }, [collaborators, savedSplits, filteredOrders, ordersWithApiSplits]);
 
   const equipmentUsage = useMemo(() => {
     const map = new Map<string, { name: string; type: string; totalHa: number; usesCount: number; plate?: string }>();
+
+    const creditEquipment = (name: string, ha: number) => {
+      const cleanName = (name || "").trim();
+      if (!cleanName) return;
+      if (!map.has(cleanName)) {
+        map.set(cleanName, { name: cleanName, type: "Geral", totalHa: 0, usesCount: 0 });
+      }
+      const item = map.get(cleanName)!;
+      item.totalHa += ha;
+      item.usesCount += 1;
+    };
 
     equipmentList.forEach(e => {
       map.set(e.name, {
@@ -164,18 +225,50 @@ export const ReportsPage: React.FC = () => {
     });
 
     savedSplits.forEach((split: any) => {
-      const name = split.equipment || "Geral";
-      const ha = parseFloat(split.areaHa) || 0;
-      if (!map.has(name)) {
-        map.set(name, { name, type: "Geral", totalHa: 0, usesCount: 0 });
+      creditEquipment(split.equipment || "Geral", parseFloat(split.areaHa) || 0);
+    });
+
+    filteredOrders.forEach(o => {
+      if (ordersWithApiSplits.has(o.id)) return;
+      const schedules = Array.isArray(o.schedules) ? o.schedules : [];
+      const latestSchedule = schedules[schedules.length - 1];
+      const fallbackEqs: string[] = Array.isArray(latestSchedule?.equipmentNames)
+        ? latestSchedule.equipmentNames
+        : latestSchedule?.equipmentName
+        ? [latestSchedule.equipmentName]
+        : [];
+
+      const execs = Array.isArray(o.executions) ? o.executions : [];
+      if (execs.length > 0) {
+        execs.forEach((exec: any) => {
+          if (Array.isArray(exec.splits) && exec.splits.length > 0) {
+            exec.splits.forEach((sp: any) => {
+              creditEquipment(sp.equipmentName || sp.equipment || "Geral", parseFloat(sp.areaHa) || 0);
+            });
+            return;
+          }
+          const execHa = parseFloat(exec.areaExecuted ?? exec.hectares ?? exec.executedArea ?? "0") || 0;
+          const execEqs: string[] = Array.isArray(exec.equipmentNames) && exec.equipmentNames.length > 0
+            ? exec.equipmentNames
+            : exec.equipmentName
+            ? [exec.equipmentName]
+            : fallbackEqs;
+          if (execHa > 0 && execEqs.length > 0) {
+            const share = execHa / execEqs.length;
+            execEqs.forEach(eq => creditEquipment(eq, share));
+          }
+        });
+      } else if (o.status === "Concluído" || o.status === "Finalizado" || Number(o.executed_area) > 0) {
+        const doneHa = Number(o.executed_area) > 0 ? Number(o.executed_area) : (parseFloat(o.area) || 0);
+        if (doneHa > 0 && fallbackEqs.length > 0) {
+          const share = doneHa / fallbackEqs.length;
+          fallbackEqs.forEach(eq => creditEquipment(eq, share));
+        }
       }
-      const item = map.get(name)!;
-      item.totalHa += ha;
-      item.usesCount += 1;
     });
 
     return Array.from(map.values()).sort((a, b) => b.totalHa - a.totalHa);
-  }, [equipmentList, savedSplits]);
+  }, [equipmentList, savedSplits, filteredOrders, ordersWithApiSplits]);
 
   const serviceBreakdown = useMemo(() => {
     const map = new Map<string, { serviceName: string; totalOrders: number; totalArea: number; totalValue: number }>();
@@ -219,8 +312,9 @@ export const ReportsPage: React.FC = () => {
     let headers: string[] = [];
     let rows: string[][] = [];
 
+    const todayLocal = getLocalDateISO();
     if (type === 'collaborators') {
-      filename = `produtividade_equipe_${new Date().toISOString().split('T')[0]}.csv`;
+      filename = `produtividade_equipe_${todayLocal}.csv`;
       headers = ['Colaborador', 'Hectares Executados', 'Alqueires', 'Qtd Execucoes', 'Participacao Percentual'];
       rows = collaboratorProductivity.map(c => [
         `"${c.name}"`,
@@ -230,7 +324,7 @@ export const ReportsPage: React.FC = () => {
         `"${kpiData.totalArea > 0 ? ((c.totalHa / kpiData.totalArea) * 100).toFixed(1) : '0'}%"`
       ]);
     } else if (type === 'equipment') {
-      filename = `uso_equipamentos_${new Date().toISOString().split('T')[0]}.csv`;
+      filename = `uso_equipamentos_${todayLocal}.csv`;
       headers = ['Equipamento', 'Tipo', 'Identificacao Placa', 'Hectares Operados', 'Qtd Atendimentos'];
       rows = equipmentUsage.map(e => [
         `"${e.name}"`,
@@ -240,7 +334,7 @@ export const ReportsPage: React.FC = () => {
         e.usesCount.toString()
       ]);
     } else if (type === 'services') {
-      filename = `volume_servicos_${new Date().toISOString().split('T')[0]}.csv`;
+      filename = `volume_servicos_${todayLocal}.csv`;
       headers = ['Servico', 'Qtd Ordens', 'Area Total Hectares', 'Area Alqueires', 'Faturamento Total R$', 'Ticket Medio R$/ha'];
       rows = serviceBreakdown.map(s => [
         `"${s.serviceName}"`,
@@ -251,7 +345,7 @@ export const ReportsPage: React.FC = () => {
         (s.totalArea > 0 ? (s.totalValue / s.totalArea) : 0).toFixed(2).replace('.', ',')
       ]);
     } else {
-      filename = `distribuicao_regional_${new Date().toISOString().split('T')[0]}.csv`;
+      filename = `distribuicao_regional_${todayLocal}.csv`;
       headers = ['Municipio e UF', 'Fazendas Atendidas', 'Area Total Hectares', 'Area Alqueires'];
       rows = regionalBreakdown.map(r => [
         `"${r.cityState}"`,
@@ -419,22 +513,26 @@ export const ReportsPage: React.FC = () => {
       </div>
 
       <Tabs defaultValue="collaborators" className="space-y-4">
-        <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full">
-          <TabsTrigger value="collaborators" className="gap-1.5 text-xs">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 h-auto w-full gap-1">
+          <TabsTrigger value="collaborators" className="gap-1.5 text-xs py-2">
             <Users className="h-4 w-4" />
             Produtividade da Equipe
           </TabsTrigger>
-          <TabsTrigger value="equipment" className="gap-1.5 text-xs">
+          <TabsTrigger value="equipment" className="gap-1.5 text-xs py-2">
             <Truck className="h-4 w-4" />
             Uso de Equipamentos
           </TabsTrigger>
-          <TabsTrigger value="services" className="gap-1.5 text-xs">
+          <TabsTrigger value="services" className="gap-1.5 text-xs py-2">
             <TrendingUp className="h-4 w-4" />
             Volume por Serviço
           </TabsTrigger>
-          <TabsTrigger value="regional" className="gap-1.5 text-xs">
+          <TabsTrigger value="regional" className="gap-1.5 text-xs py-2">
             <MapPin className="h-4 w-4" />
             Distribuição Regional
+          </TabsTrigger>
+          <TabsTrigger value="audit" className="gap-1.5 text-xs py-2">
+            <ShieldCheck className="h-4 w-4" />
+            Auditoria do Sistema
           </TabsTrigger>
         </TabsList>
 
@@ -664,6 +762,10 @@ export const ReportsPage: React.FC = () => {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="audit" className="space-y-4">
+          <AuditLogsPanel />
         </TabsContent>
       </Tabs>
     </div>

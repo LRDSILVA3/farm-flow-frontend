@@ -235,7 +235,9 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>R$ {service.valuePerAlqueire}</TableCell>
+                        <TableCell>
+                          R$ {(Number(service.valuePerAlqueire) || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </TableCell>
                         <TableCell>
                           <span className={`px-2 py-1 rounded-full text-xs ${
                             service.status === "Ativo" 
@@ -251,6 +253,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
                             <Button 
                               variant="outline" 
                               size="sm"
+                              aria-label="Editar serviço"
                               onClick={() => handleEditService(service)}
                             >
                               <Edit className="h-4 w-4" />
@@ -262,6 +265,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
                                     <Button 
                                       variant="outline" 
                                       size="sm"
+                                      aria-label="Serviço fixo não pode ser excluído"
                                       disabled
                                       className="opacity-50"
                                     >
@@ -277,6 +281,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
                               <Button 
                                 variant="outline" 
                                 size="sm"
+                                aria-label="Excluir serviço"
                                 onClick={() => openDeleteDialog(service.id)}
                                 className="text-destructive hover:text-destructive"
                               >

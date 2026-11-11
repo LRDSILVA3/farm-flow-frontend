@@ -29,6 +29,7 @@ import { useOrders, Order } from "@/hooks/useOrders";
 import { FinancialTransactionsTab } from "./financial/FinancialTransactionsTab";
 import { api } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import { getLocalDateISO } from "@/lib/utils";
 
 // Utilitários de máscara monetária BRL (R$ 1.250,50)
 const formatCurrencyInput = (value: string | number): string => {
@@ -66,9 +67,14 @@ const FinancialPage = () => {
   const [selectedOrderForBaixa, setSelectedOrderForBaixa] = useState<Order | null>(null);
   const [baixaAmountDisplay, setBaixaAmountDisplay] = useState<string>("0,00");
   const [baixaMethod, setBaixaMethod] = useState<string>("PIX");
-  const [baixaDate, setBaixaDate] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [baixaDate, setBaixaDate] = useState<string>(getLocalDateISO());
   const [baixaNotes, setBaixaNotes] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Pedidos ativos (exclui pedidos cancelados dos recebíveis)
+  const activeOrders = useMemo(() => {
+    return orders.filter((o) => o.status !== "Cancelado");
+  }, [orders]);
 
   // Financial statistics
   const stats = useMemo(() => {
@@ -77,7 +83,7 @@ const FinancialPage = () => {
     let waitingCount = 0;
     let completedAwaitingPaymentCount = 0;
 
-    orders.forEach((o) => {
+    activeOrders.forEach((o) => {
       const val = o.numericValue || 0;
       const paid = o.paidAmount || 0;
 
@@ -85,7 +91,7 @@ const FinancialPage = () => {
       const remaining = Math.max(0, val - paid);
       pendingPayments += remaining;
 
-      if (o.payment === "Aguardando" || !o.payment) {
+      if (remaining > 0 && (o.payment === "Aguardando" || o.payment === "Parcial" || !o.payment)) {
         waitingCount++;
       }
       if (o.status === "Concluído" && o.payment !== "Pago") {
@@ -100,20 +106,20 @@ const FinancialPage = () => {
       waitingCount,
       completedAwaitingPaymentCount,
     };
-  }, [orders]);
+  }, [activeOrders]);
 
   // Listas únicas para filtros
   const uniqueClients = useMemo(() => {
-    return Array.from(new Set(orders.map((o) => o.client?.name).filter(Boolean))) as string[];
-  }, [orders]);
+    return Array.from(new Set(activeOrders.map((o) => o.client?.name).filter(Boolean))) as string[];
+  }, [activeOrders]);
 
   const uniqueServices = useMemo(() => {
-    return Array.from(new Set(orders.map((o) => o.serviceName || o.type).filter(Boolean))) as string[];
-  }, [orders]);
+    return Array.from(new Set(activeOrders.map((o) => o.serviceName || o.type).filter(Boolean))) as string[];
+  }, [activeOrders]);
 
   // Filtered orders list
   const filteredOrders = useMemo(() => {
-    return orders.filter((o) => {
+    return activeOrders.filter((o) => {
       const clientName = o.client?.name || "";
       const farmName = o.farm?.name || "";
       const serviceName = o.serviceName || o.type || "";
@@ -148,7 +154,7 @@ const FinancialPage = () => {
     setSelectedOrderForBaixa(order);
     setBaixaAmountDisplay(formatCurrencyInput(remaining));
     setBaixaMethod("PIX");
-    setBaixaDate(new Date().toISOString().split("T")[0]);
+    setBaixaDate(getLocalDateISO());
     setBaixaNotes("");
   };
 
@@ -175,30 +181,7 @@ const FinancialPage = () => {
         amount,
         method: baixaMethod,
         notes: baixaNotes,
-      });
-
-      // Sincronização automática com a tela de Fluxo de Caixa / Lançamentos
-      try {
-        await api.post('/financial/transactions', {
-          type: 'income',
-          category: 'Serviços Agrícolas',
-          amount: amount,
-          description: `Recebimento Pedido #${selectedOrderForBaixa.id.slice(0, 8)} - ${selectedOrderForBaixa.client?.name || 'Cliente'} (${selectedOrderForBaixa.serviceName || selectedOrderForBaixa.type})`,
-          dueDate: baixaDate,
-          paidDate: baixaDate,
-          payment_date: baixaDate,
-          status: 'paid',
-          clientOrSupplier: selectedOrderForBaixa.client?.name || 'Cliente',
-          paymentMethod: baixaMethod,
-          notes: `Baixa efetuada em ${baixaDate}. ${baixaNotes}`.trim()
-        });
-      } catch (syncErr) {
-        console.warn("Lançamento financeiro sincronizado localmente:", syncErr);
-      }
-
-      toast({
-        title: "Baixa Confirmada!",
-        description: `Recebimento de R$ ${amount.toFixed(2)} registrado com sucesso.`
+        date: baixaDate,
       });
 
       setSelectedOrderForBaixa(null);

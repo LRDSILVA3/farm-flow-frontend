@@ -12,6 +12,7 @@ interface PlotFormProps {
   editingPlot: Plot | null;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
+  hideHeader?: boolean;
 }
 
 export const PlotForm = ({
@@ -19,7 +20,8 @@ export const PlotForm = ({
   setPlotForm,
   editingPlot,
   onSubmit,
-  onCancel
+  onCancel,
+  hideHeader = false
 }: PlotFormProps) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -131,10 +133,15 @@ export const PlotForm = ({
   };
 
   return (
-    <form onSubmit={handleFormSubmit} className="bg-gray-50 p-4 rounded-lg border space-y-4">
-      <h5 className="font-semibold text-base">
-        {editingPlot ? "Editar Talhão" : "Adicionar Novo Talhão"}
-      </h5>
+    <form
+      onSubmit={handleFormSubmit}
+      className={hideHeader ? "space-y-4" : "bg-gray-50 p-4 rounded-lg border space-y-4"}
+    >
+      {!hideHeader && (
+        <h5 className="font-semibold text-base">
+          {editingPlot ? "Editar Talhão" : "Adicionar Novo Talhão"}
+        </h5>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="plotName">Nome do Talhão</Label>

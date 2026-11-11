@@ -42,7 +42,8 @@ describe('CustomersPage', () => {
     expect(newCustomerButton).toBeInTheDocument();
     fireEvent.click(newCustomerButton);
 
-    // Check if the form is displayed
+    // Check if the modal dialog and form are displayed
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Novo Cliente/i })).toBeInTheDocument();
 
     // Fill out the form

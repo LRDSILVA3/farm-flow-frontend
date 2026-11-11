@@ -46,6 +46,7 @@ export const AddPlotModal = ({
           editingPlot={editingPlot}
           onSubmit={(e) => handleAddPlot(e, farm.id)}
           onCancel={() => onOpenChange(false)}
+          hideHeader
         />
       </DialogContent>
     </Dialog>

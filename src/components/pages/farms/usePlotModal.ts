@@ -32,11 +32,7 @@ export const usePlotsModal = (
     setShowPlotForm(true);
   };
 
-  const handleCancel = () => {
-    resetForm();
-  };
-
-  const resetForm = () => {
+  const clearPlotFields = () => {
     setPlotForm({
       id: "",
       name: "",
@@ -47,8 +43,22 @@ export const usePlotsModal = (
       registration: "",
       lot: ""
     });
-    setShowPlotForm(false);
     setEditingPlot(null);
+  };
+
+  const handleOpenNewPlot = () => {
+    clearPlotFields();
+    setShowPlotForm(true);
+  };
+
+  const handleCancel = () => {
+    clearPlotFields();
+    setShowPlotForm(false);
+  };
+
+  const resetForm = () => {
+    clearPlotFields();
+    setShowPlotForm(false);
   };
 
   return {
@@ -57,6 +67,7 @@ export const usePlotsModal = (
     editingPlot,
     handleAddPlot,
     handleEditPlot,
+    handleOpenNewPlot,
     handleCancel
   };
 };

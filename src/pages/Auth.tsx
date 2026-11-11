@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { Eye, EyeOff } from "lucide-react";
 import { z } from "zod";
 
 interface AuthProps {
@@ -16,9 +17,22 @@ const loginSchema = z.object({
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
 });
 
+const translateAuthError = (message?: string): string => {
+  if (!message) return "Email ou senha incorretos.";
+  const lower = message.toLowerCase();
+  if (lower.includes("incorrect email/password") || lower.includes("invalid credentials")) {
+    return "E-mail ou senha incorretos.";
+  }
+  if (lower.includes("failed to fetch") || lower.includes("network")) {
+    return "Não foi possível conectar ao servidor.";
+  }
+  return message;
+};
+
 const Auth = ({ onAuthSuccess }: AuthProps) => {
   const { signIn } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
@@ -47,7 +61,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
       if (error) {
         toast({
           title: "Erro no login",
-          description: error.message || "Email ou senha incorretos",
+          description: translateAuthError(error.message),
           variant: "destructive",
         });
       } else {
@@ -60,7 +74,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
     } catch (err: any) {
       toast({
         title: "Erro",
-        description: err?.message || "Ocorreu um erro inesperado",
+        description: translateAuthError(err?.message),
         variant: "destructive",
       });
     } finally {
@@ -69,7 +83,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold text-green-700">Preciza</CardTitle>
@@ -82,6 +96,7 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
               <Input
                 id="login-email"
                 type="email"
+                autoComplete="email"
                 placeholder="Digite seu email"
                 value={loginData.email}
                 onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
@@ -91,14 +106,27 @@ const Auth = ({ onAuthSuccess }: AuthProps) => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="login-password">Senha</Label>
-              <Input
-                id="login-password"
-                type="password"
-                placeholder="Digite sua senha"
-                value={loginData.password}
-                onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                disabled={isLoading}
-              />
+              <div className="relative">
+                <Input
+                  id="login-password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  placeholder="Digite sua senha"
+                  value={loginData.password}
+                  onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                  disabled={isLoading}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? "Ocultar caracteres" : "Exibir caracteres"}
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
               {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
             </div>
             <Button

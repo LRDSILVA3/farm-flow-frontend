@@ -13,12 +13,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Order } from '@/hooks/useOrders';
 import { DollarSign, CheckCircle2, History, AlertCircle, ArrowDownLeft } from 'lucide-react';
+import { getLocalDateISO } from '@/lib/utils';
 
 interface OrderPaymentDialogProps {
   order: Order | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onRecordPayment: (orderId: string, payment: { amount: number; method: string; notes?: string }) => Promise<void>;
+  onRecordPayment: (orderId: string, payment: { amount: number; method: string; notes?: string; date?: string }) => Promise<void>;
 }
 
 export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
@@ -29,7 +30,7 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
 }) => {
   const [displayAmount, setDisplayAmount] = useState<string>('');
   const [method, setMethod] = useState<string>('PIX');
-  const [paymentDate, setPaymentDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [paymentDate, setPaymentDate] = useState<string>(getLocalDateISO());
   const [notes, setNotes] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -48,13 +49,13 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
       } else {
         setDisplayAmount('');
       }
-      setPaymentDate(new Date().toISOString().split('T')[0]);
+      setPaymentDate(getLocalDateISO());
       setNotes('');
     }
   }, [order, open, remainingAmount]);
 
   const parsedAmount = useMemo(() => {
-    const clean = displayAmount.replace(/[R$s.]/g, '').replace(',', '.');
+    const clean = displayAmount.replace(/[R$\s.]/g, '').replace(',', '.');
     const n = parseFloat(clean);
     return isNaN(n) ? 0 : n;
   }, [displayAmount]);
@@ -80,33 +81,8 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
         amount: parsedAmount,
         method,
         notes: notes.trim() || undefined,
+        date: paymentDate,
       });
-
-      // SINCRONIZAÇÃO AUTOMÁTICA COM LANÇAMENTOS FINANCEIROS (FLUXO DE CAIXA)
-      try {
-        const STORAGE_KEY = 'farm_flow_financial_transactions_v2';
-        const stored = localStorage.getItem(STORAGE_KEY);
-        const list = stored ? JSON.parse(stored) : [];
-        const newTx = {
-          id: "tx-order-" + Date.now(),
-          type: "income",
-          category: "Serviços Agrícolas",
-          amount: parsedAmount,
-          description: `Recebimento Pedido #${order.id.slice(0, 8)} - ${order.client?.name || order.clientId}`,
-          dueDate: paymentDate,
-          paidDate: paymentDate,
-          status: "paid",
-          clientOrSupplier: order.client?.name || order.clientId,
-          orderId: order.id,
-          paymentMethod: method,
-          notes: notes.trim() || `Baixa financeira (${order.serviceName || order.type})`,
-          createdAt: new Date().toISOString()
-        };
-        list.unshift(newTx);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-      } catch (e) {
-        console.warn('Erro ao salvar no fluxo de caixa:', e);
-      }
 
       setDisplayAmount('');
       setNotes('');

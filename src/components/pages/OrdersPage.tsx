@@ -48,12 +48,12 @@ const OrdersPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingOrder) {
-      await updateOrder(formData);
-    } else {
-      await addOrder(formData);
+    const result = editingOrder
+      ? await updateOrder(formData)
+      : await addOrder(formData);
+    if (result) {
+      resetForm();
     }
-    resetForm();
   };
 
   const resetForm = () => {

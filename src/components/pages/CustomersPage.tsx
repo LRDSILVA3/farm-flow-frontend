@@ -8,10 +8,11 @@ import { CustomersFilters } from "./customers/CustomersFilters";
 import { CustomersTable } from "./customers/CustomersTable";
 
 interface CustomersPageProps {
-  onNavigateToFarms: (customerCpf: string) => void;
+  onNavigateToFarms: (customerCpf: string, customerName?: string, customerId?: string) => void;
+  canNavigateToFarms?: boolean;
 }
 
-const CustomersPage = ({ onNavigateToFarms }: CustomersPageProps) => {
+const CustomersPage = ({ onNavigateToFarms, canNavigateToFarms = true }: CustomersPageProps) => {
   const {
     clients,
     editingClient,
@@ -33,6 +34,11 @@ const CustomersPage = ({ onNavigateToFarms }: CustomersPageProps) => {
       stopEditing();
     };
   }, []);
+
+  const handleNewClient = () => {
+    stopEditing();
+    setShowForm(true);
+  };
 
   const handleEdit = (client: Client) => {
     startEditing(client);
@@ -56,8 +62,8 @@ const CustomersPage = ({ onNavigateToFarms }: CustomersPageProps) => {
   };
 
   const handleNavigateToFarms = (cpf: string) => {
-    console.log("Navegando para fazendas do cliente:", cpf);
-    onNavigateToFarms(cpf);
+    const found = clients.find((c) => c.cpf === cpf);
+    onNavigateToFarms(cpf, found?.name, found?.id);
   };
 
   const cidadesEstados = Array.from(new Set(clients.map(c => `${c.state}/${c.city}`))).sort();
@@ -88,20 +94,11 @@ const CustomersPage = ({ onNavigateToFarms }: CustomersPageProps) => {
           <h1 className="text-3xl font-bold tracking-tight">Clientes</h1>
           <p className="text-gray-600">Gerencie os clientes da empresa</p>
         </div>
-        <Button onClick={() => setShowForm(true)} className="bg-green-600 hover:bg-green-700">
+        <Button onClick={handleNewClient} className="bg-green-600 hover:bg-green-700">
           <Plus className="h-4 w-4 mr-2" />
           Novo Cliente
         </Button>
       </div>
-
-      {showForm && (
-        <CustomersForm
-          editingClient={editingClient}
-          onSave={handleSave}
-          onUpdate={handleUpdate}
-          onCancel={handleCancel}
-        />
-      )}
 
       <Card>
         <CardHeader>
@@ -121,6 +118,7 @@ const CustomersPage = ({ onNavigateToFarms }: CustomersPageProps) => {
             clients={filteredClients}
             onEdit={handleEdit}
             onNavigateToFarms={handleNavigateToFarms}
+            canNavigateToFarms={canNavigateToFarms}
             currentPage={currentPage}
             itemsPerPage={itemsPerPage}
             onPageChange={handlePageChange}
@@ -128,6 +126,21 @@ const CustomersPage = ({ onNavigateToFarms }: CustomersPageProps) => {
           />
         </CardContent>
       </Card>
+
+      <CustomersForm
+        open={showForm}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            handleCancel();
+          } else {
+            setShowForm(true);
+          }
+        }}
+        editingClient={editingClient}
+        onSave={handleSave}
+        onUpdate={handleUpdate}
+        onCancel={handleCancel}
+      />
     </div>
   );
 };

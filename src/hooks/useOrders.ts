@@ -12,10 +12,12 @@ const sanitizeText = (str: string | null | undefined): string => {
   s = s.replace(/Equaliza[?\uFFFD]?o|EqualizaÃ§Ã£o|Equalizao/gi, 'Equalização');
   return s;
 };
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/api";
-import { generateUUID } from "@/lib/utils";
+import { generateUUID, getLocalDateISO } from "@/lib/utils";
+import { useSafeQueryClient } from "@/hooks/useSafeQueryClient";
 
 export interface OrderExecution {
   id: string;
@@ -39,8 +41,15 @@ export interface OrderActionLog {
   id: string;
   action: string;
   userName: string;
+  userId?: string;
   timestamp: string;
   details?: string;
+  changes?: {
+    field: string;
+    label: string;
+    before: any;
+    after: any;
+  }[];
 }
 
 export interface OrderPayment {
@@ -170,51 +179,6 @@ const mapFromDB = (db: OrderDB): Order => {
   const numExecuted = typeof db.executed_area === 'number' ? db.executed_area : (parseFloat(db.executed_area as string) || 0);
   const numPaid = typeof db.paid_amount === 'number' ? db.paid_amount : (parseFloat(db.paid_amount as string) || 0);
 
-  // Ação financeira: Dar Baixa Direta
-  const markOrderAsPaid = async (orderId: string, paymentDetails: { amount?: number; method: string; notes?: string }) => {
-    try {
-      const order = orders.find(o => o.id === orderId);
-      if (!order) return;
-      const orderTotal = order.numericValue || parseValue(order.value) || 0;
-      const payAmount = paymentDetails.amount !== undefined ? paymentDetails.amount : orderTotal;
-      const newPaidAmount = (order.paidAmount || 0) + payAmount;
-      const isTotal = newPaidAmount >= orderTotal && orderTotal > 0;
-      const newPaymentStatus = isTotal ? "Pago" : "Parcial";
-
-      const newPayment: OrderPayment = {
-        id: generateUUID(),
-        date: new Date().toISOString().split('T')[0],
-        amount: payAmount,
-        method: paymentDetails.method || "PIX",
-        notes: paymentDetails.notes,
-        createdAt: new Date().toISOString()
-      };
-
-      const updatedPayments = [...(order.payments || []), newPayment];
-      const baixaLog = createLogEntry("Baixa Financeira", `Baixa financeira de ${formatCurrencyBRL(payAmount)} via ${paymentDetails.method || 'PIX'}. Status do pagamento: ${newPaymentStatus}`);
-      const updatedLogs = [...(order.logs || []), baixaLog];
-
-      await updateOrder({
-        ...order,
-        payments: updatedPayments,
-        paidAmount: newPaidAmount,
-        payment: newPaymentStatus,
-        logs: updatedLogs
-      });
-
-      toast({
-        title: "Baixa financeira realizada",
-        description: `Pagamento de ${formatCurrencyBRL(payAmount)} registrado com sucesso.`,
-      });
-    } catch (err: any) {
-      toast({
-        title: "Erro ao dar baixa",
-        description: err.message,
-        variant: "destructive",
-      });
-    }
-  };
-
   return {
     id: db.id,
     clientId: db.client_id || (db.client?.id) || "",
@@ -241,9 +205,34 @@ const mapFromDB = (db: OrderDB): Order => {
 };
 
 export const useOrders = () => {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const queryClient = useSafeQueryClient();
+
+  const { data: orders = [], isLoading: loading, refetch } = useQuery({
+    queryKey: ["orders"],
+    queryFn: async () => {
+      try {
+        const backendOrders = await api.get<any[]>('/orders');
+        return Array.isArray(backendOrders) ? backendOrders.map(mapFromDB) : [];
+      } catch (error: any) {
+        toast({
+          title: "Erro ao carregar pedidos",
+          description: error.message,
+          variant: "destructive"
+        });
+        throw error;
+      }
+    },
+  }, queryClient);
+
+  const setOrders = useCallback(
+    (updater: Order[] | ((prev: Order[]) => Order[])) => {
+      queryClient.setQueryData<Order[]>(["orders"], (prev = []) =>
+        typeof updater === "function" ? updater(prev) : updater
+      );
+    },
+    [queryClient]
+  );
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -279,25 +268,9 @@ export const useOrders = () => {
   };
 
   const fetchOrders = async () => {
-    try {
-      const backendOrders = await api.get<any[]>('/orders');
-      if (Array.isArray(backendOrders)) {
-        setOrders(backendOrders.map(mapFromDB));
-      }
-    } catch (error: any) {
-      toast({
-        title: "Erro ao carregar pedidos",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
+    await queryClient.invalidateQueries({ queryKey: ["orders"] });
+    await refetch();
   };
-
-  useEffect(() => {
-    fetchOrders();
-  }, []);
 
   const createLogEntry = (action: string, details?: string): OrderActionLog => {
     let userName = "Administrador FarmFlow";
@@ -346,6 +319,8 @@ export const useOrders = () => {
           paid_amount: 0
         });
         await fetchOrders();
+        await queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+        await queryClient.invalidateQueries({ queryKey: ["order-audit", created?.id] });
         toast({
           title: "Pedido criado",
           description: "O pedido foi criado com sucesso."
@@ -390,6 +365,8 @@ export const useOrders = () => {
           paid_amount: order.paidAmount || 0
         });
         await fetchOrders();
+        await queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
+        await queryClient.invalidateQueries({ queryKey: ["order-audit", order.id] });
         toast({
           title: "Pedido atualizado",
           description: "O pedido foi atualizado com sucesso."
@@ -404,6 +381,7 @@ export const useOrders = () => {
         description: error.message,
         variant: "destructive"
       });
+      return null;
     }
   };
 
@@ -471,7 +449,7 @@ export const useOrders = () => {
 
       const newExecution: any = {
         id: generateUUID(),
-        date: new Date().toISOString().split('T')[0],
+        date: getLocalDateISO(),
         areaExecuted: execution.areaExecuted,
         hectares: execution.areaExecuted,
         percentage: Math.round(percentage * 100) / 100,
@@ -580,7 +558,10 @@ export const useOrders = () => {
   };
 
   // Lifecycle action: Registrar Pagamento / Cobrança
-  const recordPayment = async (orderId: string, payment: { amount: number; method: string; notes?: string }) => {
+  const recordPayment = async (
+    orderId: string,
+    payment: { amount: number; method: string; notes?: string; date?: string }
+  ) => {
     try {
       const order = orders.find(o => o.id === orderId);
       if (!order) return;
@@ -588,10 +569,11 @@ export const useOrders = () => {
       const orderTotal = order.numericValue || parseValue(order.value) || 0;
       const previousPaid = order.paidAmount || 0;
       const newPaidAmount = previousPaid + payment.amount;
+      const paymentDate = payment.date || getLocalDateISO();
 
       const newPayment: OrderPayment = {
         id: generateUUID(),
-        date: new Date().toISOString().split('T')[0],
+        date: paymentDate,
         amount: payment.amount,
         method: payment.method,
         notes: payment.notes,
@@ -618,6 +600,26 @@ export const useOrders = () => {
         logs: updatedLogs
       });
 
+      // Sincroniza recebimento no Fluxo de Caixa (/financial/transactions)
+      try {
+        await api.post('/financial/transactions', {
+          order_id: order.id,
+          client_id: order.clientId || null,
+          type: 'income',
+          category: 'Serviços Agrícolas',
+          amount: payment.amount,
+          description: `Recebimento Pedido #${order.id.slice(0, 8)} - ${order.serviceName || order.type}`,
+          due_date: paymentDate,
+          payment_date: paymentDate,
+          status: 'paid',
+          payment_method: payment.method,
+          notes: order.client?.name || payment.notes || 'Cliente'
+        });
+        await queryClient.invalidateQueries({ queryKey: ["financial-transactions"] });
+      } catch (syncErr) {
+        console.warn("Erro ao sincronizar recebimento no fluxo de caixa:", syncErr);
+      }
+
       toast({
         title: "Pagamento registrado",
         description: `Valor recebido: ${formatCurrencyBRL(payment.amount)} (Total pago: ${formatCurrencyBRL(newPaidAmount)}/${formatCurrencyBRL(orderTotal)})`,
@@ -632,12 +634,24 @@ export const useOrders = () => {
   };
 
   // Lifecycle action: Dar Baixa Direta
-  const markOrderAsPaid = async (orderId: string, method = 'PIX') => {
+  const markOrderAsPaid = async (
+    orderId: string,
+    paymentDetails: string | { amount?: number; method: string; notes?: string; date?: string } = 'PIX'
+  ) => {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
     const orderTotal = order.numericValue || parseValue(order.value) || 0;
     const remaining = Math.max(0, orderTotal - (order.paidAmount || 0));
-    await recordPayment(orderId, { amount: remaining > 0 ? remaining : orderTotal, method, notes: 'Baixa integral via Financeiro' });
+    const opts = typeof paymentDetails === 'string'
+      ? { method: paymentDetails }
+      : paymentDetails;
+    const amount = opts.amount !== undefined ? opts.amount : (remaining > 0 ? remaining : orderTotal);
+    await recordPayment(orderId, {
+      amount,
+      method: opts.method || 'PIX',
+      notes: opts.notes || 'Baixa integral via Financeiro',
+      date: opts.date
+    });
   };
 
   return {

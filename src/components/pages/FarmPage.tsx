@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { FarmsTable } from "./farms/FarmTable";
 import { FarmForm } from "./farms/FarmForm";
 import { PlotsModal } from "./farms/PlotsModal";
@@ -11,11 +12,12 @@ import { FarmPageHeader } from "./farms/FarmPageHeader";
 import { useFarms } from "@/hooks/useFarms";
 import { useFarmHandlers } from "./farms/usePlotHandlers";
 
+interface FarmsPageProps {
+  clientFilter?: { id?: string; name?: string; cpf?: string } | null;
+  onClearClientFilter?: () => void;
+}
 
-
-
-
-const FarmsPage = () => {
+const FarmsPage = ({ clientFilter, onClearClientFilter }: FarmsPageProps = {}) => {
   const {
     farms,
     setFarms,
@@ -96,6 +98,10 @@ const FarmsPage = () => {
   const locations = Array.from(new Set(farms.map(f => `${f.city} - ${f.state}`))).sort();
 
   const filteredFarms = farms.filter(farm => {
+    const matchesClientFilter = !clientFilter ||
+      (clientFilter.id && farm.clientId === clientFilter.id) ||
+      (clientFilter.name && (farm.clientName || "").toLowerCase() === clientFilter.name.toLowerCase());
+
     const matchesSearch = farm.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (farm.clientName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       farm.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -104,12 +110,32 @@ const FarmsPage = () => {
     const farmLocation = `${farm.city} - ${farm.state}`;
     const matchesCidadeEstado = !cidadeEstadoFilter || cidadeEstadoFilter === "all" || farmLocation === cidadeEstadoFilter;
     
-    return matchesSearch && matchesCidadeEstado;
+    return matchesClientFilter && matchesSearch && matchesCidadeEstado;
   });
 
   return (
     <div className="space-y-6">
       <FarmPageHeader onNewFarm={() => setShowFarmForm(true)} />
+
+      {clientFilter && (
+        <div className="flex items-center justify-between gap-2 px-4 py-2.5 rounded-lg bg-green-50 border border-green-200 text-sm text-green-900">
+          <span>
+            Exibindo fazendas do cliente: <strong>{clientFilter.name || clientFilter.cpf}</strong>
+          </span>
+          {onClearClientFilter && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onClearClientFilter}
+              className="h-7 px-2 text-xs text-green-800 hover:bg-green-100"
+            >
+              <X className="h-3.5 w-3.5 mr-1" />
+              Mostrar todas
+            </Button>
+          )}
+        </div>
+      )}
 
       <Card>
         <CardHeader>

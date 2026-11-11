@@ -1,5 +1,6 @@
 
 import { useState, FormEvent } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export interface Banner {
   id: number;
@@ -12,29 +13,50 @@ export interface Banner {
   dataCriacao: string;
 }
 
+const STORAGE_KEY_BANNERS = "farm_flow_app_banners_v1";
+
+const DEFAULT_BANNERS: Banner[] = [
+  {
+    id: 1,
+    titulo: "Amostragem de Solo de Precisão",
+    descricao: "Planeje a próxima safra com recomendação georreferenciada Preciza",
+    local: "home",
+    ordem: 1,
+    status: "Ativo",
+    imagem: "",
+    dataCriacao: "06/10/2026"
+  },
+  {
+    id: 2,
+    titulo: "Pulverização e Mapeamento com Drone",
+    descricao: "Solicite orçamento direto para sua propriedade",
+    local: "servicos",
+    ordem: 2,
+    status: "Ativo",
+    imagem: "",
+    dataCriacao: "06/10/2026"
+  }
+];
+
 export const useBanners = () => {
-  const [banners] = useState<Banner[]>([
-    {
-      id: 1,
-      titulo: "Promoção de Verão",
-      descricao: "Desconto especial em todos os serviços",
-      local: "home",
-      ordem: 1,
-      status: "Ativo",
-      imagem: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=400",
-      dataCriacao: "15/01/2024"
-    },
-    {
-      id: 2,
-      titulo: "Novos Produtos",
-      descricao: "Confira nossa linha de produtos agrícolas",
-      local: "servicos",
-      ordem: 2,
-      status: "Ativo",
-      imagem: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400",
-      dataCriacao: "10/01/2024"
-    }
-  ]);
+  const { toast } = useToast();
+  const [banners, setBanners] = useState<Banner[]>(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_BANNERS);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {}
+    return DEFAULT_BANNERS;
+  });
+
+  const persistBanners = (next: Banner[]) => {
+    setBanners(next);
+    try {
+      localStorage.setItem(STORAGE_KEY_BANNERS, JSON.stringify(next));
+    } catch {}
+  };
 
   const [bannersPage, setBannersPage] = useState(1);
   const [bannersPerPage, setBannersPerPage] = useState(10);
@@ -66,7 +88,19 @@ export const useBanners = () => {
 
   const handleBannerSubmit = (e: FormEvent) => {
     e.preventDefault();
-    console.log("Banner saved:", bannerFormData);
+    if (editingBanner) {
+      const updated = banners.map(b => b.id === editingBanner.id ? { ...bannerFormData, id: editingBanner.id } : b);
+      persistBanners(updated);
+      toast({ title: "Banner atualizado", description: "As alterações foram salvas." });
+    } else {
+      const created: Banner = {
+        ...bannerFormData,
+        id: Date.now(),
+        dataCriacao: new Date().toLocaleDateString("pt-BR")
+      };
+      persistBanners([created, ...banners]);
+      toast({ title: "Banner criado", description: "O novo banner foi cadastrado." });
+    }
     resetBannerForm();
   };
 

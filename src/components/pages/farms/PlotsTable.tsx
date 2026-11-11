@@ -68,6 +68,8 @@ export const PlotsTable = ({ plots, onEditPlot, onDeletePlot }: PlotsTableProps)
                 <Button
                   variant="outline"
                   size="sm"
+                  aria-label="Editar talhão"
+                  title="Editar talhão"
                   onClick={() => onEditPlot(plot)}
                 >
                   <Edit className="h-4 w-4" />
@@ -75,6 +77,8 @@ export const PlotsTable = ({ plots, onEditPlot, onDeletePlot }: PlotsTableProps)
                 <Button
                   variant="outline"
                   size="sm"
+                  aria-label="Excluir talhão"
+                  title="Excluir talhão"
                   onClick={() => onDeletePlot(plot.id)}
                 >
                   <Trash2 className="h-4 w-4" />

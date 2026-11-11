@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Settings, Users, Smartphone, Printer } from "lucide-react";
+import { Settings, Users, Smartphone, Printer, ShieldCheck } from "lucide-react";
 import { OperationalSection } from "./settings/OperationalSection";
 import { SystemSection } from "./settings/SystemSection";
 import { UsersSection } from "./settings/UsersSection";
 import { AppSection } from "./settings/AppSection";
 import { PdfHeaderTab } from "./settings/PdfHeaderTab";
+import { AuditLogsPanel } from "./audit/AuditLogsPanel";
 
 const SettingsPage = () => {
   const [activeSection, setActiveSection] = useState("operational");
@@ -36,6 +37,12 @@ const SettingsPage = () => {
       description: "Gerenciar usuários e acessos"
     },
     {
+      id: "audit",
+      title: "Logs de Auditoria",
+      icon: ShieldCheck,
+      description: "Histórico global de ações e alterações"
+    },
+    {
       id: "app",
       title: "Configurações do App",
       icon: Smartphone,
@@ -53,6 +60,8 @@ const SettingsPage = () => {
         return <SystemSection />;
       case "users":
         return <UsersSection />;
+      case "audit":
+        return <AuditLogsPanel />;
       case "app":
         return <AppSection />;
       default:
@@ -63,7 +72,7 @@ const SettingsPage = () => {
   return (
     <div className="flex flex-col md:flex-row gap-6">
       {/* Sidebar Menu */}
-      <div className="w-full md:w-64 space-y-2">
+      <div className="w-full md:w-64 shrink-0 space-y-2">
         <div className="mb-4">
           <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>
           <p className="text-gray-600 text-sm">Gerencie as configurações do sistema</p>
@@ -99,7 +108,7 @@ const SettingsPage = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         {renderActiveSection()}
       </div>
     </div>
