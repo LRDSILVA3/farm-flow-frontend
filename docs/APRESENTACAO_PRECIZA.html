@@ -518,9 +518,9 @@
 
           <div class="glass-card">
             <div class="text-sky-400 text-2xl mb-3"><i class="fa-solid fa-server"></i></div>
-            <h3 class="text-lg font-bold text-white mb-2">Servidor Próprio & Backups</h3>
+            <h3 class="text-lg font-bold text-white mb-2">Arquitetura em Nuvem & Backups</h3>
             <p class="text-slate-400 text-xs leading-relaxed">
-              Instalado no servidor HP local com backup noturno automático no HD de 2TB às 03:00, monitoramento em tempo real (Dozzle) e túnel seguro.
+              Estrutura conteinerizada em Docker pronta para hospedagem em nuvem, com rotinas automatizadas de backup diário do banco de dados, HTTPS e monitoramento contínuo.
             </p>
           </div>
         </div>
@@ -535,53 +535,54 @@
     <!-- SLIDE 9: INFRAESTRUTURA & ESTIMATIVA DE CUSTOS EM NUVEM -->
     <section class="slide" data-slide="9">
       <div class="flex justify-between items-center">
-        <span class="badge bg-sky-950 text-sky-400 border border-sky-800/40"><i class="fa-solid fa-cloud"></i> Infraestrutura & Nuvem</span>
+        <span class="badge bg-sky-950 text-sky-400 border border-sky-800/40"><i class="fa-solid fa-cloud"></i> Infraestrutura 100% em Nuvem</span>
         <span class="text-sm text-slate-400 font-medium">Estimativa de Custos Mensais</span>
       </div>
 
       <div class="my-auto">
-        <h2 class="text-4xl font-extrabold text-white mb-3">Flexibilidade Total: Servidor Local ou 100% em Nuvem</h2>
+        <h2 class="text-4xl font-extrabold text-white mb-3">Opções de Hospedagem e Custos Mensais em Nuvem</h2>
         <p class="text-slate-300 text-sm mb-8 max-w-4xl">
-          Por rodar em containers Docker, o FarmFlow opera hoje no servidor da empresa sem mensalidade de nuvem e pode ser migrado para infraestrutura 100% online a qualquer momento:
+          Para operar o FarmFlow 100% online com domínio próprio, certificado HTTPS e backups automáticos, existem três faixas de infraestrutura conforme o porte da operação (valores pagos diretamente aos provedores):
         </p>
 
         <div class="grid grid-cols-3 gap-6">
           <div class="glass-card flex flex-col justify-between">
             <div>
               <div class="flex justify-between items-center mb-3">
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Cenário Atual</span>
-                <i class="fa-solid fa-server text-slate-400 text-lg"></i>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Plano de Entrada</span>
+                <i class="fa-solid fa-seedling text-slate-400 text-lg"></i>
               </div>
-              <h3 class="text-xl font-bold text-white mb-1">Servidor Local (HP)</h3>
-              <div class="text-2xl font-extrabold text-emerald-400 mb-4">R$ 0 <span class="text-xs font-normal text-slate-400">/ mês</span></div>
+              <h3 class="text-xl font-bold text-white mb-1">Nuvem Inicial (VPS BR)</h3>
+              <div class="text-2xl font-extrabold text-slate-200 mb-4">~R$ 35 – 55 <span class="text-xs font-normal text-slate-400">/ mês</span></div>
               <ul class="space-y-2 text-xs text-slate-300">
-                <li class="flex items-start gap-2"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i><span>Hospedagem local já instalada e ativa</span></li>
-                <li class="flex items-start gap-2"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i><span>Banco PostgreSQL + Backup HD 2TB</span></li>
-                <li class="flex items-start gap-2"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i><span>Domínio + acesso externo opcional: ~R$ 3,35/mês</span></li>
+                <li class="flex items-start gap-2"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i><span><strong>Domínio .com.br:</strong> ~R$ 3,35/mês (R$ 40/ano)</span></li>
+                <li class="flex items-start gap-2"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i><span><strong>SSL/HTTPS + DNS (Cloudflare):</strong> Grátis</span></li>
+                <li class="flex items-start gap-2"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i><span><strong>VPS Brasil (4 GB RAM / 50 GB NVMe):</strong> R$ 30 – 50/mês</span></li>
+                <li class="flex items-start gap-2"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i><span><strong>Storage & Backup (até 10 GB R2):</strong> Grátis</span></li>
               </ul>
             </div>
             <div class="mt-4 pt-3 border-t border-slate-700/50 text-[11px] text-slate-400">
-              Ideal para iniciar sem custos recorrentes de nuvem.
+              Indicado para equipe enxuta e início imediato em nuvem.
             </div>
           </div>
 
           <div class="glass-card border-emerald-500/40 bg-emerald-950/15 flex flex-col justify-between relative">
             <div>
               <div class="flex justify-between items-center mb-3">
-                <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Recomendado Nuvem</span>
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Melhor Custo-Benefício</span>
                 <i class="fa-solid fa-cloud-arrow-up text-emerald-400 text-lg"></i>
               </div>
-              <h3 class="text-xl font-bold text-white mb-1">Nuvem Enxuta (VPS Brasil)</h3>
-              <div class="text-2xl font-extrabold text-emerald-400 mb-4">~R$ 50 – 95 <span class="text-xs font-normal text-slate-400">/ mês</span></div>
+              <h3 class="text-xl font-bold text-white mb-1">Nuvem Recomendada</h3>
+              <div class="text-2xl font-extrabold text-emerald-400 mb-4">~R$ 60 – 95 <span class="text-xs font-normal text-slate-400">/ mês</span></div>
               <ul class="space-y-2 text-xs text-slate-300">
-                <li class="flex items-start gap-2"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i><span><strong>Domínio .com.br:</strong> ~R$ 3,35/mês (R$ 40/ano)</span></li>
-                <li class="flex items-start gap-2"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i><span><strong>SSL/HTTPS + DNS (Cloudflare):</strong> Grátis</span></li>
-                <li class="flex items-start gap-2"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i><span><strong>VPS BR (8 GB RAM / 100 GB NVMe):</strong> R$ 43 – 78/mês</span></li>
-                <li class="flex items-start gap-2"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i><span><strong>Backup Externo (R2 / Snapshot):</strong> R$ 0 – 15/mês</span></li>
+                <li class="flex items-start gap-2"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i><span><strong>Domínio .com.br + SSL Cloudflare:</strong> ~R$ 3,35/mês</span></li>
+                <li class="flex items-start gap-2"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i><span><strong>VPS BR (8 GB RAM / 100 GB NVMe):</strong> R$ 45 – 78/mês</span></li>
+                <li class="flex items-start gap-2"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i><span><strong>Backup Externo + Storage Extra:</strong> R$ 10 – 15/mês</span></li>
+                <li class="flex items-start gap-2"><i class="fa-solid fa-check text-emerald-400 mt-0.5"></i><span><strong>E-mail Transacional Inicial:</strong> Grátis (até 3 mil/mês)</span></li>
               </ul>
             </div>
             <div class="mt-4 pt-3 border-t border-emerald-800/40 text-[11px] text-emerald-300">
-              Disponibilidade 24/7 no campo, celular ou escritório.
+              Folga de processamento, disponibilidade 24/7 e snapshot.
             </div>
           </div>
 
@@ -609,7 +610,7 @@
 
       <div class="flex justify-between items-center text-xs text-slate-500 border-t border-slate-800/80 pt-4">
         <span>Preciza Tecnologia</span>
-        <span>Arquitetura Docker portável • Migração sem reescrever código</span>
+        <span>Arquitetura Docker portável • Upgrade de plano a qualquer momento</span>
       </div>
     </section>
 
@@ -626,7 +627,7 @@
         </div>
         <h2 class="text-4xl font-extrabold text-white mb-4">O FarmFlow Está Pronto para Evoluir com a Preciza</h2>
         <p class="text-slate-300 text-base leading-relaxed mb-10">
-          A plataforma já está instalada no servidor da empresa, com os 8 serviços oficiais configurados, todas as variáveis de custo e parâmetros da tabela cadastrados e fluxos validados.
+          A plataforma já conta com os 8 serviços oficiais configurados, todas as variáveis de custo e parâmetros da tabela cadastrados e fluxos validados para entrar em produção.
         </p>
 
         <div class="grid grid-cols-3 gap-6 text-left mb-10">
@@ -648,7 +649,7 @@
         </div>
 
         <button onclick="window.open('http://192.168.1.24:3000', '_blank')" class="nav-btn bg-emerald-500 text-slate-950 font-bold hover:bg-emerald-400 border-none px-8 py-3 text-base">
-          <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Sistema em Produção (192.168.1.24:3000)
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Iniciar Demonstração ao Vivo
         </button>
       </div>
 
