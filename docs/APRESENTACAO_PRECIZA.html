@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Apresentação FarmFlow — Preciza Tecnologia</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    
+    * {
+      box-sizing: border-box;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      background-color: #0b1320;
+      color: #f1f5f9;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .slide-deck {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      padding: 48px 72px;
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      opacity: 0;
+      transition: opacity 0.35s ease-in-out;
+      background: radial-gradient(circle at 85% 15%, rgba(16, 185, 129, 0.08) 0%, transparent 60%),
+                  radial-gradient(circle at 15% 85%, rgba(14, 165, 233, 0.06) 0%, transparent 60%),
+                  #0b1320;
+    }
+
+    .slide.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 24px;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .glass-card:hover {
+      border-color: rgba(16, 185, 129, 0.35);
+      transform: translateY(-2px);
+    }
+
+    .screenshot-frame {
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+      overflow: hidden;
+      background: #0f172a;
+    }
+
+    .screenshot-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* Controls */
+    .nav-btn {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #e2e8f0;
+      padding: 10px 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .nav-btn:hover {
+      background: #10b981;
+      color: #0f172a;
+      border-color: #10b981;
+    }
+
+    /* Print styles */
+    @media print {
+      body {
+        overflow: visible !important;
+        background: white !important;
+        color: #0f172a !important;
+      }
+      .slide-deck {
+        height: auto !important;
+      }
+      .slide {
+        position: relative !important;
+        display: flex !important;
+        opacity: 1 !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        height: 100vh !important;
+        background: white !important;
+        color: #0f172a !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .glass-card {
+        background: #f8fafc !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #0f172a !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="slide-deck" id="deck">
+
+    <!-- SLIDE 1: CAPA -->
+    <section class="slide active" data-slide="1">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center font-black text-slate-950 text-xl">P</div>
+          <span class="text-xl font-bold tracking-tight text-white">PRECIZA <span class="text-emerald-400 font-light">Tecnologia</span></span>
+        </div>
+        <span class="badge bg-emerald-950/80 text-emerald-400 border border-emerald-800/50">
+          <i class="fa-solid fa-satellite-dish"></i> Solução Integrada 2026
+        </span>
+      </div>
+
+      <div class="grid grid-cols-12 gap-10 items-center my-auto">
+        <div class="col-span-7">
+          <span class="text-emerald-400 font-semibold text-lg tracking-wider uppercase mb-3 block">Apresentação Executiva</span>
+          <h1 class="text-5xl font-extrabold text-white leading-tight mb-6">
+            FarmFlow: O Sistema de Gestão Agronômica da <span class="text-emerald-400">Preciza</span>
+          </h1>
+          <p class="text-slate-300 text-lg leading-relaxed mb-8 max-w-xl">
+            Uma plataforma completa desenvolvida sob medida para centralizar clientes, pedidos, cálculos agronômicos de alta precisão, agenda operacional de campo e liquidação financeira.
+          </p>
+          <div class="flex gap-4">
+            <div class="flex items-center gap-2 text-slate-400 text-sm">
+              <i class="fa-solid fa-circle-check text-emerald-400"></i> Fórmulas Validadas (budget.xlsm)
+            </div>
+            <div class="flex items-center gap-2 text-slate-400 text-sm">
+              <i class="fa-solid fa-circle-check text-emerald-400"></i> 100% Web & Mobile
+            </div>
+            <div class="flex items-center gap-2 text-slate-400 text-sm">
+              <i class="fa-solid fa-circle-check text-emerald-400"></i> Auditoria & RBAC
+            </div>
+          </div>
+        </div>
+        <div class="col-span-5">
+          <div class="screenshot-frame transform rotate-1 hover:rotate-0 transition duration-300">
+            <img src="screens/02_dashboard_inicial.png" alt="Dashboard FarmFlow">
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center text-xs text-slate-500 border-t border-slate-800/80 pt-4">
+        <span>Preciza Tecnologia Agrícola • Confidencial</span>
+        <span>Aperte [→] ou [Espaço] para avançar</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: DESAFIO & OPORTUNIDADE -->
+    <section class="slide" data-slide="2">
+      <div class="flex justify-between items-center">
+        <span class="badge bg-slate-800 text-slate-300"><i class="fa-solid fa-compass"></i> Cenário Atual</span>
+        <span class="text-sm text-slate-400 font-medium">Desafios Operacionais</span>
+      </div>
+
+      <div class="my-auto">
+        <h2 class="text-4xl font-extrabold text-white mb-4">De Planilhas Isoladas para uma Operação Ágil</h2>
+        <p class="text-slate-300 text-base mb-10 max-w-3xl">
+          Antes do FarmFlow, cálculos complexos e controles operacionais ficavam dispersos em planilhas Excel, anotações de WhatsApp e controles paralelos.
+        </p>
+
+        <div class="grid grid-cols-3 gap-6">
+          <div class="glass-card">
+            <div class="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center text-xl mb-4">
+              <i class="fa-solid fa-file-excel"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Orçamentos Manuais</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Cálculos demorados em planilhas pesadas, sujeitos a erros manuais de conversão de alqueires/hectares e inconsistências de descontos.
+            </p>
+          </div>
+
+          <div class="glass-card">
+            <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-xl mb-4">
+              <i class="fa-solid fa-calendar-xmark"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Descompasso Campo x Escritório</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Dificuldade em acompanhar em tempo real quais serviços foram executados no campo, quais operadores estão alocados e status das amostras.
+            </p>
+          </div>
+
+          <div class="glass-card">
+            <div class="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center text-xl mb-4">
+              <i class="fa-solid fa-hand-holding-dollar"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Cobrança e Baixas Descentralizadas</h3>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Risco de serviços executados sem cobrança imediata, falta de visão de saldo em aberto de clientes e ausência de histórico de auditoria.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center text-xs text-slate-500 border-t border-slate-800/80 pt-4">
+        <span>Preciza Tecnologia</span>
+        <span>Solução: Integração ponta a ponta</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: PILARES DA SOLUÇÃO -->
+    <section class="slide" data-slide="3">
+      <div class="flex justify-between items-center">
+        <span class="badge bg-emerald-950 text-emerald-400 border border-emerald-800/40"><i class="fa-solid fa-layer-group"></i> Pilares da Plataforma</span>
+        <span class="text-sm text-slate-400 font-medium">Arquitetura Integrada</span>
+      </div>
+
+      <div class="my-auto">
+        <h2 class="text-4xl font-extrabold text-white mb-3">Tudo o que a Preciza precisa em um só lugar</h2>
+        <p class="text-slate-300 text-base mb-8 max-w-3xl">O ecossistema FarmFlow cobre toda a jornada de atendimento ao produtor rural.</p>
+
+        <div class="grid grid-cols-4 gap-5">
+          <div class="glass-card">
+            <span class="text-emerald-400 font-bold text-2xl block mb-2">01</span>
+            <h4 class="text-lg font-bold text-white mb-1">Cadastros Agrícolas</h4>
+            <p class="text-slate-400 text-xs leading-relaxed">
+              Clientes, fazendas e talhões com medida dupla automática: <strong>Alqueires (alq)</strong> e <strong>Hectares (ha)</strong> (1 alq = 2,42 ha).
+            </p>
+          </div>
+
+          <div class="glass-card">
+            <span class="text-emerald-400 font-bold text-2xl block mb-2">02</span>
+            <h4 class="text-lg font-bold text-white mb-1">Orçamentos de Alta Precisão</h4>
+            <p class="text-slate-400 text-xs leading-relaxed">
+              Motores matemáticos fiéis à planilha <code class="text-emerald-300">budget.xlsm</code>: Amostragem de Solo (AP), Pulverização por Drone, Mapeamento, Conferência e Foliar.
+            </p>
+          </div>
+
+          <div class="glass-card">
+            <span class="text-emerald-400 font-bold text-2xl block mb-2">03</span>
+            <h4 class="text-lg font-bold text-white mb-1">Agenda & Campo</h4>
+            <p class="text-slate-400 text-xs leading-relaxed">
+              Alocação de colaboradores, equipamentos, maquinários, registro de área executada e controle de amostras laboratoriais.
+            </p>
+          </div>
+
+          <div class="glass-card">
+            <span class="text-emerald-400 font-bold text-2xl block mb-2">04</span>
+            <h4 class="text-lg font-bold text-white mb-1">Financeiro & Auditoria</h4>
+            <p class="text-slate-400 text-xs leading-relaxed">
+              Baixa com pagamento à vista ou a prazo com juros contratuais, exportação de Folha de Pedido em PDF oficial e trilha completa de auditoria.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center text-xs text-slate-500 border-t border-slate-800/80 pt-4">
+        <span>Preciza Tecnologia</span>
+        <span>Módulos 100% Conectados</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: MOTOR AGRONÔMICO (BUDGET.XLSM) -->
+    <section class="slide" data-slide="4">
+      <div class="flex justify-between items-center">
+        <span class="badge bg-blue-950 text-blue-400 border border-blue-800/40"><i class="fa-solid fa-calculator"></i> Motor Agronômico</span>
+        <span class="text-sm text-slate-400 font-medium">Fidelidade aos Cálculos Oficiais</span>
+      </div>
+
+      <div class="grid grid-cols-12 gap-8 items-center my-auto">
+        <div class="col-span-6">
+          <h2 class="text-3xl font-extrabold text-white mb-4">Cálculos Exatos da Planilha, com a Velocidade da Web</h2>
+          <p class="text-slate-300 text-sm leading-relaxed mb-6">
+            O coração do FarmFlow implementa rigorosamente a matemática de engenharia agronômica que a Preciza utiliza:
+          </p>
+
+          <div class="space-y-3">
+            <div class="p-3 rounded-lg bg-slate-800/60 border border-slate-700/60 flex items-start gap-3">
+              <i class="fa-solid fa-check text-emerald-400 mt-1"></i>
+              <div>
+                <strong class="text-white text-sm block">Amostragem de Solo em AP (Gabarito Oficial)</strong>
+                <span class="text-xs text-slate-400">100% Análise Completa sem desconto comercial. Distribuição cúbica automática e edição livre sem perda de gabarito.</span>
+              </div>
+            </div>
+
+            <div class="p-3 rounded-lg bg-slate-800/60 border border-slate-700/60 flex items-start gap-3">
+              <i class="fa-solid fa-check text-emerald-400 mt-1"></i>
+              <div>
+                <strong class="text-white text-sm block">Conversão Bidirecional Automática</strong>
+                <span class="text-xs text-slate-400">Digitar alqueires calcula hectares na hora (e vice-versa), eliminando arredondamentos incorretos de área.</span>
+              </div>
+            </div>
+
+            <div class="p-3 rounded-lg bg-slate-800/60 border border-slate-700/60 flex items-start gap-3">
+              <i class="fa-solid fa-check text-emerald-400 mt-1"></i>
+              <div>
+                <strong class="text-white text-sm block">Todos os Serviços Suportados</strong>
+                <span class="text-xs text-slate-400">Conferência, Mapeamento com Drone, Pulverização por Drone, Coleta Foliar, Compactação, ATV e Biológicos.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-span-6">
+          <div class="screenshot-frame">
+            <img src="screens/09_modal_novo_pedido_ap.png" alt="Orçamento de Amostragem de Solo">
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center text-xs text-slate-500 border-t border-slate-800/80 pt-4">
+        <span>Preciza Tecnologia</span>
+        <span>Confiabilidade Matemática: 0% de divergência</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: FOLHA DE PEDIDO & PROPOSTA COMERCIAL -->
+    <section class="slide" data-slide="5">
+      <div class="flex justify-between items-center">
+        <span class="badge bg-purple-950 text-purple-400 border border-purple-800/40"><i class="fa-solid fa-file-pdf"></i> Proposta Comercial</span>
+        <span class="text-sm text-slate-400 font-medium">Geração de Orçamento Oficial</span>
+      </div>
+
+      <div class="grid grid-cols-12 gap-8 items-center my-auto">
+        <div class="col-span-5">
+          <h2 class="text-3xl font-extrabold text-white mb-4">Folha de Pedido Profissional em 1 Clique</h2>
+          <p class="text-slate-300 text-sm leading-relaxed mb-6">
+            O vendedor ou agrônomo gera na hora o documento oficial de proposta para enviar ao cliente pelo WhatsApp ou imprimir:
+          </p>
+
+          <ul class="space-y-3 text-sm text-slate-300 mb-6">
+            <li class="flex items-center gap-2"><i class="fa-solid fa-circle-dot text-purple-400 text-xs"></i> Cabeçalho oficial com logo da Preciza</li>
+            <li class="flex items-center gap-2"><i class="fa-solid fa-circle-dot text-purple-400 text-xs"></i> Discriminação por talhão e por serviço</li>
+            <li class="flex items-center gap-2"><i class="fa-solid fa-circle-dot text-purple-400 text-xs"></i> Condições de pagamento: à vista / a prazo com taxa</li>
+            <li class="flex items-center gap-2"><i class="fa-solid fa-circle-dot text-purple-400 text-xs"></i> Download instantâneo em PDF vetorizado</li>
+          </ul>
+
+          <div class="p-3 bg-purple-950/40 border border-purple-800/40 rounded-xl text-xs text-purple-300">
+            <i class="fa-solid fa-signature mr-1"></i> Pronto para colher a assinatura do produtor no campo ou enviar digitalmente.
+          </div>
+        </div>
+
+        <div class="col-span-7">
+          <div class="screenshot-frame max-h-[460px]">
+            <img src="screens/10_folha_pedido_orcamento.png" alt="Folha de Pedido e Orçamento">
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center text-xs text-slate-500 border-t border-slate-800/80 pt-4">
+        <span>Preciza Tecnologia</span>
+        <span>Apresentação Comercial Impecável</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 6: EXECUÇÃO, AGENDA E AMOSTRAS -->
+    <section class="slide" data-slide="6">
+      <div class="flex justify-between items-center">
+        <span class="badge bg-emerald-950 text-emerald-400 border border-emerald-800/40"><i class="fa-solid fa-calendar-check"></i> Operação de Campo</span>
+        <span class="text-sm text-slate-400 font-medium">Agenda & Rastreabilidade</span>
+      </div>
+
+      <div class="grid grid-cols-12 gap-8 items-center my-auto">
+        <div class="col-span-7">
+          <div class="screenshot-frame">
+            <img src="screens/11_agenda_execucao.png" alt="Agenda e Execução de Campo">
+          </div>
+        </div>
+
+        <div class="col-span-5">
+          <h2 class="text-3xl font-extrabold text-white mb-4">Controle em Tempo Real do que Acontece na Fazenda</h2>
+          
+          <div class="space-y-4">
+            <div class="glass-card p-4">
+              <h4 class="text-white font-bold text-base flex items-center gap-2 mb-1">
+                <i class="fa-solid fa-users text-emerald-400"></i> Escala de Equipes & Máquinas
+              </h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Vincule operadores, quadriciclos, drones e veículos a cada serviço com registro de datas previstas e executadas.
+              </p>
+            </div>
+
+            <div class="glass-card p-4">
+              <h4 class="text-white font-bold text-base flex items-center gap-2 mb-1">
+                <i class="fa-solid fa-vial text-emerald-400"></i> Gestão de Amostras Laboratoriais
+              </h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Inclusão em lote com sugestão automática calculada: Completa, Macro, Micronutrientes, 20-40cm e Análise Física.
+              </p>
+            </div>
+
+            <div class="glass-card p-4">
+              <h4 class="text-white font-bold text-base flex items-center gap-2 mb-1">
+                <i class="fa-solid fa-chart-line text-emerald-400"></i> Baixa Parcial e Execução
+              </h4>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Se choveu ou o talhão foi feito parcialmente, o sistema registra exatamente a área executada e o saldo pendente.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center text-xs text-slate-500 border-t border-slate-800/80 pt-4">
+        <span>Preciza Tecnologia</span>
+        <span>Rastreabilidade Total de Campo</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 7: FINANCEIRO & FLUXO DE CAIXA -->
+    <section class="slide" data-slide="7">
+      <div class="flex justify-between items-center">
+        <span class="badge bg-amber-950 text-amber-400 border border-amber-800/40"><i class="fa-solid fa-wallet"></i> Módulo Financeiro</span>
+        <span class="text-sm text-slate-400 font-medium">Controle de Baixas & Fluxo</span>
+      </div>
+
+      <div class="grid grid-cols-12 gap-8 items-center my-auto">
+        <div class="col-span-5">
+          <h2 class="text-3xl font-extrabold text-white mb-4">Financeiro Integrado ao Pedido</h2>
+          <p class="text-slate-300 text-sm leading-relaxed mb-6">
+            Chega de reconciliações manuais no fim do mês:
+          </p>
+
+          <div class="space-y-3 text-sm">
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs mt-0.5">✓</div>
+              <span class="text-slate-300"><strong>Liquidação Flexível:</strong> Baixa total ou parcial com cálculo imediato do saldo devedor restante.</span>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs mt-0.5">✓</div>
+              <span class="text-slate-300"><strong>Multi-formas de Pagamento:</strong> Dinheiro, PIX, Boleto, Cheque e Transferência Bancária.</span>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs mt-0.5">✓</div>
+              <span class="text-slate-300"><strong>Alimentação Automática do Caixa:</strong> Cada baixa de serviço gera lançamento automático de receita.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-span-7">
+          <div class="screenshot-frame">
+            <img src="screens/13_financeiro_fluxo_caixa.png" alt="Fluxo de Caixa e Financeiro">
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center text-xs text-slate-500 border-t border-slate-800/80 pt-4">
+        <span>Preciza Tecnologia</span>
+        <span>Controle Financeiro Rigoroso</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 8: SEGURANÇA, AUDITORIA & RBAC -->
+    <section class="slide" data-slide="8">
+      <div class="flex justify-between items-center">
+        <span class="badge bg-indigo-950 text-indigo-400 border border-indigo-800/40"><i class="fa-solid fa-shield-halved"></i> Governança</span>
+        <span class="text-sm text-slate-400 font-medium">Permissões e Trilha de Auditoria</span>
+      </div>
+
+      <div class="my-auto">
+        <h2 class="text-4xl font-extrabold text-white mb-4">Segurança Corporativa e Rastreabilidade Total</h2>
+        <p class="text-slate-300 text-base mb-10 max-w-3xl">
+          Controle exatamente quem pode ver, editar, aprovar descontos ou excluir registros dentro da empresa.
+        </p>
+
+        <div class="grid grid-cols-3 gap-6">
+          <div class="glass-card">
+            <div class="text-indigo-400 text-2xl mb-3"><i class="fa-solid fa-user-lock"></i></div>
+            <h3 class="text-lg font-bold text-white mb-2">Controle de Perfis (RBAC)</h3>
+            <p class="text-slate-400 text-xs leading-relaxed">
+              Perfis padronizados: <strong>Administrador</strong>, <strong>Gerente</strong>, <strong>Operador</strong> e <strong>Financeiro</strong> com controle fino de permissões de módulo.
+            </p>
+          </div>
+
+          <div class="glass-card">
+            <div class="text-emerald-400 text-2xl mb-3"><i class="fa-solid fa-clock-rotate-left"></i></div>
+            <h3 class="text-lg font-bold text-white mb-2">Trilha de Auditoria Completa</h3>
+            <p class="text-slate-400 text-xs leading-relaxed">
+              Todo pedido registra quem criou, quando editou, quem deu desconto, quando foi agendado e quem deu baixa no financeiro com data/hora precisa.
+            </p>
+          </div>
+
+          <div class="glass-card">
+            <div class="text-sky-400 text-2xl mb-3"><i class="fa-solid fa-server"></i></div>
+            <h3 class="text-lg font-bold text-white mb-2">Servidor Próprio & Backups</h3>
+            <p class="text-slate-400 text-xs leading-relaxed">
+              Instalado no servidor HP local com backup noturno automático no HD de 2TB às 03:00, monitoramento em tempo real (Dozzle) e túnel seguro.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center text-xs text-slate-500 border-t border-slate-800/80 pt-4">
+        <span>Preciza Tecnologia</span>
+        <span>Conformidade & Tranquilidade</span>
+      </div>
+    </section>
+
+    <!-- SLIDE 9: CONCLUSÃO E PRÓXIMOS PASSOS -->
+    <section class="slide" data-slide="9">
+      <div class="flex justify-between items-center">
+        <span class="badge bg-emerald-950 text-emerald-400 border border-emerald-800/40"><i class="fa-solid fa-rocket"></i> Prontidão</span>
+        <span class="text-sm text-slate-400 font-medium">Entrada em Operação</span>
+      </div>
+
+      <div class="my-auto text-center max-w-4xl mx-auto">
+        <div class="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-3xl mx-auto mb-6">
+          <i class="fa-solid fa-check-double"></i>
+        </div>
+        <h2 class="text-4xl font-extrabold text-white mb-4">O FarmFlow Está Pronto para Rodar na Preciza</h2>
+        <p class="text-slate-300 text-base leading-relaxed mb-10">
+          A plataforma já foi instalada no servidor da empresa, possui os 8 serviços oficiais configurados, as 59 variáveis de custo cadastradas e todos os testes validados.
+        </p>
+
+        <div class="grid grid-cols-3 gap-6 text-left mb-10">
+          <div class="glass-card">
+            <span class="text-emerald-400 text-xs font-bold uppercase tracking-wider block mb-1">Passo 1</span>
+            <h4 class="text-white font-bold text-base mb-1">Capacitação da Equipe</h4>
+            <p class="text-slate-400 text-xs">Apresentação prática das telas com o Manual Ilustrado em PDF entregue.</p>
+          </div>
+          <div class="glass-card">
+            <span class="text-emerald-400 text-xs font-bold uppercase tracking-wider block mb-1">Passo 2</span>
+            <h4 class="text-white font-bold text-base mb-1">Importação de Clientes</h4>
+            <p class="text-slate-400 text-xs">Cadastro das principais fazendas e talhões da safra atual.</p>
+          </div>
+          <div class="glass-card">
+            <span class="text-emerald-400 text-xs font-bold uppercase tracking-wider block mb-1">Passo 3</span>
+            <h4 class="text-white font-bold text-base mb-1">Emissão dos Pedidos</h4>
+            <p class="text-slate-400 text-xs">Substituição das planilhas de orçamentos pela emissão digital no FarmFlow.</p>
+          </div>
+        </div>
+
+        <button onclick="window.open('http://192.168.1.24:3000', '_blank')" class="nav-btn bg-emerald-500 text-slate-950 font-bold hover:bg-emerald-400 border-none px-8 py-3 text-base">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Sistema em Produção (192.168.1.24:3000)
+        </button>
+      </div>
+
+      <div class="flex justify-between items-center text-xs text-slate-500 border-t border-slate-800/80 pt-4">
+        <span>Preciza Tecnologia Agrícola • 2026</span>
+        <span>Obrigado! Perguntas e Demonstração ao Vivo.</span>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- FLOATING NAVIGATION CONTROLS -->
+  <div class="no-print fixed bottom-6 right-8 flex items-center gap-3 z-50 bg-slate-900/90 backdrop-blur-md p-2 rounded-xl border border-slate-800 shadow-2xl">
+    <button class="nav-btn text-xs" onclick="prevSlide()"><i class="fa-solid fa-chevron-left"></i> Anterior</button>
+    <span class="text-xs font-bold text-slate-400 px-2" id="slide-indicator">1 / 9</span>
+    <button class="nav-btn text-xs" onclick="nextSlide()">Próximo <i class="fa-solid fa-chevron-right"></i></button>
+    <div class="w-px h-5 bg-slate-800 mx-1"></div>
+    <button class="nav-btn text-xs" onclick="window.print()"><i class="fa-solid fa-file-pdf"></i> Salvar PDF</button>
+    <button class="nav-btn text-xs" onclick="toggleFullscreen()"><i class="fa-solid fa-expand"></i></button>
+  </div>
+
+  <script>
+    let currentSlide = 1;
+    const totalSlides = document.querySelectorAll('.slide').length;
+
+    function showSlide(n) {
+      document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+      const active = document.querySelector(`.slide[data-slide="${n}"]`);
+      if (active) {
+        active.classList.add('active');
+        document.getElementById('slide-indicator').innerText = `${n} / ${totalSlides}`;
+      }
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        currentSlide++;
+        showSlide(currentSlide);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        currentSlide--;
+        showSlide(currentSlide);
+      }
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        prevSlide();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullscreen();
+      }
+    });
+  </script>
+</body>
+</html>
+

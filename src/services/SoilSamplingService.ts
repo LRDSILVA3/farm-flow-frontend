@@ -13,6 +13,7 @@ export interface SoilSamplingParams {
   desejaAnalise20_40cm?: boolean;
   desejaAnaliseFisica?: boolean;
   descontoManual?: number; // Desconto em R$
+  descontoPercentualManual?: number; // Desconto em %
   valorFechadoManual?: number; // Valor Total Fechado em R$
 }
 
@@ -75,6 +76,7 @@ export class SoilSamplingService {
       desejaAnalise20_40cm = true,
       desejaAnaliseFisica = false,
       descontoManual,
+      descontoPercentualManual,
       valorFechadoManual,
     } = params;
 
@@ -175,6 +177,9 @@ export class SoilSamplingService {
 
     const valorTotalSugerido = Math.max(metodo1, metodo2);
 
+    // Desconto padrão da variável de custo se não houver desconto ou valor fechado informado manualmente
+    const defaultDiscountPercent = this.getVariableValue('DESCONTO_COMERCIAL_PADRAO_PERCENTUAL') || 0;
+
     let desconto = 0;
     let totalValue = valorTotalSugerido;
 
@@ -183,6 +188,12 @@ export class SoilSamplingService {
       desconto = Math.max(0, valorTotalSugerido - totalValue);
     } else if (descontoManual !== undefined && descontoManual !== null && descontoManual > 0) {
       desconto = descontoManual;
+      totalValue = Math.max(0, valorTotalSugerido - desconto);
+    } else if (descontoPercentualManual !== undefined && descontoPercentualManual !== null && descontoPercentualManual > 0) {
+      desconto = (valorTotalSugerido * descontoPercentualManual) / 100;
+      totalValue = Math.max(0, valorTotalSugerido - desconto);
+    } else if (defaultDiscountPercent > 0) {
+      desconto = (valorTotalSugerido * defaultDiscountPercent) / 100;
       totalValue = Math.max(0, valorTotalSugerido - desconto);
     }
 

@@ -48,6 +48,7 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
 
   // Discount & Final Closed Value (INPUT DADOS Linha 9 / PEDIDO Linha 44)
   const [descontoManual, setDescontoManual] = useState<number | null>(null);
+  const [descontoPercentualManual, setDescontoPercentualManual] = useState<number | null>(null);
   const [valorFechadoManual, setValorFechadoManual] = useState<number | null>(null);
 
   // Gabarito editável de distribuição de análises (INPUT DADOS Linhas 21-24)
@@ -169,6 +170,7 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
         desejaAnalise20_40cm,
         desejaAnaliseFisica,
         descontoManual: descontoManual === null ? undefined : descontoManual,
+        descontoPercentualManual: descontoPercentualManual === null ? undefined : descontoPercentualManual,
         valorFechadoManual: valorFechadoManual === null ? undefined : valorFechadoManual,
       });
 
@@ -192,6 +194,7 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
     desejaAnalise20_40cm,
     desejaAnaliseFisica,
     descontoManual,
+    descontoPercentualManual,
     valorFechadoManual,
     soilSamplingService,
   ]);
@@ -585,29 +588,121 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
 
         {/* Campos de Desconto e Negociação (Excel INPUT DADOS Linha 9 / PEDIDO Linha 44) */}
         <div className="p-3 border rounded-md bg-muted/20 space-y-3">
-          <div className="flex justify-between items-center">
-            <Label className="font-semibold text-sm">Negociação de Preço / Desconto:</Label>
+          <div className="flex justify-between items-center flex-wrap gap-2">
+            <div>
+              <Label className="font-semibold text-sm">Negociação de Preço / Desconto Comercial:</Label>
+              <span className="text-xs text-muted-foreground block">
+                Alinhado à fórmula da planilha (INPUT DADOS C9). Pode ser pré-definido nas Variáveis de Custo.
+              </span>
+            </div>
             {desconto > 0 && (
               <span className="text-xs font-semibold px-2 py-0.5 rounded bg-destructive/10 text-destructive">
-                Desconto de -{descontoPercentual.toFixed(2)}% (-{soilSamplingService.formatCurrency(descontoPerAlq)}/alq)
+                Desconto de -{descontoPercentual.toFixed(2)}% (-{soilSamplingService?.formatCurrency(descontoPerAlq)}/alq)
               </span>
             )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          {/* Atalhos rápidos de percentual de desconto */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs text-muted-foreground mr-1">Atalhos rápidos:</span>
+            {[0, 3, 5, 6.39, 7, 10].map((pct) => {
+              const isSelected = Math.abs(descontoPercentual - pct) < 0.05 && (desconto > 0 || pct === 0);
+              return (
+                <button
+                  key={pct}
+                  type="button"
+                  onClick={() => {
+                    if (pct === 0) {
+                      setDescontoManual(0);
+                      setDescontoPercentualManual(0);
+                      setValorFechadoManual(null);
+                    } else {
+                      setDescontoPercentualManual(pct);
+                      setDescontoManual(null);
+                      setValorFechadoManual(null);
+                    }
+                  }}
+                  className={cn(
+                    "px-2.5 py-1 text-xs rounded-full border transition-colors font-medium",
+                    isSelected
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background hover:bg-muted text-foreground border-input"
+                  )}
+                >
+                  {pct === 0 ? "Sem Desconto (0%)" : `${pct}%`}
+                </button>
+              );
+            })}
+            {(descontoManual !== null || descontoPercentualManual !== null || valorFechadoManual !== null) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDescontoManual(null);
+                  setDescontoPercentualManual(null);
+                  setValorFechadoManual(null);
+                }}
+                className="px-2 py-1 text-xs text-muted-foreground hover:text-foreground underline ml-auto"
+              >
+                Restaurar Padrão
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <Label htmlFor="ap-desconto" className="text-xs">Desconto Manual (R$):</Label>
+              <Label htmlFor="ap-desconto-pct" className="text-xs">Desconto Comercial (%):</Label>
               <Input
-                id="ap-desconto"
+                id="ap-desconto-pct"
                 type="number"
-                value={descontoManual === null ? '' : descontoManual}
+                value={
+                  descontoPercentualManual !== null
+                    ? descontoPercentualManual
+                    : desconto > 0
+                    ? Number(descontoPercentual.toFixed(2))
+                    : ''
+                }
                 onChange={(e) => {
                   const val = e.target.value;
                   if (val === '') {
+                    setDescontoPercentualManual(0);
+                    setDescontoManual(0);
+                    setValorFechadoManual(null);
+                  } else {
+                    const pct = parseFloat(val) || 0;
+                    setDescontoPercentualManual(pct);
                     setDescontoManual(null);
+                    setValorFechadoManual(null);
+                  }
+                }}
+                min="0"
+                max="100"
+                step="0.1"
+                placeholder="Ex: 5"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="ap-desconto" className="text-xs">Desconto em Valor (R$):</Label>
+              <Input
+                id="ap-desconto"
+                type="number"
+                value={
+                  descontoManual !== null
+                    ? descontoManual
+                    : desconto > 0
+                    ? Number(desconto.toFixed(2))
+                    : ''
+                }
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '') {
+                    setDescontoManual(0);
+                    setDescontoPercentualManual(0);
                     setValorFechadoManual(null);
                   } else {
                     const desc = parseFloat(val) || 0;
                     setDescontoManual(desc);
+                    setDescontoPercentualManual(null);
                     setValorFechadoManual(null);
                   }
                 }}
@@ -628,10 +723,12 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
                   if (val === '') {
                     setValorFechadoManual(null);
                     setDescontoManual(null);
+                    setDescontoPercentualManual(null);
                   } else {
                     const fechado = parseFloat(val) || 0;
                     setValorFechadoManual(fechado);
                     setDescontoManual(null);
+                    setDescontoPercentualManual(null);
                   }
                 }}
                 min="0"
