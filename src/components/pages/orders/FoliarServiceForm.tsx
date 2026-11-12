@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { FoliarService, FoliarCalculationResult } from '../../../services/FoliarService';
 import { useCostVariables } from '../../../hooks/useCostVariables';
 import { Input } from '@/components/ui/input';
+import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -206,23 +207,19 @@ export const FoliarServiceForm: React.FC<FoliarServiceFormProps> = ({
         <div className="grid grid-cols-3 gap-4">
           <div>
             <Label htmlFor="foliar-alqueires">Alqueires:</Label>
-            <Input
+            <DecimalInput
               id="foliar-alqueires"
-              type="number" step="any"
-              value={alqueires === null ? '' : alqueires}
-              onChange={(e) => {
-                const value = e.target.value;
-                setAlqueires(value === '' ? null : parseFloat(value));
-              }}
-              min="0"
+              value={alqueires}
+              onValueChange={(newAlq) => setAlqueires(newAlq)}
+              placeholder="0,00"
             />
           </div>
           <div>
             <Label htmlFor="foliar-hectares">Hectares (ha):</Label>
             <Input
               id="foliar-hectares"
-              type="number" step="any"
-              value={((alqueires || 0) * 2.42).toFixed(2)}
+              type="text"
+              value={((alqueires || 0) * 2.42).toFixed(2).replace('.', ',')}
               readOnly
               className="bg-muted"
             />

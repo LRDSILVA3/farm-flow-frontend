@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { DroneSprayingService, DroneSprayingCalculationResult } from '../../../services/DroneSprayingService';
 import { useCostVariables } from '../../../hooks/useCostVariables';
 import { Input } from '@/components/ui/input';
+import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -123,20 +124,15 @@ export const DroneSprayingServiceForm: React.FC<DroneSprayingServiceFormProps> =
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="pulve-area">Área em Hectares (ha):</Label>
-            <Input
+            <DecimalInput
               id="pulve-area"
-              type="number" step="any"
-              value={areaHa === null ? '' : areaHa}
-              onChange={(e) => {
-                const value = e.target.value;
-                setAreaHa(value === '' ? null : parseFloat(value));
-              }}
-              min="0"
+              value={areaHa}
+              onValueChange={(newHa) => setAreaHa(newHa)}
               placeholder="Ex: 50"
             />
             {areaHa && areaHa > 0 && (
               <span className="text-xs text-muted-foreground">
-                Equivale a {(areaHa / 2.42).toFixed(2)} alqueires paulistas
+                Equivale a {(areaHa / 2.42).toFixed(2).replace('.', ',')} alqueires paulistas
               </span>
             )}
           </div>

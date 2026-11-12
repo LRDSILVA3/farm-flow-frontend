@@ -56,7 +56,7 @@ describe('PlotForm', () => {
 
         expect(screen.getByText('Adicionar Novo Talhão')).toBeInTheDocument();
         expect(screen.getByLabelText('Nome do Talhão')).toHaveValue('');
-        expect(screen.getByLabelText('Área Total (ha)')).toHaveValue(0);
+        expect(screen.getByLabelText('Área Total (ha)')).toHaveValue('');
         expect(screen.getByLabelText('Cidade')).toHaveValue('');
         expect(screen.getByLabelText('Estado')).toHaveValue('');
         expect(screen.getByLabelText('Matrícula')).toHaveValue('');
@@ -71,7 +71,7 @@ describe('PlotForm', () => {
 
         expect(screen.getByText('Editar Talhão')).toBeInTheDocument();
         expect(screen.getByLabelText('Nome do Talhão')).toHaveValue(mockPlot.name);
-        expect(screen.getByLabelText('Área Total (ha)')).toHaveValue(Number(mockPlot.area));
+        expect(screen.getByLabelText('Área Total (ha)')).toHaveValue(String(mockPlot.area));
         expect(screen.getByLabelText('Cidade')).toHaveValue(mockPlot.city);
         expect(screen.getByLabelText('Estado')).toHaveValue(mockPlot.state);
         expect(screen.getByLabelText('Matrícula')).toHaveValue(mockPlot.registration);
@@ -121,7 +121,7 @@ describe('PlotForm', () => {
         fireEvent.change(alqInput, { target: { value: '10' } });
 
         const haInput = screen.getByLabelText('Área Total (ha)');
-        expect(haInput).toHaveValue(24.2);
+        expect(haInput).toHaveValue('24,2');
         expect(mockSetPlotForm).toHaveBeenCalledWith(expect.objectContaining({ area: '24.20' }));
     });
 
@@ -129,9 +129,9 @@ describe('PlotForm', () => {
         renderCreateForm();
 
         const haInput = screen.getByLabelText('Área Total (ha)');
-        fireEvent.change(haInput, { target: { value: '24.20' } });
+        fireEvent.change(haInput, { target: { value: '24,20' } });
 
         const alqInput = screen.getByLabelText('Área Total (alq)');
-        expect(alqInput).toHaveValue(10);
+        expect(alqInput).toHaveValue('10');
     });
 });

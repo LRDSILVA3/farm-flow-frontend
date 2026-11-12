@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { EqualizaService, EqualizaCalculationResult } from '../../../services/EqualizaService';
 import { useCostVariables } from '../../../hooks/useCostVariables';
 import { Input } from '@/components/ui/input';
+import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -99,15 +100,10 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="equaliza-area">Área Total da Propriedade (Alqueires):</Label>
-            <Input
+            <DecimalInput
               id="equaliza-area"
-              type="number" step="any"
-              value={totalAlqueires === null ? '' : totalAlqueires}
-              onChange={(e) => {
-                const val = e.target.value;
-                setTotalAlqueires(val === '' ? null : parseFloat(val));
-              }}
-              min="0"
+              value={totalAlqueires}
+              onValueChange={(newAlq) => setTotalAlqueires(newAlq)}
               placeholder="Ex: 120"
             />
             {totalAlqueires && totalAlqueires >= 100 && (

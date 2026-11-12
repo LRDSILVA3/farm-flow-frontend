@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -192,15 +193,11 @@ export const OrderExecutionDialog: React.FC<OrderExecutionDialogProps> = ({
                   <Label htmlFor="partial-area" className="text-xs">
                     Área Executada nesta Etapa (ha):
                   </Label>
-                  <Input
+                  <DecimalInput
                     id="partial-area"
-                    type="number"
-                    step="0.1"
-                    min="0.1"
-                    max={remainingArea}
                     value={partialArea}
-                    onChange={(e) => setPartialArea(e.target.value)}
-                    placeholder={'Máximo: ' + remainingArea.toFixed(1) + ' ha'}
+                    onValueChange={(_, normalized) => setPartialArea(normalized)}
+                    placeholder={'Máximo: ' + remainingArea.toFixed(1).replace('.', ',') + ' ha'}
                   />
                 </div>
               )}

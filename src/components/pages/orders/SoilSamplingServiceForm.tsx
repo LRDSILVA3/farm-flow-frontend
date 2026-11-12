@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { SoilSamplingService, SoilSamplingCalculationResult } from '../../../services/SoilSamplingService';
 import { useCostVariables } from '../../../hooks/useCostVariables';
 import { Input } from '@/components/ui/input';
+import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -86,6 +87,7 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
   const lastValueRef = React.useRef<number | null>(null);
   const lastProductsJsonRef = React.useRef<string>('');
   const lastAreaHaRef = React.useRef<number | null>(null);
+  const lastEmittedAlqRef = React.useRef<number | null>(null);
 
   React.useEffect(() => {
     onValuesChangeRef.current = onValuesChange;
@@ -125,6 +127,14 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
   }, [costVariables]);
 
   useEffect(() => {
+    // Evita sobrescrever o que o usuário está digitando quando o pai devolve a área arredondada
+    if (
+      lastEmittedAlqRef.current !== null &&
+      Math.abs(lastEmittedAlqRef.current - initialAlqueires) <= 0.03
+    ) {
+      return;
+    }
+    lastEmittedAlqRef.current = null;
     setAlqueires(initialAlqueires === 0 ? null : initialAlqueires);
     if (initialAlqueires > 0) {
       lastAreaHaRef.current = Number((initialAlqueires * 2.42).toFixed(2));
@@ -446,14 +456,11 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label htmlFor="ap-alqueires">Área em Alqueires:</Label>
-            <Input
+            <DecimalInput
               id="ap-alqueires"
-              type="number"
-              step="any"
-              value={alqueires === null ? '' : alqueires}
-              onChange={(e) => {
-                const value = e.target.value;
-                const newAlq = value === '' ? null : parseFloat(value);
+              value={alqueires}
+              onValueChange={(newAlq) => {
+                lastEmittedAlqRef.current = newAlq;
                 setAlqueires(newAlq);
                 // Atualiza automaticamente o número de pontos sugerido se o usuário não tiver travado valor customizado
                 if (newAlq && newAlq > 0 && !isEditing) {
@@ -461,7 +468,6 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
                   setNumPontos(pts);
                 }
               }}
-              min="0"
               placeholder="Ex: 50"
             />
           </div>
@@ -470,8 +476,8 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
             <Label htmlFor="ap-hectares">Hectares (ha):</Label>
             <Input
               id="ap-hectares"
-              type="number"
-              value={((alqueires || 0) * 2.42).toFixed(2)}
+              type="text"
+              value={((alqueires || 0) * 2.42).toFixed(2).replace('.', ',')}
               readOnly
               className="bg-muted"
             />

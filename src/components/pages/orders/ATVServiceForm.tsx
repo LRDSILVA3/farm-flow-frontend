@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ATVService, ATVCalculationResult, ATVItemParam } from '../../../services/ATVService';
 import { useCostVariables } from '../../../hooks/useCostVariables';
 import { Input } from '@/components/ui/input';
+import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -339,12 +340,10 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
 
                 <div>
                   <Label className="text-xs">Área (ha)</Label>
-                  <Input
-                    type="number"
+                  <DecimalInput
                     value={item.areaHa}
-                    onChange={(e) => handleItemChange(idx, 'areaHa', parseFloat(e.target.value) || 0)}
-                    min="0"
-                    step="0.1"
+                    onValueChange={(newHa) => handleItemChange(idx, 'areaHa', newHa ?? 0)}
+                    placeholder="0,00"
                   />
                 </div>
 

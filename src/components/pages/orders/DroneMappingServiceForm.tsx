@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { DroneMappingService, DroneMappingCalculationResult } from '../../../services/DroneMappingService';
 import { useCostVariables } from '../../../hooks/useCostVariables';
 import { Input } from '@/components/ui/input';
+import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -139,15 +140,10 @@ export const DroneMappingServiceForm: React.FC<DroneMappingServiceFormProps> = (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="drone-alqueires">Área em Alqueires:</Label>
-            <Input
+            <DecimalInput
               id="drone-alqueires"
-              type="number" step="any"
-              value={alqueires === null ? '' : alqueires}
-              onChange={(e) => {
-                const value = e.target.value;
-                setAlqueires(value === '' ? null : parseFloat(value));
-              }}
-              min="0"
+              value={alqueires}
+              onValueChange={(newAlq) => setAlqueires(newAlq)}
               placeholder="Ex: 10"
             />
           </div>

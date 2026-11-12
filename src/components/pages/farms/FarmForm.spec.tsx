@@ -83,7 +83,7 @@ describe('FarmForm', () => {
 
         expect(screen.getByText('Nova Fazenda')).toBeInTheDocument();
         expect(screen.getByLabelText('Nome da Fazenda')).toHaveValue('');
-        expect(screen.getByLabelText('Área Total (ha)')).toHaveValue(0);
+        expect(screen.getByLabelText('Área Total (ha)')).toHaveValue('');
         expect(screen.getByLabelText(/Contato/i)).toHaveValue('');
         expect(screen.getByTestId('city-select')).toHaveValue('');
         expect(screen.getByTestId('state-select')).toHaveValue('');
@@ -99,7 +99,7 @@ describe('FarmForm', () => {
 
         expect(screen.getByText('Editar Fazenda')).toBeInTheDocument();
         expect(screen.getByLabelText('Nome da Fazenda')).toHaveValue(mockFarm.name);
-        expect(screen.getByLabelText('Área Total (ha)')).toHaveValue(Number(mockFarm.area));
+        expect(screen.getByLabelText('Área Total (ha)')).toHaveValue(String(mockFarm.area));
         expect(screen.getByLabelText<HTMLInputElement>(/Contato/i)).toHaveValue('(11) 99999-9999');
         expect(screen.getByTestId('city-select')).toHaveValue(mockFarm.city);
         expect(screen.getByTestId('state-select')).toHaveValue(mockFarm.state);
@@ -143,17 +143,34 @@ describe('FarmForm', () => {
         fireEvent.change(alqInput, { target: { value: '20' } });
 
         const haInput = screen.getByLabelText('Área Total (ha)');
-        expect(haInput).toHaveValue(48.4);
+        expect(haInput).toHaveValue('48,4');
         expect(mockOnInputChange).toHaveBeenCalledWith('area', '48.40');
+    });
+
+    it('keeps typed integer or decimal alqueires without jumping to 2000', () => {
+        renderCreateForm();
+
+        const alqInput = screen.getByLabelText('Área Total (alq)');
+        fireEvent.focus(alqInput);
+        fireEvent.change(alqInput, { target: { value: '2' } });
+        expect(alqInput).toHaveValue('2');
+
+        const haInput = screen.getByLabelText('Área Total (ha)');
+        expect(haInput).toHaveValue('4,84');
+        expect(mockOnInputChange).toHaveBeenCalledWith('area', '4.84');
+
+        fireEvent.change(alqInput, { target: { value: '2,5' } });
+        expect(alqInput).toHaveValue('2,5');
+        expect(haInput).toHaveValue('6,05');
     });
 
     it('recalculates alqueires when hectares is entered', () => {
         renderCreateForm();
 
         const haInput = screen.getByLabelText('Área Total (ha)');
-        fireEvent.change(haInput, { target: { value: '48.40' } });
+        fireEvent.change(haInput, { target: { value: '48,40' } });
 
         const alqInput = screen.getByLabelText('Área Total (alq)');
-        expect(alqInput).toHaveValue(20);
+        expect(alqInput).toHaveValue('20');
     });
 });

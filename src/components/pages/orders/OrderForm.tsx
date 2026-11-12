@@ -1,5 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { DecimalInput } from "@/components/ui/decimal-input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -358,13 +359,11 @@ export const OrderForm = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="area">Área (ha)</Label>
-                <Input
+                <DecimalInput
                   id="area"
-                  type="number"
-                  step="0.01"
                   value={formData.area}
-                  onChange={(e) => onInputChange("area", e.target.value)}
-                  placeholder="0.00"
+                  onValueChange={(_, normalized) => onInputChange("area", normalized)}
+                  placeholder="0,00"
                   required
                 />
               </div>

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { DecimalInput } from "@/components/ui/decimal-input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -1383,13 +1384,11 @@ export const SchedulePage = () => {
                         </button>
                       )}
                     </div>
-                    <Input
+                    <DecimalInput
                       id="exec-area"
-                      type="number"
-                      step="0.01"
                       value={partialExecutionForm.executedArea}
-                      onChange={(e) => setPartialExecutionForm({ ...partialExecutionForm, executedArea: e.target.value })}
-                      placeholder="0.00"
+                      onValueChange={(_, normalized) => setPartialExecutionForm({ ...partialExecutionForm, executedArea: normalized })}
+                      placeholder="0,00"
                       required
                       className="mt-1 text-base font-semibold"
                     />
@@ -1433,12 +1432,10 @@ export const SchedulePage = () => {
                     <div className="flex gap-1.5">
                       <div className="flex-1">
                         <Label className="text-[11px]">Área (ha)</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
+                        <DecimalInput
                           placeholder="Ex: 20"
                           value={splitArea}
-                          onChange={(e) => setSplitArea(e.target.value)}
+                          onValueChange={(_, normalized) => setSplitArea(normalized)}
                           className="h-8 text-xs bg-background"
                         />
                       </div>
