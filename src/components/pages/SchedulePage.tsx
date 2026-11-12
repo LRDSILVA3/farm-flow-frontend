@@ -1134,12 +1134,11 @@ export const SchedulePage = () => {
             <Table className="w-full text-xs">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="px-2.5">Cliente / Fazenda</TableHead>
+                  <TableHead className="px-2.5 min-w-[175px]">Cliente / Fazenda</TableHead>
                   <TableHead className="px-2.5">Serviço</TableHead>
                   <TableHead className="px-2.5">Execução (ha)</TableHead>
                   <TableHead className="px-2.5">Data</TableHead>
-                  <TableHead className="px-2.5">Equipe</TableHead>
-                  <TableHead className="px-2.5">Equipamentos</TableHead>
+                  <TableHead className="px-2.5">Equipe / Equip.</TableHead>
                   <TableHead className="px-2.5">Status</TableHead>
                   <TableHead className="px-2.5 text-right">Ações</TableHead>
                 </TableRow>
@@ -1147,7 +1146,7 @@ export const SchedulePage = () => {
               <TableBody>
                 {filteredExecutions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       Nenhum agendamento encontrado com os filtros selecionados.
                     </TableCell>
                   </TableRow>
@@ -1164,9 +1163,9 @@ export const SchedulePage = () => {
 
                     return (
                       <TableRow key={execution.id} className="hover:bg-muted/40">
-                        <TableCell className="px-2.5 py-3">
-                          <div className="font-semibold text-foreground text-xs sm:text-sm leading-tight">{execution.clientName}</div>
-                          <div className="text-xs text-muted-foreground leading-tight mt-0.5">{execution.farmName}</div>
+                        <TableCell className="px-2.5 py-3 min-w-[175px]">
+                          <div className="font-semibold text-foreground text-xs sm:text-sm leading-snug">{execution.clientName}</div>
+                          <div className="text-xs text-muted-foreground leading-snug mt-0.5">{execution.farmName}</div>
                           {execution.city && execution.city !== "-" && (
                             <div className="text-[11px] text-muted-foreground/80 mt-0.5">
                               {execution.city} / {execution.state || "PR"}
@@ -1174,13 +1173,13 @@ export const SchedulePage = () => {
                           )}
                         </TableCell>
 
-                        <TableCell className="px-2.5 py-3 font-medium text-xs max-w-[140px]">
+                        <TableCell className="px-2.5 py-3 font-medium text-xs max-w-[150px]">
                           {execution.serviceName}
                         </TableCell>
 
                         {/* Coluna de Progresso em Hectares */}
                         <TableCell className="px-2.5 py-3">
-                          <div className="space-y-1 min-w-[120px] max-w-[140px]">
+                          <div className="space-y-1 min-w-[115px] max-w-[135px]">
                             <div className="flex justify-between text-[11px] font-medium gap-1">
                               <span className="whitespace-nowrap">{executedArea.toFixed(1)} / {totalArea.toFixed(1)} ha</span>
                               <span className="font-bold text-primary">{percent}%</span>
@@ -1203,51 +1202,50 @@ export const SchedulePage = () => {
                           )}
                         </TableCell>
 
-                        {/* Equipe com Limite de 2 + Badge (+X) */}
-                        <TableCell className="px-2.5 py-3 max-w-[135px]">
-                          {execution.collaborators && execution.collaborators.length > 0 ? (
-                            <div className="flex flex-wrap gap-1 items-center">
-                              {execution.collaborators.slice(0, 2).map((collab, idx) => (
-                                <Badge key={idx} variant="secondary" className="rounded-md text-[11px] font-normal py-0 px-1.5 whitespace-nowrap">
-                                  {collab}
-                                </Badge>
-                              ))}
-                              {execution.collaborators.length > 2 && (
-                                <Badge
-                                  variant="outline"
-                                  className="rounded-md text-[11px] font-semibold py-0 px-1.5 cursor-help bg-muted/60"
-                                  title={execution.collaborators.slice(2).join(', ')}
-                                >
-                                  +{execution.collaborators.length - 2}
-                                </Badge>
+                        {/* Equipe & Equipamentos combinados para dar fôlego à tabela */}
+                        <TableCell className="px-2.5 py-3 max-w-[185px]">
+                          {(!execution.collaborators || execution.collaborators.length === 0) &&
+                          (!execution.equipmentNames || execution.equipmentNames.length === 0) ? (
+                            <span className="text-xs text-muted-foreground italic">Não atribuído</span>
+                          ) : (
+                            <div className="space-y-1">
+                              {execution.collaborators && execution.collaborators.length > 0 && (
+                                <div className="flex flex-wrap gap-1 items-center">
+                                  {execution.collaborators.slice(0, 2).map((collab, idx) => (
+                                    <Badge key={idx} variant="secondary" className="rounded-md text-[11px] font-normal py-0 px-1.5 whitespace-nowrap">
+                                      {collab}
+                                    </Badge>
+                                  ))}
+                                  {execution.collaborators.length > 2 && (
+                                    <Badge
+                                      variant="outline"
+                                      className="rounded-md text-[11px] font-semibold py-0 px-1.5 cursor-help bg-muted/60"
+                                      title={execution.collaborators.slice(2).join(', ')}
+                                    >
+                                      +{execution.collaborators.length - 2}
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
+                              {execution.equipmentNames && execution.equipmentNames.length > 0 && (
+                                <div className="flex flex-wrap gap-1 items-center">
+                                  {execution.equipmentNames.slice(0, 2).map((eq, idx) => (
+                                    <Badge key={idx} variant="outline" className="rounded-md text-[10px] font-normal py-0 px-1.5 leading-snug max-w-[165px] truncate" title={eq}>
+                                      {eq}
+                                    </Badge>
+                                  ))}
+                                  {execution.equipmentNames.length > 2 && (
+                                    <Badge
+                                      variant="outline"
+                                      className="rounded-md text-[10px] font-semibold py-0 px-1.5 cursor-help bg-muted/60"
+                                      title={execution.equipmentNames.slice(2).join(', ')}
+                                    >
+                                      +{execution.equipmentNames.length - 2}
+                                    </Badge>
+                                  )}
+                                </div>
                               )}
                             </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground italic">Não atribuído</span>
-                          )}
-                        </TableCell>
-
-                        {/* Equipamentos com Limite de 2 + Badge (+X) */}
-                        <TableCell className="px-2.5 py-3 max-w-[170px]">
-                          {execution.equipmentNames && execution.equipmentNames.length > 0 ? (
-                            <div className="flex flex-wrap gap-1 items-center">
-                              {execution.equipmentNames.slice(0, 2).map((eq, idx) => (
-                                <Badge key={idx} variant="outline" className="rounded-md text-[11px] font-normal py-0 px-1.5 leading-snug max-w-[155px] truncate" title={eq}>
-                                  {eq}
-                                </Badge>
-                              ))}
-                              {execution.equipmentNames.length > 2 && (
-                                <Badge
-                                  variant="outline"
-                                  className="rounded-md text-[11px] font-semibold py-0 px-1.5 cursor-help bg-muted/60"
-                                  title={execution.equipmentNames.slice(2).join(', ')}
-                                >
-                                  +{execution.equipmentNames.length - 2}
-                                </Badge>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground italic">Não atribuído</span>
                           )}
                         </TableCell>
 
@@ -1272,14 +1270,15 @@ export const SchedulePage = () => {
                           <div className="flex items-center justify-end gap-1">
                             {/* Incluir Análises Recomendadas */}
                             <Button
-                              variant="ghost"
+                              variant="outline"
                               size="sm"
-                              className="h-7 px-2 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                              className="h-7 px-2 text-xs text-indigo-600 border-indigo-200 hover:text-indigo-700 hover:bg-indigo-50"
                               onClick={() => openIncludeAnalysesModal(execution)}
-                              title="Importar análises recomendadas da planilha"
+                              title="Incluir análises recomendadas da planilha"
+                              aria-label="Análises"
                             >
-                              <FlaskConical className="h-3.5 w-3.5 mr-1" />
-                              Análises
+                              <FlaskConical className="h-3.5 w-3.5 2xl:mr-1" />
+                              <span className="hidden 2xl:inline">Análises</span>
                             </Button>
 
                             {/* Registrar Execução em Campo */}
