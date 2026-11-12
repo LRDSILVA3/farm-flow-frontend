@@ -3,6 +3,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PlotForm } from './PlotForm';
 import { Plot } from '@/types/farm';
 
+vi.mock('./CityStateSelect', () => ({
+    CityStateSelect: ({ city, state, onCityChange, onStateChange }: any) => (
+        <>
+            <input data-testid="city-select" value={city} onChange={(e) => onCityChange(e.target.value)} />
+            <input data-testid="state-select" value={state} onChange={(e) => onStateChange(e.target.value)} />
+        </>
+    )
+}));
+
 const mockPlot: Plot = {
     id: '1',
     name: 'Talhão Teste',
@@ -57,8 +66,8 @@ describe('PlotForm', () => {
         expect(screen.getByText('Adicionar Novo Talhão')).toBeInTheDocument();
         expect(screen.getByLabelText('Nome do Talhão')).toHaveValue('');
         expect(screen.getByLabelText('Área Total (ha)')).toHaveValue('');
-        expect(screen.getByLabelText('Cidade')).toHaveValue('');
-        expect(screen.getByLabelText('Estado')).toHaveValue('');
+        expect(screen.getByTestId('city-select')).toHaveValue('');
+        expect(screen.getByTestId('state-select')).toHaveValue('');
         expect(screen.getByLabelText('Matrícula')).toHaveValue('');
         expect(screen.getByLabelText('Lote')).toHaveValue('');
 
@@ -72,8 +81,8 @@ describe('PlotForm', () => {
         expect(screen.getByText('Editar Talhão')).toBeInTheDocument();
         expect(screen.getByLabelText('Nome do Talhão')).toHaveValue(mockPlot.name);
         expect(screen.getByLabelText('Área Total (ha)')).toHaveValue(String(mockPlot.area));
-        expect(screen.getByLabelText('Cidade')).toHaveValue(mockPlot.city);
-        expect(screen.getByLabelText('Estado')).toHaveValue(mockPlot.state);
+        expect(screen.getByTestId('city-select')).toHaveValue(mockPlot.city);
+        expect(screen.getByTestId('state-select')).toHaveValue(mockPlot.state);
         expect(screen.getByLabelText('Matrícula')).toHaveValue(mockPlot.registration);
         expect(screen.getByLabelText('Lote')).toHaveValue(mockPlot.lot);
         

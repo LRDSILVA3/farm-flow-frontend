@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { DecimalInput } from "@/components/ui/decimal-input";
+import { CityStateSelect } from "./CityStateSelect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -152,25 +153,12 @@ export const PlotForm = ({
           </div>
         </div>
 
-        <div>
-          <Label htmlFor="plotCity">Cidade</Label>
-          <Input
-            id="plotCity"
-            value={plotForm.city || ""}
-            onChange={(e) => setPlotForm({ ...plotForm, city: e.target.value })}
-            placeholder="Cidade"
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="plotState">Estado</Label>
-          <Input
-            id="plotState"
-            value={plotForm.state || ""}
-            onChange={(e) => setPlotForm({ ...plotForm, state: e.target.value })}
-            placeholder="UF"
-          />
-        </div>
+        <CityStateSelect
+          city={plotForm.city || ""}
+          state={plotForm.state || ""}
+          onCityChange={(value) => setPlotForm({ ...plotForm, city: value })}
+          onStateChange={(value) => setPlotForm({ ...plotForm, state: value })}
+        />
 
         {/* Ordem Padronizada: LOTE primeiro, depois MATRÍCULA (Ambos Opcionais) */}
         <div>
