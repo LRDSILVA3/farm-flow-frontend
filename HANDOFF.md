@@ -1,6 +1,6 @@
 # FarmFlow - Handoff Completo de Sessão
 
-> **Data do Handoff:** 06/10/2026  
+> **Data do Handoff:** 11/11/2026 (commits `a46689b` no backend e `a10c861` no frontend)  
 > **Status Geral:**  
 > - ✅ **Deploy no Servidor HP Local Concluído:** Backend (`http://192.168.1.20:3333`) | Frontend (`http://192.168.1.20:3000`) | PostgreSQL 15 (`5432`)
 > - ✅ **100% dos Motores de Cálculo Agronômico Migrados e Sincronizados** (`budget.xlsm`)
@@ -8,7 +8,9 @@
 > - ✅ **Medida Dupla de Área (ha e alq):** Fazendas e Talhões com recálculo bidirecional instantâneo (`1 alq = 2,42 ha`) e rigor de 2 dígitos decimais
 > - ✅ **Compatibilidade HTTP/LAN:** Polyfill global de `crypto.randomUUID` para redes locais não seguras
 > - ✅ **Identidade Visual Preciza:** Favicon oficial SVG/ICO e limpeza de metadados do Lovable
-> - ✅ **Testes Unitários:** Suítes de testes cobrindo recálculo bidirecional de áreas, serviços de orçamento e modais
+> - ✅ **RBAC & Permissões Persistentes:** Controle por módulo no PostgreSQL, rotas protegidas por `ensurePermission` e interface dinâmica conforme usuário logado
+> - ✅ **Auditoria Completa de Pedidos & Sistema (`audit_logs`):** Diffs `Antes → Depois` em pedidos (`OrderHistoryDialog`) e trilha global imutável (`AuditLogsPanel`)
+> - ✅ **Testes Unitários & E2E:** Backend com **26 suítes / 120 testes** e Frontend com **18 suítes / 59 testes** passando + validação E2E Playwright
 
 ---
 
@@ -76,7 +78,7 @@ Servidor HP Local (Produção/Rede Local - sv1):
 
 ### E. Acesso Remoto Seguro (Túnel Cloudflare), Proxy Nginx & Manual do Usuário
 - **Acesso Online Unificado (Túnel Cloudflare):**
-  - Subido container `farmflow-tunnel` expondo o frontend via URL pública segura (`https://statistical-institutes-wood-somehow.trycloudflare.com`).
+  - Subido container `farmflow-tunnel` expondo o frontend via URL pública segura (`https://remedies-triangle-renewable-respond.trycloudflare.com`).
   - Nginx configurado para fazer proxy reverso automático de todas as rotas da API (`/sessions`, `/users`, `/clients`, `/orders`, etc.) para o backend (`http://farmflow-backend:3333`) na rede Docker interna (`farm-flow-backend_default`).
   - `src/services/api.ts` e `docker-compose.yml` ajustados para usar rotas relativas (`""`) em produção, eliminando erros de *Mixed Content* e permitindo login e uso de qualquer rede externa ou celular.
 - **Limpeza de Serviços & Ajustes de Interface:**
@@ -100,21 +102,35 @@ Servidor HP Local (Produção/Rede Local - sv1):
 
 ## 3. Estado dos Testes e Validação
 
-### Frontend (`farm-flow-frontend`)
-- **Comandos:**
+### Status dos Testes Atualizado (10/11/2026)
+- **Frontend (`farm-flow-frontend`):**
   ```powershell
   $env:PATH = "C:\Users\User\AppData\Roaming\nvm\v20.20.2;" + $env:PATH;
   npm test -- --run
   ```
-- **Status:** **Suítes de testes passando sem regressões**, incluindo testes de recálculo bidirecional em `FarmForm.spec.tsx` e `PlotForm.spec.tsx`.
+  - **Status:** **18 suítes | 59 testes passando | 0 falhas** + `npx tsc --noEmit` + `npm run build` (`vite build`) OK (incluindo `AuditLogsPanel.spec.tsx`, `OrderHistoryDialog.spec.tsx`, `UsersSection.spec.tsx`, `permissions.spec.ts`, `FarmForm.spec.tsx` e `PlotForm.spec.tsx`).
 
-### Backend (`farm-flow-backend`)
-- **Comando:**
+- **Backend (`farm-flow-backend`):**
   ```powershell
   $env:PATH = "C:\Users\User\AppData\Roaming\nvm\v20.20.2;" + $env:PATH;
   npm --prefix "..\farm-flow-backend" test
   ```
-- **Status:** **22 suítes | 97 testes passando | 0 falhas**
+  - **Status:** **26 suítes | 120 testes passando | 0 falhas** + `npm run build` (`tsc`) OK (incluindo `AuditLogService.spec.ts`, `orderAudit.spec.ts`, `ensurePermission.spec.ts` e `UsersController.spec.ts`).
+
+### Atualizações de 10/11/2026 (Commits `a46689b` Backend / `a10c861` Frontend)
+
+#### F. Padronização de Modais e Ajustes de Pedidos
+- Criação/edição de Clientes (`CustomersForm.tsx`), Fazendas, Talhões (`PlotForm.tsx` / `PlotsModal.tsx`) e Usuários (`UserModal.tsx`) padronizadas em `<Dialog>` modais, eliminando formulários inline.
+- Corrigida validação HTML5 em [`SoilSamplingServiceForm.tsx`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/components/pages/orders/SoilSamplingServiceForm.tsx) adicionando `step="any"` no campo `Área em Alqueires` para aceitar áreas fracionárias convertidas de hectares (ex.: `62.19`).
+
+#### G. Permissões de Usuários (RBAC Persistente)
+- **Migrations & Backend:** `1790856601754-AddUserPermissionsAndStatus.ts` (`phone`, `status`, `permissions` jsonb em `users`), endpoint `GET /sessions/me`, bloqueio de usuários `Inativo` no login/sessão e middleware [`ensurePermission.ts`](file:///c:/Users/User/Documents/Projects/farm-flow-backend/src/shared/http/middlewares/ensurePermission.ts) em todas as rotas da API.
+- **Frontend:** [`permissions.ts`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/constants/permissions.ts), [`useAuth.ts`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/hooks/useAuth.ts), [`MainLayout.tsx`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/components/MainLayout.tsx) e [`useUser.ts`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/components/pages/settings/useUser.ts) salvando e aplicando permissões reais por módulo (ocultando menus/atalhos não autorizados e impedindo autoexclusão/auto-inativação do próprio usuário).
+
+#### H. Auditoria Completa de Pedidos e Trilha Global (`audit_logs`)
+- **Migrations & Backend:** `1790856601755-CreateTableAuditLogs.ts` e `1790856601756-AlterAuditLogsCreatedAtTimestamptz.ts` (`created_at TIMESTAMPTZ`), módulo `audit` ([`AuditLog.ts`](file:///c:/Users/User/Documents/Projects/farm-flow-backend/src/modules/audit/typeorm/entities/AuditLog.ts), [`AuditLogService.ts`](file:///c:/Users/User/Documents/Projects/farm-flow-backend/src/modules/audit/services/AuditLogService.ts), [`audit.routes.ts`](file:///c:/Users/User/Documents/Projects/farm-flow-backend/src/modules/audit/routes/audit.routes.ts)) e [`orderAudit.ts`](file:///c:/Users/User/Documents/Projects/farm-flow-backend/src/modules/orders/utils/orderAudit.ts) gerando diffs `Antes → Depois` em `orders.logs` e gravando ações (`LOGIN`, `CREATE`, `UPDATE`, `DELETE` e ciclo de pedidos) em todos os módulos.
+- **Frontend:** [`OrderHistoryDialog.tsx`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/components/pages/orders/OrderHistoryDialog.tsx) com abas **Linha do Tempo** (chips `Antes → Depois`) e **Auditoria do Servidor** (`GET /audit-logs/entity/orders/:id`), além do painel [`AuditLogsPanel.tsx`](file:///c:/Users/User/Documents/Projects/farm-flow-frontend/src/components/pages/audit/AuditLogsPanel.tsx) em **Relatórios → Auditoria do Sistema** e **Configurações → Logs de Auditoria**.
+- *(Importante ao atualizar o servidor HP `sv1`: rodar `npm run typeorm:migrate` no container/backend antes ou durante o deploy para aplicar as migrations `1790856601754`, `1790856601755` e `1790856601756`.)*
 
 ---
 
@@ -178,7 +194,7 @@ docker restart farmflow-backend
 
 1. **Geração Direta de PDF nos Relatórios:**
    - Adicionar botão de exportação em PDF estruturado também nos Relatórios de Produtividade (`ReportsPage.tsx`).
-2. **Timeline de Auditoria de Pedidos:**
-   - Exibir na aba de detalhes do pedido uma linha do tempo com o histórico de alterações (criação, agendamento, execução parcial e liquidação financeira).
+2. **Pedidos Offline & Sincronização:**
+   - Implementar fila offline em IndexedDB (`offlineOrderQueue`) com UUID idempotente e banner de sincronização automática ao retomar conexão para uso em campo sem sinal.
 3. **Controle de Estoque Físico de Amostras:**
    - Rastreamento dos números de lacres e caixas de amostras de solo e foliar despachadas para o laboratório.

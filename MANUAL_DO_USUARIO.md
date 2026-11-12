@@ -27,7 +27,7 @@ O sistema é 100% web e pode ser acessado de qualquer computador, tablet ou celu
 ### Passo a Passo de Acesso:
 1. Abra o navegador de sua preferência (Google Chrome, Microsoft Edge, Safari).
 2. Acesse o link fornecido pela equipe Preciza:
-   - **Link de Acesso Online:** `https://statistical-institutes-wood-somehow.trycloudflare.com`
+   - **Link de Acesso Online:** `https://remedies-triangle-renewable-respond.trycloudflare.com`
    - *(Ou na rede interna do escritório: `http://192.168.1.20:3000`)*
 3. Digite o seu **E-mail** e **Senha** cadastrados.
 4. Clique no botão verde **Entrar**.
