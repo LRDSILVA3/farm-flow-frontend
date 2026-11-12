@@ -50,6 +50,9 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
   const [descontoManual, setDescontoManual] = useState<number | null>(null);
   const [descontoPercentualManual, setDescontoPercentualManual] = useState<number | null>(null);
   const [valorFechadoManual, setValorFechadoManual] = useState<number | null>(null);
+  const [descontoPctInput, setDescontoPctInput] = useState<string>('');
+  const [descontoValorInput, setDescontoValorInput] = useState<string>('');
+  const [valorFechadoInput, setValorFechadoInput] = useState<string>('');
 
   // Gabarito editável de distribuição de análises (INPUT DADOS Linhas 21-24)
   // Em pedidos novos (!isEditing), inicia como null para seguir estritamente o sugerido da planilha
@@ -619,31 +622,42 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
               <Label htmlFor="ap-desconto-pct" className="text-xs font-medium">Desconto Comercial (%):</Label>
               <Input
                 id="ap-desconto-pct"
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={
-                  descontoPercentualManual !== null
-                    ? descontoPercentualManual
+                  descontoPctInput !== ''
+                    ? descontoPctInput
+                    : descontoPercentualManual !== null && descontoPercentualManual > 0
+                    ? String(Number(descontoPercentualManual.toFixed(2))).replace('.', ',')
                     : desconto > 0
-                    ? Number(descontoPercentual.toFixed(2))
+                    ? descontoPercentual.toFixed(2).replace('.', ',')
                     : ''
                 }
+                onFocus={(e) => e.target.select()}
                 onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === '') {
-                    setDescontoPercentualManual(0);
-                    setDescontoManual(0);
-                    setValorFechadoManual(null);
-                  } else {
-                    const pct = parseFloat(val) || 0;
-                    setDescontoPercentualManual(pct);
+                  const raw = e.target.value;
+                  setDescontoPctInput(raw);
+                  setDescontoValorInput('');
+                  setValorFechadoInput('');
+
+                  const normalized = raw.replace(',', '.');
+                  if (normalized.trim() === '' || normalized === '.') {
+                    setDescontoPercentualManual(null);
                     setDescontoManual(null);
                     setValorFechadoManual(null);
+                  } else {
+                    const parsed = parseFloat(normalized);
+                    if (!isNaN(parsed) && parsed >= 0) {
+                      setDescontoPercentualManual(parsed);
+                      setDescontoManual(null);
+                      setValorFechadoManual(null);
+                    }
                   }
                 }}
-                min="0"
-                max="100"
-                step="0.01"
-                placeholder="0%"
+                onBlur={() => {
+                  setDescontoPctInput('');
+                }}
+                placeholder="0,00%"
               />
             </div>
 
@@ -651,29 +665,41 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
               <Label htmlFor="ap-desconto" className="text-xs font-medium">Desconto em Valor (R$):</Label>
               <Input
                 id="ap-desconto"
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={
-                  descontoManual !== null
-                    ? descontoManual
+                  descontoValorInput !== ''
+                    ? descontoValorInput
+                    : descontoManual !== null && descontoManual > 0
+                    ? String(Number(descontoManual.toFixed(2))).replace('.', ',')
                     : desconto > 0
-                    ? Number(desconto.toFixed(2))
+                    ? desconto.toFixed(2).replace('.', ',')
                     : ''
                 }
+                onFocus={(e) => e.target.select()}
                 onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === '') {
-                    setDescontoManual(0);
-                    setDescontoPercentualManual(0);
-                    setValorFechadoManual(null);
-                  } else {
-                    const desc = parseFloat(val) || 0;
-                    setDescontoManual(desc);
+                  const raw = e.target.value;
+                  setDescontoValorInput(raw);
+                  setDescontoPctInput('');
+                  setValorFechadoInput('');
+
+                  const normalized = raw.replace(',', '.');
+                  if (normalized.trim() === '' || normalized === '.') {
+                    setDescontoManual(null);
                     setDescontoPercentualManual(null);
                     setValorFechadoManual(null);
+                  } else {
+                    const parsed = parseFloat(normalized);
+                    if (!isNaN(parsed) && parsed >= 0) {
+                      setDescontoManual(parsed);
+                      setDescontoPercentualManual(null);
+                      setValorFechadoManual(null);
+                    }
                   }
                 }}
-                min="0"
-                step="0.01"
+                onBlur={() => {
+                  setDescontoValorInput('');
+                }}
                 placeholder="R$ 0,00"
               />
             </div>
@@ -682,24 +708,40 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
               <Label htmlFor="ap-valor-fechado" className="text-xs font-medium">Valor Total Fechado (R$):</Label>
               <Input
                 id="ap-valor-fechado"
-                type="number"
-                value={valorFechadoManual === null ? '' : valorFechadoManual}
+                type="text"
+                inputMode="decimal"
+                value={
+                  valorFechadoInput !== ''
+                    ? valorFechadoInput
+                    : valorFechadoManual !== null && valorFechadoManual > 0
+                    ? String(Number(valorFechadoManual.toFixed(2))).replace('.', ',')
+                    : ''
+                }
+                onFocus={(e) => e.target.select()}
                 onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === '') {
+                  const raw = e.target.value;
+                  setValorFechadoInput(raw);
+                  setDescontoPctInput('');
+                  setDescontoValorInput('');
+
+                  const normalized = raw.replace(',', '.');
+                  if (normalized.trim() === '' || normalized === '.') {
                     setValorFechadoManual(null);
                     setDescontoManual(null);
                     setDescontoPercentualManual(null);
                   } else {
-                    const fechado = parseFloat(val) || 0;
-                    setValorFechadoManual(fechado);
-                    setDescontoManual(null);
-                    setDescontoPercentualManual(null);
+                    const parsed = parseFloat(normalized);
+                    if (!isNaN(parsed) && parsed >= 0) {
+                      setValorFechadoManual(parsed);
+                      setDescontoManual(null);
+                      setDescontoPercentualManual(null);
+                    }
                   }
                 }}
-                min="0"
-                step="0.01"
-                placeholder={'Sugerido: ' + valorTotalSugerido.toFixed(2)}
+                onBlur={() => {
+                  setValorFechadoInput('');
+                }}
+                placeholder={valorTotalSugerido > 0 ? 'Sugerido: ' + valorTotalSugerido.toFixed(2).replace('.', ',') : 'R$ 0,00'}
               />
             </div>
           </div>
