@@ -125,6 +125,12 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
     setAlqueires(initialAlqueires === 0 ? null : initialAlqueires);
     if (initialAlqueires > 0) {
       lastAreaHaRef.current = Number((initialAlqueires * 2.42).toFixed(2));
+      // Auto-preencher o número de pontos sugerido quando for novo pedido
+      if (!isEditing && (numPontos === null || numPontos === 0)) {
+        const alq = initialAlqueires;
+        const pts = alq < 5 ? Math.floor(alq) + 1 : alq < 10 ? Math.floor((alq * 2.42) / 2.5) + 1 : Math.floor((alq * 2.42) / 3) + 1;
+        setNumPontos(pts);
+      }
     }
     // Ao criar novo pedido ou alterar área inicial, resetar gabarito para seguir a planilha
     if (!isEditing) {
@@ -444,7 +450,13 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
               value={alqueires === null ? '' : alqueires}
               onChange={(e) => {
                 const value = e.target.value;
-                setAlqueires(value === '' ? null : parseFloat(value));
+                const newAlq = value === '' ? null : parseFloat(value);
+                setAlqueires(newAlq);
+                // Atualiza automaticamente o número de pontos sugerido se o usuário não tiver travado valor customizado
+                if (newAlq && newAlq > 0 && !isEditing) {
+                  const pts = newAlq < 5 ? Math.floor(newAlq) + 1 : newAlq < 10 ? Math.floor((newAlq * 2.42) / 2.5) + 1 : Math.floor((newAlq * 2.42) / 3) + 1;
+                  setNumPontos(pts);
+                }
               }}
               min="0"
               placeholder="Ex: 50"
@@ -592,7 +604,7 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
             <div>
               <Label className="font-semibold text-sm">Negociação de Preço / Desconto Comercial:</Label>
               <span className="text-xs text-muted-foreground block">
-                Alinhado à fórmula da planilha (INPUT DADOS C9). Pode ser pré-definido nas Variáveis de Custo.
+                Alinhado à fórmula da planilha (INPUT DADOS C9). Pode definir a porcentagem livremente ou usar a padrão da tabela.
               </span>
             </div>
             {desconto > 0 && (
@@ -602,55 +614,9 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
             )}
           </div>
 
-          {/* Atalhos rápidos de percentual de desconto */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-xs text-muted-foreground mr-1">Atalhos rápidos:</span>
-            {[0, 3, 5, 6.39, 7, 10].map((pct) => {
-              const isSelected = Math.abs(descontoPercentual - pct) < 0.05 && (desconto > 0 || pct === 0);
-              return (
-                <button
-                  key={pct}
-                  type="button"
-                  onClick={() => {
-                    if (pct === 0) {
-                      setDescontoManual(0);
-                      setDescontoPercentualManual(0);
-                      setValorFechadoManual(null);
-                    } else {
-                      setDescontoPercentualManual(pct);
-                      setDescontoManual(null);
-                      setValorFechadoManual(null);
-                    }
-                  }}
-                  className={cn(
-                    "px-2.5 py-1 text-xs rounded-full border transition-colors font-medium",
-                    isSelected
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-background hover:bg-muted text-foreground border-input"
-                  )}
-                >
-                  {pct === 0 ? "Sem Desconto (0%)" : `${pct}%`}
-                </button>
-              );
-            })}
-            {(descontoManual !== null || descontoPercentualManual !== null || valorFechadoManual !== null) && (
-              <button
-                type="button"
-                onClick={() => {
-                  setDescontoManual(null);
-                  setDescontoPercentualManual(null);
-                  setValorFechadoManual(null);
-                }}
-                className="px-2 py-1 text-xs text-muted-foreground hover:text-foreground underline ml-auto"
-              >
-                Restaurar Padrão
-              </button>
-            )}
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <Label htmlFor="ap-desconto-pct" className="text-xs">Desconto Comercial (%):</Label>
+              <Label htmlFor="ap-desconto-pct" className="text-xs font-medium">Desconto Comercial (%):</Label>
               <Input
                 id="ap-desconto-pct"
                 type="number"
@@ -676,13 +642,13 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
                 }}
                 min="0"
                 max="100"
-                step="0.1"
-                placeholder="Ex: 5"
+                step="0.01"
+                placeholder="0%"
               />
             </div>
 
             <div>
-              <Label htmlFor="ap-desconto" className="text-xs">Desconto em Valor (R$):</Label>
+              <Label htmlFor="ap-desconto" className="text-xs font-medium">Desconto em Valor (R$):</Label>
               <Input
                 id="ap-desconto"
                 type="number"
@@ -708,12 +674,12 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
                 }}
                 min="0"
                 step="0.01"
-                placeholder="Ex: 1319.88"
+                placeholder="R$ 0,00"
               />
             </div>
 
             <div>
-              <Label htmlFor="ap-valor-fechado" className="text-xs">Valor Total Fechado (R$):</Label>
+              <Label htmlFor="ap-valor-fechado" className="text-xs font-medium">Valor Total Fechado (R$):</Label>
               <Input
                 id="ap-valor-fechado"
                 type="number"
