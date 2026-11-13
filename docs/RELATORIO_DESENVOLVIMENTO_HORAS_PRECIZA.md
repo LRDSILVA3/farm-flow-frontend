@@ -1,5 +1,6 @@
-# Relatório Executivo de Desenvolvimento — Sistema FarmFlow
-**Cliente:** Preciza — Agricultura de Precisão  
+# Relatório de Desenvolvimento de Software — NewFeel
+**Desenvolvido por:** NewFeel (Desenvolvimento de Software — https://newfeel.netlify.app/)  
+**Cliente Contratante:** Preciza — Agricultura de Precisão  
 **Projeto:** FarmFlow — Sistema de Gestão Operacional, Orçamentária e Financeira  
 **Período:** Desenvolvimento e Implantação  
 **Data:** 13 de Novembro de 2026  
