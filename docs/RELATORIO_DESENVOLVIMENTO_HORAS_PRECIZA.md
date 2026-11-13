@@ -1,5 +1,5 @@
 # Relatório de Desenvolvimento de Software — NewFeel
-**Desenvolvido por:** NewFeel (Desenvolvimento de Software — https://newfeel.netlify.app/)  
+**Desenvolvido por:** NewFeel (Desenvolvimento de Software)  
 **Cliente Contratante:** Preciza — Agricultura de Precisão  
 **Projeto:** FarmFlow — Sistema de Gestão Operacional, Orçamentária e Financeira  
 **Período:** Desenvolvimento e Implantação  
