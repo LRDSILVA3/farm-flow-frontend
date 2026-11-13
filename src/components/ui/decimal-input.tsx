@@ -116,3 +116,4 @@ export const DecimalInput = React.forwardRef<HTMLInputElement, DecimalInputProps
 );
 
 DecimalInput.displayName = 'DecimalInput';
+
