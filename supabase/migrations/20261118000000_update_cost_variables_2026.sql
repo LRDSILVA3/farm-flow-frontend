@@ -67,3 +67,4 @@ UPDATE public.services SET value_per_alqueire = '345.12' WHERE name = 'Amostrage
 UPDATE public.services SET value_per_alqueire = '71.67' WHERE name = 'Conferência';
 UPDATE public.services SET value_per_alqueire = '18.00' WHERE name = 'Coleta Foliar';
 UPDATE public.services SET value_per_alqueire = '315.00' WHERE name = 'Aplicação ATV';
+
