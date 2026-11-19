@@ -363,12 +363,13 @@ export const useOrders = () => {
       if (!order.clientId || order.clientId.trim() === '') {
         throw new Error('Por favor, selecione um cliente para o pedido.');
       }
-      const numArea = order.area ? parseFloat(order.area) : null;
-      if (!numArea || numArea <= 0) {
+      const isProductOrder = order.type === "Produto";
+      const numArea = order.area ? parseFloat(order.area) : (isProductOrder ? 0 : null);
+      if (!isProductOrder && (!numArea || numArea <= 0)) {
         throw new Error('A área do pedido deve ser informada e maior que zero.');
       }
       const numVal = parseValue(order.value);
-      const sName = order.serviceName || order.type || "Serviço";
+      const sName = order.serviceName || (isProductOrder ? "Venda de Produtos" : (order.type || "Serviço"));
 
       const initLog = createLogEntry("Criação", `Pedido criado no valor de ${formatCurrencyBRL(numVal || 0)} para o serviço ${sName}`);
       const initialLogs = order.logs && order.logs.length > 0 ? order.logs : [initLog];
@@ -422,12 +423,13 @@ export const useOrders = () => {
       if (!order.clientId || order.clientId.trim() === '') {
         throw new Error('Por favor, selecione um cliente para o pedido.');
       }
-      const numArea = order.area ? parseFloat(order.area) : null;
-      if (!numArea || numArea <= 0) {
+      const isProductOrder = order.type === "Produto";
+      const numArea = order.area ? parseFloat(order.area) : (isProductOrder ? 0 : null);
+      if (!isProductOrder && (!numArea || numArea <= 0)) {
         throw new Error('A área do pedido deve ser informada e maior que zero.');
       }
       const numVal = parseValue(order.value) ?? order.numericValue;
-      const sName = order.serviceName || order.type || "Serviço";
+      const sName = order.serviceName || (isProductOrder ? "Venda de Produtos" : (order.type || "Serviço"));
 
       try {
         const updated = await api.put<any>(`/orders/${order.id}`, {

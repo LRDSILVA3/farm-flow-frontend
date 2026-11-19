@@ -60,15 +60,40 @@ const OrdersPage = () => {
       });
       return;
     }
-    const numArea = parseFloat(formData.area || "0");
-    if (!formData.area || isNaN(numArea) || numArea <= 0) {
-      toast({
-        title: "Área obrigatória",
-        description: "Por favor, informe uma área válida (em hectares ou alqueires) maior que zero para o pedido.",
-        variant: "destructive"
-      });
-      return;
+
+    const isProductOrder = formData.type === "Produto";
+
+    if (isProductOrder) {
+      if (
+        !formData.productsData ||
+        !Array.isArray(formData.productsData) ||
+        !formData.productsData.some((p: any) => p.id && Number(p.quantity) > 0)
+      ) {
+        toast({
+          title: "Produtos obrigatórios",
+          description: "Por favor, adicione pelo menos um produto com quantidade maior que zero.",
+          variant: "destructive"
+        });
+        return;
+      }
+      if (!formData.area) {
+        formData.area = "0";
+      }
+      if (!formData.serviceName) {
+        formData.serviceName = "Venda de Produtos";
+      }
+    } else {
+      const numArea = parseFloat(formData.area || "0");
+      if (!formData.area || isNaN(numArea) || numArea <= 0) {
+        toast({
+          title: "Área obrigatória",
+          description: "Por favor, informe uma área válida (em hectares ou alqueires) maior que zero para o pedido de serviço.",
+          variant: "destructive"
+        });
+        return;
+      }
     }
+
     const result = editingOrder
       ? await updateOrder(formData)
       : await addOrder(formData);

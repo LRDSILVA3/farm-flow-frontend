@@ -332,9 +332,15 @@ export const OrdersTable = ({
                   </div>
 
                   <div className="flex items-center justify-between gap-2 text-xs">
-                    <span className="inline-block font-medium px-2 py-0.5 rounded bg-muted leading-snug">
-                      {formatServiceName(order.serviceName || order.type)}
-                    </span>
+                    {order.type === "Produto" ? (
+                      <span className="inline-flex items-center gap-1 font-semibold text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 leading-snug">
+                        🛒 Venda de Produtos
+                      </span>
+                    ) : (
+                      <span className="inline-block font-medium px-2 py-0.5 rounded bg-muted leading-snug">
+                        {formatServiceName(order.serviceName || order.type)}
+                      </span>
+                    )}
                     <span className={cn("px-2 py-0.5 rounded-full text-[11px] font-medium border whitespace-nowrap", getPaymentBadge(order.payment))}>
                       {order.payment}
                     </span>
@@ -342,9 +348,15 @@ export const OrdersTable = ({
 
                   <div className="grid grid-cols-2 gap-2 pt-1 border-t text-xs">
                     <div>
-                      <span className="text-muted-foreground block text-[11px]">Área / Execução</span>
+                      <span className="text-muted-foreground block text-[11px]">
+                        {order.type === "Produto" ? "Itens da Venda" : "Área / Execução"}
+                      </span>
                       <span className="font-medium">
-                        {totalArea > 0 ? `${formatHa(executedArea)} / ${formatHa(totalArea)} ha (${percentExec.toFixed(0)}%)` : "-"}
+                        {order.type === "Produto"
+                          ? (Array.isArray(order.productsData) && order.productsData.length > 0
+                              ? `${order.productsData.length} ${order.productsData.length === 1 ? 'produto' : 'produtos'}`
+                              : "Venda Direta")
+                          : (totalArea > 0 ? `${formatHa(executedArea)} / ${formatHa(totalArea)} ha (${percentExec.toFixed(0)}%)` : "-")}
                       </span>
                     </div>
                     <div className="text-right">
@@ -418,39 +430,64 @@ export const OrdersTable = ({
                     </TableCell>
 
                     <TableCell className="px-2.5 py-3">
-                      <span className="inline-block font-medium text-xs px-2 py-0.5 rounded bg-muted leading-snug whitespace-nowrap">
-                        {formatServiceName(order.serviceName || order.type)}
-                      </span>
+                      {order.type === "Produto" ? (
+                        <span className="inline-flex items-center gap-1 font-semibold text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 leading-snug whitespace-nowrap">
+                          🛒 Venda de Produtos
+                        </span>
+                      ) : (
+                        <span className="inline-block font-medium text-xs px-2 py-0.5 rounded bg-muted leading-snug whitespace-nowrap">
+                          {formatServiceName(order.serviceName || order.type)}
+                        </span>
+                      )}
                     </TableCell>
 
                     <TableCell className="px-2.5 py-3 whitespace-nowrap">
-                      {totalArea > 0 ? `${totalArea.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ha` : "-"}
+                      {order.type === "Produto" ? (
+                        <span className="text-muted-foreground text-xs font-normal">N/A (Produtos)</span>
+                      ) : (
+                        totalArea > 0 ? `${totalArea.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ha` : "-"
+                      )}
                     </TableCell>
 
                     <TableCell className="px-2.5 py-3">
-                      <div className="w-32 space-y-1">
-                        <div className="flex justify-between text-[11px] gap-1">
-                          <span className="font-semibold text-xs">{percentExec.toFixed(0)}%</span>
-                          <span className="text-muted-foreground text-[10px] whitespace-nowrap">
-                            {formatHa(executedArea)}/{formatHa(totalArea)} ha
+                      {order.type === "Produto" ? (
+                        <div className="text-xs space-y-0.5">
+                          <span className="font-semibold text-foreground block">
+                            {Array.isArray(order.productsData) && order.productsData.length > 0
+                              ? `${order.productsData.length} ${order.productsData.length === 1 ? 'produto' : 'produtos'}`
+                              : 'Venda de Produtos'}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground block truncate max-w-[140px]" title={Array.isArray(order.productsData) ? order.productsData.map((p: any) => `${p.quantity || 1} ${p.unit || ''} ${p.name || ''}`).join(', ') : ''}>
+                            {Array.isArray(order.productsData) && order.productsData.length > 0
+                              ? order.productsData.map((p: any) => `${p.quantity || 1} ${p.unit || ''} ${p.name || ''}`).join(', ')
+                              : 'Itens de venda'}
                           </span>
                         </div>
-                        <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
-                          <div
-                            className={cn(
-                              "h-1.5 rounded-full transition-all",
-                              percentExec >= 100 ? "bg-green-600" : percentExec > 0 ? "bg-blue-600" : "bg-muted-foreground/30"
-                            )}
-                            style={{ width: percentExec + '%' }}
-                          />
-                        </div>
-                        {totalSamples > 0 && (
-                          <div className="text-[10px] text-emerald-800 font-medium flex justify-between items-center pt-0.5">
-                            <span>🧪 Análises:</span>
-                            <span className="font-bold">{execSamples}/{totalSamples}</span>
+                      ) : (
+                        <div className="w-32 space-y-1">
+                          <div className="flex justify-between text-[11px] gap-1">
+                            <span className="font-semibold text-xs">{percentExec.toFixed(0)}%</span>
+                            <span className="text-muted-foreground text-[10px] whitespace-nowrap">
+                              {formatHa(executedArea)}/{formatHa(totalArea)} ha
+                            </span>
                           </div>
-                        )}
-                      </div>
+                          <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className={cn(
+                                "h-1.5 rounded-full transition-all",
+                                percentExec >= 100 ? "bg-green-600" : percentExec > 0 ? "bg-blue-600" : "bg-muted-foreground/30"
+                              )}
+                              style={{ width: percentExec + '%' }}
+                            />
+                          </div>
+                          {totalSamples > 0 && (
+                            <div className="text-[10px] text-emerald-800 font-medium flex justify-between items-center pt-0.5">
+                              <span>🧪 Análises:</span>
+                              <span className="font-bold">{execSamples}/{totalSamples}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </TableCell>
 
                     <TableCell className="px-2.5 py-3 font-semibold text-foreground whitespace-nowrap">

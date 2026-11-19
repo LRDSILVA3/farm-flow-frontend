@@ -225,78 +225,49 @@ export const OrderForm = ({
     }
   };
 
+  const isProductOrder = formData.type === "Produto";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {editingOrder ? "Editar Pedido" : "Novo Pedido"}
+          <DialogTitle className="flex items-center gap-2">
+            {isProductOrder ? (
+              <>
+                <span className="p-1 rounded bg-primary/10 text-primary text-base">🛒</span>
+                {editingOrder ? "Editar Pedido de Venda de Produtos" : "Novo Pedido - Venda de Produtos"}
+              </>
+            ) : (
+              editingOrder ? "Editar Pedido" : "Novo Pedido de Serviço"
+            )}
           </DialogTitle>
           <DialogDescription className="sr-only">
             {editingOrder ? "Formulário de edição do pedido" : "Formulário de criação de novo pedido"}
           </DialogDescription>
         </DialogHeader>
         <form key={open ? (editingOrder?.id || 'new-order-clean') : 'closed'} onSubmit={onSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="customer">
-                Cliente <span className="text-red-500 font-bold">*</span>
-              </Label>
-              <CustomerSelect
-                value={formData.clientId}
-                onValueChange={handleCustomerChange}
-                customers={clients}
-              />
-            </div>
-            <div>
-              <Label htmlFor="farm">
-                Fazenda <span className="text-red-500 font-bold">*</span>
-              </Label>
-              <FarmSelect
-                value={formData.farmId}
-                onValueChange={handleFarmChange}
-                farms={availableFarms}
-                disabled={!formData.clientId}
-              />
-            </div>
-            <div>
-              <Label htmlFor="plot">Talhão(ões) do Pedido</Label>
-              <PlotSelect
-                selectedPlotIds={selectedPlotIds}
-                onPlotsChange={handlePlotsChange}
-                plots={availablePlots}
-                disabled={!formData.farmId}
-              />
-            </div>
-          </div>
-
-          {/* Resumo da Área Selecionada */}
-          {formData.area && (
-            <div className="flex gap-4 p-2.5 bg-muted/40 rounded-md border text-sm">
-              <div>
-                Área em Hectares: <strong>{parseFloat(formData.area).toFixed(2)} ha</strong>
-              </div>
-              <div className="border-l pl-4">
-                Área em Alqueires: <strong>{calculatedAlqueires.toFixed(2)} alq</strong>
-              </div>
-            </div>
-          )}
-
+          {/* Seletor de Tipo no Topo para adaptar a UX imediatamente */}
           <div>
-            <Label htmlFor="type">Tipo do Pedido / Serviço</Label>
+            <Label htmlFor="type" className="font-semibold text-xs text-muted-foreground uppercase tracking-wider block mb-1.5">
+              Tipo do Pedido
+            </Label>
             <Select
               value={formData.type}
               onValueChange={(value) => {
                 onInputChange("type", value);
-                if (value !== "Produto" && value !== "Serviço") {
+                if (value === "Produto") {
+                  onInputChange("serviceName", "Venda de Produtos");
+                  onInputChange("area", "0");
+                } else if (value !== "Serviço") {
                   onInputChange("serviceName", value);
                 }
               }}
             >
-              <SelectTrigger>
+              <SelectTrigger className="font-medium bg-background">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="Produto">🛒 Venda de Produto (Biológicos, Adjuvantes, Insumos)</SelectItem>
                 <SelectItem value="Amostragem de Solo (AP)">Amostragem de Solo (AP)</SelectItem>
                 <SelectItem value="Conferência">Conferência de Amostragem</SelectItem>
                 <SelectItem value="Voo de Drone (Mapeamento)">Voo de Drone (Mapeamento)</SelectItem>
@@ -305,11 +276,84 @@ export const OrderForm = ({
                 <SelectItem value="Coleta Foliar">Coleta Foliar</SelectItem>
                 <SelectItem value="Aplicação ATV">Aplicação ATV (Sistematização)</SelectItem>
                 <SelectItem value="Sistema Equaliza">Sistema Equaliza</SelectItem>
-                <SelectItem value="Produto">Venda de Produto</SelectItem>
                 <SelectItem value="Serviço">Outro Serviço Avulso</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {/* Vínculo de Cliente / Fazenda adaptado ao Tipo de Pedido */}
+          {isProductOrder ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3 border rounded-xl bg-muted/15">
+              <div>
+                <Label htmlFor="customer" className="font-medium text-xs">
+                  Cliente Comprador <span className="text-red-500 font-bold">*</span>
+                </Label>
+                <CustomerSelect
+                  value={formData.clientId}
+                  onValueChange={handleCustomerChange}
+                  customers={clients}
+                />
+              </div>
+              <div>
+                <Label htmlFor="farm" className="font-medium text-xs">
+                  Fazenda de Destino / Entrega <span className="text-xs text-muted-foreground font-normal">(Opcional)</span>
+                </Label>
+                <FarmSelect
+                  value={formData.farmId}
+                  onValueChange={handleFarmChange}
+                  farms={availableFarms}
+                  disabled={!formData.clientId}
+                />
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="customer">
+                    Cliente <span className="text-red-500 font-bold">*</span>
+                  </Label>
+                  <CustomerSelect
+                    value={formData.clientId}
+                    onValueChange={handleCustomerChange}
+                    customers={clients}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="farm">
+                    Fazenda <span className="text-red-500 font-bold">*</span>
+                  </Label>
+                  <FarmSelect
+                    value={formData.farmId}
+                    onValueChange={handleFarmChange}
+                    farms={availableFarms}
+                    disabled={!formData.clientId}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="plot">Talhão(ões) do Pedido</Label>
+                  <PlotSelect
+                    selectedPlotIds={selectedPlotIds}
+                    onPlotsChange={handlePlotsChange}
+                    plots={availablePlots}
+                    disabled={!formData.farmId}
+                  />
+                </div>
+              </div>
+
+              {/* Resumo da Área Selecionada */}
+              {formData.area && (
+                <div className="flex gap-4 p-2.5 bg-muted/40 rounded-md border text-sm">
+                  <div>
+                    Área em Hectares: <strong>{parseFloat(formData.area).toFixed(2)} ha</strong>
+                  </div>
+                  <div className="border-l pl-4">
+                    Área em Alqueires: <strong>{calculatedAlqueires.toFixed(2)} alq</strong>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
 
           {renderFieldsByType()}
 
@@ -477,32 +521,32 @@ export const OrderForm = ({
             </Button>
             {(() => {
               const numArea = parseFloat(formData.area || "0");
-              const isProductOrder = formData.type === "Produto";
               const hasValidProduct =
                 !isProductOrder ||
                 (Array.isArray(formData.productsData) &&
                   formData.productsData.some((p: any) => p.id && Number(p.quantity) > 0));
               const isInvalid =
                 !formData.clientId ||
-                !formData.farmId ||
-                !formData.area ||
-                isNaN(numArea) ||
-                numArea <= 0 ||
+                (!isProductOrder && (!formData.farmId || !formData.area || isNaN(numArea) || numArea <= 0)) ||
                 !hasValidProduct;
               return (
                 <Button
                   type="submit"
                   disabled={isInvalid}
-                  className="w-full sm:w-auto bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full sm:w-auto bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-sm"
                   title={
                     !hasValidProduct
-                      ? "Selecione ao menos um produto válido para prosseguir"
+                      ? "Adicione pelo menos um produto com quantidade maior que zero para prosseguir"
                       : isInvalid
-                      ? "Preencha cliente, fazenda e uma área válida para prosseguir"
+                      ? isProductOrder
+                        ? "Selecione o cliente comprador para prosseguir"
+                        : "Preencha cliente, fazenda e uma área válida para prosseguir"
                       : ""
                   }
                 >
-                  {editingOrder ? "Atualizar Pedido" : "Criar Pedido"}
+                  {editingOrder
+                    ? (isProductOrder ? "Atualizar Pedido de Venda" : "Atualizar Pedido")
+                    : (isProductOrder ? "Concluir Pedido de Venda" : "Criar Pedido")}
                 </Button>
               );
             })()}
