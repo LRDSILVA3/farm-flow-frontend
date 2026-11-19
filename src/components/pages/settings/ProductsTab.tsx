@@ -74,6 +74,7 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [stockControlFilter, setStockControlFilter] = useState<"all" | "controlled" | "service_only">("all");
   const [onlyLowStock, setOnlyLowStock] = useState(false);
 
   // Filtered products
@@ -90,12 +91,17 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
       const matchesCategory = categoryFilter === "all" || product.category === categoryFilter;
       const matchesStatus = statusFilter === "all" || product.status === statusFilter;
 
-      const isLow = Number(product.minStock) > 0 && Number(product.quantity) <= Number(product.minStock);
+      const matchesStockControl =
+        stockControlFilter === "all" ||
+        (stockControlFilter === "controlled" && product.controlsStock) ||
+        (stockControlFilter === "service_only" && !product.controlsStock);
+
+      const isLow = product.controlsStock && Number(product.minStock) > 0 && Number(product.quantity) <= Number(product.minStock);
       const matchesLowStock = !onlyLowStock || isLow;
 
-      return matchesSearch && matchesCategory && matchesStatus && matchesLowStock;
+      return matchesSearch && matchesCategory && matchesStatus && matchesStockControl && matchesLowStock;
     });
-  }, [products, searchTerm, categoryFilter, statusFilter, onlyLowStock]);
+  }, [products, searchTerm, categoryFilter, statusFilter, stockControlFilter, onlyLowStock]);
 
   const totalFiltered = filteredProducts.length;
   const totalPages = Math.max(1, Math.ceil(totalFiltered / (productsPerPage || 10)));
@@ -104,12 +110,18 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
   const endIndex = Math.min(startIndex + (productsPerPage || 10), totalFiltered);
   const displayedProducts = filteredProducts.slice(startIndex, endIndex);
 
-  const hasActiveFilters = searchTerm !== "" || categoryFilter !== "all" || statusFilter !== "all" || onlyLowStock;
+  const hasActiveFilters =
+    searchTerm !== "" ||
+    categoryFilter !== "all" ||
+    statusFilter !== "all" ||
+    stockControlFilter !== "all" ||
+    onlyLowStock;
 
   const handleResetFilters = () => {
     setSearchTerm("");
     setCategoryFilter("all");
     setStatusFilter("all");
+    setStockControlFilter("all");
     setOnlyLowStock(false);
     setProductsPage(1);
   };
@@ -188,10 +200,10 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider block">
-                  Produtos Ativos
+                  Estoque Próprio
                 </span>
                 <span className="text-xl font-bold text-emerald-700 dark:text-emerald-400">
-                  {stockSummary?.activeProducts ?? products.filter((p) => p.status === "Ativo").length}
+                  {products.filter((p) => p.controlsStock).length} <span className="text-xs font-normal text-muted-foreground">itens</span>
                 </span>
               </div>
               <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600">
@@ -323,6 +335,24 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                     </SelectContent>
                   </Select>
 
+                  {/* Tipo de Insumo / Estoque */}
+                  <Select
+                    value={stockControlFilter}
+                    onValueChange={(val: any) => {
+                      setStockControlFilter(val);
+                      setProductsPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="w-full sm:w-[170px] h-9 text-xs">
+                      <SelectValue placeholder="Tipo de Insumo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os Insumos</SelectItem>
+                      <SelectItem value="controlled">Estoque Próprio</SelectItem>
+                      <SelectItem value="service_only">Insumos de Serviço</SelectItem>
+                    </SelectContent>
+                  </Select>
+
                   {/* Status */}
                   <Select
                     value={statusFilter}
@@ -444,25 +474,31 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
 
                             {/* Saldo Estoque */}
                             <TableCell className="text-right">
-                              <div className="flex flex-col items-end">
-                                <span
-                                  className={`font-bold text-sm ${
-                                    isLowStock ? "text-amber-600 dark:text-amber-400" : "text-foreground"
-                                  }`}
-                                >
-                                  {qty.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} {product.unit}
-                                </span>
-                                {isLowStock && (
-                                  <span className="flex items-center gap-1 text-[10px] text-amber-700 dark:text-amber-400 font-semibold mt-0.5">
-                                    <AlertTriangle className="h-3 w-3" />
-                                    Estoque Baixo
+                              {product.controlsStock ? (
+                                <div className="flex flex-col items-end">
+                                  <span
+                                    className={`font-bold text-sm ${
+                                      isLowStock ? "text-amber-600 dark:text-amber-400" : "text-foreground"
+                                    }`}
+                                  >
+                                    {qty.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} {product.unit}
                                   </span>
-                                )}
-                              </div>
+                                  {isLowStock && (
+                                    <span className="flex items-center gap-1 text-[10px] text-amber-700 dark:text-amber-400 font-semibold mt-0.5">
+                                      <AlertTriangle className="h-3 w-3" />
+                                      Estoque Baixo
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <Badge variant="outline" className="text-muted-foreground border-dashed bg-slate-50 dark:bg-slate-900 text-[11px] font-normal">
+                                  Insumo de Serviço (Cliente)
+                                </Badge>
+                              )}
                             </TableCell>
 
                             <TableCell className="text-right text-muted-foreground">
-                              {min > 0 ? `${min.toLocaleString("pt-BR")} ${product.unit}` : "-"}
+                              {product.controlsStock && min > 0 ? `${min.toLocaleString("pt-BR")} ${product.unit}` : "-"}
                             </TableCell>
 
                             <TableCell className="text-right font-semibold text-emerald-700 dark:text-emerald-400 text-sm">
@@ -486,15 +522,27 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
 
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-1">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleOpenMovement(product)}
-                                  className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700"
-                                  title="Movimentar Estoque (Entrada/Saída/Ajuste)"
-                                >
-                                  <PackagePlus className="h-4 w-4" />
-                                </Button>
+                                {product.controlsStock ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleOpenMovement(product)}
+                                    className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700"
+                                    title="Movimentar Estoque (Entrada/Saída/Ajuste)"
+                                  >
+                                    <PackagePlus className="h-4 w-4" />
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled
+                                    className="h-8 w-8 p-0 opacity-40 cursor-not-allowed text-muted-foreground"
+                                    title="Insumo de serviço (sem controle de estoque físico)"
+                                  >
+                                    <PackagePlus className="h-4 w-4" />
+                                  </Button>
+                                )}
                                 <Button
                                   variant="outline"
                                   size="sm"

@@ -176,39 +176,67 @@ export const ProductModal: React.FC<ProductModalProps> = ({
           </div>
 
           {/* Linha 4: Estoque e Estoque Mínimo */}
-          <div className="p-3 bg-amber-50/50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800/50 space-y-3">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-800 dark:text-amber-400">
-              <Package className="h-4 w-4" />
-              Controle de Estoque ({productFormData.unit || "un"})
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="prod-quantity" className="text-xs">Saldo Atual em Estoque</Label>
-                <Input
-                  id="prod-quantity"
-                  type="number"
-                  step="0.01"
-                  value={productFormData.quantity ?? 0}
-                  onChange={(e) => handleProductInputChange("quantity", parseFloat(e.target.value) || 0)}
-                  placeholder="0.00"
-                  className="mt-1"
-                />
-                <span className="text-[11px] text-muted-foreground">Quantidade física disponível</span>
+          <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  <Package className="h-4 w-4 text-emerald-600" />
+                  Controle de Estoque Físico da Preciza
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {productFormData.controlsStock
+                    ? "A Preciza mantém estoque físico deste produto em galpão/armazém (ex: Biológicos, Adjuvantes)."
+                    : "Insumo de serviço (ex: Calcário, Gesso, Cama de Frango, Esterco). A Preciza apenas aplica; o produto é fornecido pelo produtor ou entregue direto na fazenda."}
+                </p>
               </div>
-              <div>
-                <Label htmlFor="min-stock" className="text-xs">Estoque Mínimo para Alerta</Label>
-                <Input
-                  id="min-stock"
-                  type="number"
-                  step="0.01"
-                  value={productFormData.minStock ?? 0}
-                  onChange={(e) => handleProductInputChange("minStock", parseFloat(e.target.value) || 0)}
-                  placeholder="0.00"
-                  className="mt-1"
+              <div className="flex items-center gap-2 self-start sm:self-center">
+                <input
+                  type="checkbox"
+                  id="controls-stock-toggle"
+                  checked={productFormData.controlsStock ?? false}
+                  onChange={(e) => handleProductInputChange("controlsStock", e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
                 />
-                <span className="text-[11px] text-muted-foreground">Avisa quando o saldo ficar menor ou igual</span>
+                <Label htmlFor="controls-stock-toggle" className="text-xs cursor-pointer font-medium whitespace-nowrap">
+                  {productFormData.controlsStock ? "Controlar Estoque" : "Sem Estoque Próprio"}
+                </Label>
               </div>
             </div>
+
+            {productFormData.controlsStock ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <Label htmlFor="prod-quantity" className="text-xs">Saldo Atual em Estoque ({productFormData.unit || "un"})</Label>
+                  <Input
+                    id="prod-quantity"
+                    type="number"
+                    step="0.01"
+                    value={productFormData.quantity ?? 0}
+                    onChange={(e) => handleProductInputChange("quantity", parseFloat(e.target.value) || 0)}
+                    placeholder="0.00"
+                    className="mt-1"
+                  />
+                  <span className="text-[11px] text-muted-foreground">Quantidade física disponível</span>
+                </div>
+                <div>
+                  <Label htmlFor="min-stock" className="text-xs">Estoque Mínimo para Alerta ({productFormData.unit || "un"})</Label>
+                  <Input
+                    id="min-stock"
+                    type="number"
+                    step="0.01"
+                    value={productFormData.minStock ?? 0}
+                    onChange={(e) => handleProductInputChange("minStock", parseFloat(e.target.value) || 0)}
+                    placeholder="0.00"
+                    className="mt-1"
+                  />
+                  <span className="text-[11px] text-muted-foreground">Avisa quando o saldo ficar menor ou igual</span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-[11px] text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 p-2 rounded border border-emerald-200 dark:border-emerald-900/50">
+                ✓ <strong>Insumo do Produtor / Aplicação em Serviço:</strong> Este produto não gera saldo de estoque na Preciza nem entra no cálculo do valor do inventário.
+              </div>
+            )}
           </div>
 
           {/* Linha 5: Fornecedor e Observações */}

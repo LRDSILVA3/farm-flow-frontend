@@ -13,6 +13,7 @@ export interface Product {
   unitValue?: number; // alias for backwards compatibility
   quantity: number;
   minStock: number;
+  controlsStock: boolean;
   supplier?: string;
   status: string;
   description?: string;
@@ -41,6 +42,7 @@ export interface StockMovement {
 export interface StockSummary {
   totalProducts: number;
   activeProducts: number;
+  stockControlledCount?: number;
   lowStockCount: number;
   totalStockValue: number;
 }
@@ -76,6 +78,7 @@ export const useProducts = () => {
     unitValue: 0,
     quantity: 0,
     minStock: 0,
+    controlsStock: false,
     supplier: "",
     status: "Ativo",
     description: "",
@@ -99,6 +102,7 @@ export const useProducts = () => {
             unitValue: price,
             quantity: Number(p.quantity || 0),
             minStock: Number(p.min_stock || p.minStock || 0),
+            controlsStock: p.controls_stock === true || p.controlsStock === true,
             supplier: p.supplier || "",
             status: p.status || "Ativo",
             description: p.description || "",
@@ -188,8 +192,9 @@ export const useProducts = () => {
         cost_price: Number(productFormData.costPrice || 0),
         price: price,
         value_per_unit: price,
-        quantity: Number(productFormData.quantity || 0),
-        min_stock: Number(productFormData.minStock || 0),
+        quantity: productFormData.controlsStock ? Number(productFormData.quantity || 0) : 0,
+        min_stock: productFormData.controlsStock ? Number(productFormData.minStock || 0) : 0,
+        controls_stock: productFormData.controlsStock === true,
         supplier: productFormData.supplier,
         status: productFormData.status,
         description: productFormData.description,
@@ -222,6 +227,7 @@ export const useProducts = () => {
       unitValue: 0,
       quantity: 0,
       minStock: 0,
+      controlsStock: false,
       supplier: "",
       status: "Ativo",
       description: "",
