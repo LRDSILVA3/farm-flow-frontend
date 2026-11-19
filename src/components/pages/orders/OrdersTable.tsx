@@ -45,6 +45,8 @@ interface OrdersTableProps {
   onRecordExecution: (orderId: string, execution: any) => Promise<void>;
   onAddSchedule: (orderId: string, schedule: any) => Promise<void>;
   onRecordPayment: (orderId: string, payment: any) => Promise<void>;
+  onSavePaymentSchedules?: (orderId: string, paymentSchedules: any[]) => Promise<void>;
+  onPayScheduledInstallment?: (orderId: string, scheduleId: string, paymentData: any) => Promise<void>;
 }
 
 export const OrdersTable = ({
@@ -59,6 +61,8 @@ export const OrdersTable = ({
   onRecordExecution,
   onAddSchedule,
   onRecordPayment,
+  onSavePaymentSchedules,
+  onPayScheduledInstallment,
 }: OrdersTableProps) => {
   const { clients } = useClients();
   const { farms } = useFarms();
@@ -463,6 +467,11 @@ export const OrdersTable = ({
                       <span className={cn("inline-block px-2.5 py-1 rounded-full text-xs font-medium border whitespace-nowrap", getPaymentBadge(order.payment))}>
                         {order.payment}
                       </span>
+                      {order.paymentSchedules && order.paymentSchedules.length > 0 && (
+                        <div className="text-[10px] text-purple-700 font-medium mt-0.5 whitespace-nowrap">
+                          🌾 {order.paymentSchedules.filter(s => s.status === 'Pago').length}/{order.paymentSchedules.length} safras
+                        </div>
+                      )}
                     </TableCell>
 
                     <TableCell className="px-2.5 py-3 text-right whitespace-nowrap">
@@ -549,6 +558,8 @@ export const OrdersTable = ({
           open={!!selectedOrderForPay}
           onOpenChange={(op) => !op && setSelectedOrderForPay(null)}
           onRecordPayment={onRecordPayment}
+          onSavePaymentSchedules={onSavePaymentSchedules}
+          onPayScheduledInstallment={onPayScheduledInstallment}
         />
       </div>
     

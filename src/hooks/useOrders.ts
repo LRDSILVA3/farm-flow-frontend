@@ -97,6 +97,22 @@ export interface OrderPayment {
   createdAt: string;
 }
 
+export interface OrderPaymentSchedule {
+  id: string;
+  dueDate: string;              // YYYY-MM-DD
+  amount: number;               // Valor da parcela
+  cycleYear?: number;           // Ano do ciclo (1 a 5)
+  cycleLabel?: string;          // ex: 'Ano 1 (Safra 2025/2026)'
+  installmentNumber: number;    // ex: 1, 2, 3
+  totalInstallments: number;    // ex: 3
+  description: string;          // ex: '1ª Parcela - Safra Soja 2025/2026'
+  status: 'Pendente' | 'Pago' | 'Atrasado';
+  paidDate?: string;
+  paidAmount?: number;
+  paymentMethod?: string;
+  notes?: string;
+}
+
 export interface Order {
   id: string;
   clientId: string;
@@ -116,6 +132,7 @@ export interface Order {
   executions: OrderExecution[];
   schedules: OrderSchedule[];
   payments: OrderPayment[];
+  paymentSchedules?: OrderPaymentSchedule[];
   logs: OrderActionLog[];
   executedArea: number;
   executedSamples?: number;
@@ -236,6 +253,10 @@ const mapFromDB = (db: OrderDB): Order => {
     executions: Array.isArray(db.executions) ? db.executions : [],
     schedules: Array.isArray(db.schedules) ? db.schedules : [],
     payments: Array.isArray(db.payments) ? db.payments : [],
+    paymentSchedules: Array.isArray(db.payment_schedules) ? db.payment_schedules : (Array.isArray(db.paymentSchedules) ? db.paymentSchedules : []),
+    plots: Array.isArray(db.plots) ? db.plots : [],
+    totalSamples: typeof db.total_samples === 'number' ? db.total_samples : 0,
+    executedSamples: typeof db.executed_samples === 'number' ? db.executed_samples : 0,
     logs: Array.isArray(db.logs) ? db.logs : [],
     executedArea: numExecuted,
     paidAmount: numPaid,
@@ -353,6 +374,10 @@ export const useOrders = () => {
           executions: [],
           schedules: [],
           payments: [],
+          payment_schedules: (order as any).paymentSchedules || [],
+          plots: (order as any).plots || [],
+          total_samples: (order as any).totalSamples || 0,
+          executed_samples: (order as any).executedSamples || 0,
           logs: initialLogs,
           executed_area: 0,
           paid_amount: 0
@@ -399,6 +424,10 @@ export const useOrders = () => {
           executions: order.executions || [],
           schedules: order.schedules || [],
           payments: order.payments || [],
+          payment_schedules: (order as any).paymentSchedules || [],
+          plots: (order as any).plots || [],
+          total_samples: (order as any).totalSamples || 0,
+          executed_samples: (order as any).executedSamples || 0,
           logs: order.logs || [],
           executed_area: order.executedArea || 0,
           paid_amount: order.paidAmount || 0
@@ -750,6 +779,137 @@ export const useOrders = () => {
     });
   };
 
+  // Lifecycle action: Salvar Cronograma de Pagamentos das Safras (Equaliza & Multianual)
+  const savePaymentSchedules = async (
+    orderId: string,
+    paymentSchedules: OrderPaymentSchedule[]
+  ) => {
+    try {
+      const order = orders.find(o => o.id === orderId);
+      if (!order) return;
+
+      const scheduleLog = createLogEntry(
+        "Cronograma Financeiro",
+        `Cronograma de pagamentos atualizado: ${paymentSchedules.length} parcelas/safras agendadas.`
+      );
+      const updatedLogs = [...(order.logs || []), scheduleLog];
+
+      await updateOrder({
+        ...order,
+        paymentSchedules,
+        logs: updatedLogs
+      });
+
+      toast({
+        title: "Cronograma de Pagamento Salvo",
+        description: `${paymentSchedules.length} parcelas de safras programadas com sucesso.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Erro ao salvar cronograma de pagamento",
+        description: err.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Lifecycle action: Dar Baixa Direta em Parcela Agendada
+  const payScheduledInstallment = async (
+    orderId: string,
+    scheduleId: string,
+    paymentData: { amount: number; method: string; date?: string; notes?: string }
+  ) => {
+    try {
+      const order = orders.find(o => o.id === orderId);
+      if (!order) return;
+
+      const schedules = order.paymentSchedules || [];
+      const targetSched = schedules.find(s => s.id === scheduleId);
+      const amountToPay = paymentData.amount || targetSched?.amount || 0;
+      const paymentDate = paymentData.date || getLocalDateISO();
+
+      const updatedSchedules: OrderPaymentSchedule[] = schedules.map(s => {
+        if (s.id === scheduleId) {
+          return {
+            ...s,
+            status: 'Pago' as const,
+            paidDate: paymentDate,
+            paidAmount: amountToPay,
+            paymentMethod: paymentData.method,
+            notes: paymentData.notes || s.notes
+          };
+        }
+        return s;
+      });
+
+      const newPayment: OrderPayment = {
+        id: generateUUID(),
+        date: paymentDate,
+        amount: amountToPay,
+        method: paymentData.method,
+        notes: paymentData.notes || `${targetSched?.description || 'Parcela'} quitada`,
+        createdAt: new Date().toISOString()
+      };
+
+      const updatedPayments = [...order.payments, newPayment];
+      const orderTotal = order.numericValue || parseValue(order.value) || 0;
+      const newPaidAmount = (order.paidAmount || 0) + amountToPay;
+
+      let newPaymentStatus = order.payment;
+      if (newPaidAmount >= orderTotal && orderTotal > 0) {
+        newPaymentStatus = "Pago";
+      } else if (newPaidAmount > 0) {
+        newPaymentStatus = "Parcial";
+      }
+
+      const payLog = createLogEntry(
+        "Pagamento",
+        `Baixa na parcela "${targetSched?.description || scheduleId}" de ${formatCurrencyBRL(amountToPay)} via ${paymentData.method}.`
+      );
+      const updatedLogs = [...(order.logs || []), payLog];
+
+      await updateOrder({
+        ...order,
+        payments: updatedPayments,
+        paymentSchedules: updatedSchedules,
+        paidAmount: newPaidAmount,
+        payment: newPaymentStatus,
+        logs: updatedLogs
+      });
+
+      // Sincroniza recebimento no Fluxo de Caixa (/financial/transactions)
+      try {
+        await api.post('/financial/transactions', {
+          order_id: order.id,
+          client_id: order.clientId || null,
+          type: 'income',
+          category: 'Serviços Agrícolas',
+          amount: amountToPay,
+          description: `Recebimento Parcela ${targetSched?.description || ''} - Pedido #${order.id.slice(0, 8)}`,
+          due_date: targetSched?.dueDate || paymentDate,
+          payment_date: paymentDate,
+          status: 'paid',
+          payment_method: paymentData.method,
+          notes: order.client?.name || paymentData.notes || 'Cliente'
+        });
+        await queryClient.invalidateQueries({ queryKey: ["financial-transactions"] });
+      } catch (syncErr) {
+        console.warn("Erro ao sincronizar recebimento no fluxo de caixa:", syncErr);
+      }
+
+      toast({
+        title: "Parcela Quitada com Sucesso",
+        description: `Recebido: ${formatCurrencyBRL(amountToPay)} (${targetSched?.description || 'Parcela'})`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Erro ao quitar parcela",
+        description: err.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     orders,
     setOrders,
@@ -771,6 +931,8 @@ export const useOrders = () => {
     recordExecution,
     addSchedule,
     recordPayment,
+    savePaymentSchedules,
+    payScheduledInstallment,
     markOrderAsPaid,
     resetOrderForm,
     refetch: fetchOrders

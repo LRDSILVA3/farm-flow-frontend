@@ -26,6 +26,8 @@ const OrdersPage = () => {
     recordExecution,
     addSchedule,
     recordPayment,
+    savePaymentSchedules,
+    payScheduledInstallment,
     currentPage,
     setCurrentPage,
     itemsPerPage,
@@ -162,6 +164,8 @@ const OrdersPage = () => {
             onRecordExecution={recordExecution}
             onAddSchedule={addSchedule}
             onRecordPayment={recordPayment}
+            onSavePaymentSchedules={savePaymentSchedules}
+            onPayScheduledInstallment={payScheduledInstallment}
           />
         </CardContent>
       </Card>

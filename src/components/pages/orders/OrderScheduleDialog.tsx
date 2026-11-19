@@ -449,6 +449,16 @@ export const OrderScheduleDialog: React.FC<OrderScheduleDialogProps> = ({
                             {sc.cycleLabel}
                           </Badge>
                         )}
+                        {order.paymentSchedules && (() => {
+                          const linkedPay = order.paymentSchedules.find(p => p.cycleYear === sc.yearCycle);
+                          if (!linkedPay) return null;
+                          const isPaid = linkedPay.status === 'Pago';
+                          return (
+                            <Badge variant="outline" className={`text-[10px] ${isPaid ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'}`}>
+                              💰 Parcela: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(linkedPay.amount)} ({linkedPay.status})
+                            </Badge>
+                          );
+                        })()}
                       </div>
                       <span className="px-2 py-0.5 rounded text-[10px] bg-blue-100 text-blue-800 font-medium">
                         {sc.status || 'Agendado'}

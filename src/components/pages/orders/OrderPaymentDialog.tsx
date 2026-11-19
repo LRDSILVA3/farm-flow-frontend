@@ -10,9 +10,24 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Order } from '@/hooks/useOrders';
-import { DollarSign, CheckCircle2, History, AlertCircle, ArrowDownLeft } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Order, OrderPaymentSchedule } from '@/hooks/useOrders';
+import {
+  DollarSign,
+  CheckCircle2,
+  History,
+  AlertCircle,
+  CalendarClock,
+  ArrowDownLeft,
+  Plus,
+  Trash2,
+  Calendar,
+  Sparkles,
+  Check,
+} from 'lucide-react';
 import { getLocalDateISO } from '@/lib/utils';
 
 interface OrderPaymentDialogProps {
@@ -20,28 +35,68 @@ interface OrderPaymentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onRecordPayment: (orderId: string, payment: { amount: number; method: string; notes?: string; date?: string }) => Promise<void>;
+  onSavePaymentSchedules?: (orderId: string, paymentSchedules: OrderPaymentSchedule[]) => Promise<void>;
+  onPayScheduledInstallment?: (orderId: string, scheduleId: string, paymentData: { amount: number; method: string; date?: string; notes?: string }) => Promise<void>;
 }
+
+const DEFAULT_SAFRA_CYCLES = [
+  { cycle: 1, label: 'Ano 1 (Safra 2025/2026)' },
+  { cycle: 2, label: 'Ano 2 (Safra 2026/2027)' },
+  { cycle: 3, label: 'Ano 3 (Safra 2027/2028)' },
+  { cycle: 4, label: 'Ano 4 (Safra 2028/2029)' },
+  { cycle: 5, label: 'Ano 5 (Safra 2029/2030)' },
+];
 
 export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
   order,
   open,
   onOpenChange,
   onRecordPayment,
+  onSavePaymentSchedules,
+  onPayScheduledInstallment,
 }) => {
+  // Tabs: 'cronograma' ou 'recebimento'
+  const [activeTab, setActiveTab] = useState<'cronograma' | 'recebimento'>('cronograma');
+
+  // Estado da aba de Recebimento Avulso
   const [displayAmount, setDisplayAmount] = useState<string>('');
   const [method, setMethod] = useState<string>('PIX');
   const [paymentDate, setPaymentDate] = useState<string>(getLocalDateISO());
   const [notes, setNotes] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Estado da aba de Cronograma de Parcelas / Safras
+  const [schedulesList, setSchedulesList] = useState<OrderPaymentSchedule[]>([]);
+  const [numSafrasToGenerate, setNumSafrasToGenerate] = useState<number>(3);
+  const [firstDueDate, setFirstDueDate] = useState<string>('2026-04-30');
+
+  // Campos para adicionar parcela avulsa ao cronograma
+  const [newInstDesc, setNewInstDesc] = useState<string>('');
+  const [newInstAmount, setNewInstAmount] = useState<string>('');
+  const [newInstDueDate, setNewInstDueDate] = useState<string>('2026-04-30');
+  const [newInstCycle, setNewInstCycle] = useState<number>(1);
+
+  // Mini-modal / estado para quitação de parcela específica
+  const [payingScheduleId, setPayingScheduleId] = useState<string | null>(null);
+  const [paySchedMethod, setPaySchedMethod] = useState<string>('PIX');
+  const [paySchedDate, setPaySchedDate] = useState<string>(getLocalDateISO());
+  const [paySchedNotes, setPaySchedNotes] = useState<string>('');
+
   const totalValue = order?.numericValue || 0;
   const paidAmount = order?.paidAmount || 0;
   const remainingAmount = Math.max(0, totalValue - paidAmount);
+  const percentPaid = totalValue > 0 ? Math.min(100, (paidAmount / totalValue) * 100) : 0;
+
+  const isEqualiza = useMemo(() => {
+    if (!order) return false;
+    const name = `${order.serviceName || ''} ${order.type || ''}`.toLowerCase();
+    return name.includes('equaliz');
+  }, [order]);
 
   const formatBRL = (val: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
-  // Inicializa o valor com o saldo restante formatado
+  // Inicializa estados ao abrir o modal
   useEffect(() => {
     if (order && open) {
       if (remainingAmount > 0) {
@@ -51,8 +106,17 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
       }
       setPaymentDate(getLocalDateISO());
       setNotes('');
+      setSchedulesList(order.paymentSchedules || []);
+      setPayingScheduleId(null);
+
+      // Define aba inicial: se for Equaliza ou tiver cronograma, foca em 'cronograma'
+      if (isEqualiza || (order.paymentSchedules && order.paymentSchedules.length > 0)) {
+        setActiveTab('cronograma');
+      } else {
+        setActiveTab('recebimento');
+      }
     }
-  }, [order, open, remainingAmount]);
+  }, [order, open, remainingAmount, isEqualiza]);
 
   const parsedAmount = useMemo(() => {
     const clean = displayAmount.replace(/[R$\s.]/g, '').replace(',', '.');
@@ -72,7 +136,130 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
     setDisplayAmount(num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   };
 
-  const handleConfirm = async () => {
+  // Gerador Automático de Parcelas de Safras para Contratos Plurianuais (Equaliza)
+  const handleGenerateSafrasSchedule = () => {
+    if (totalValue <= 0 || numSafrasToGenerate <= 0) return;
+
+    const baseVal = Math.floor((totalValue / numSafrasToGenerate) * 100) / 100;
+    const remainder = Math.round((totalValue - (baseVal * numSafrasToGenerate)) * 100) / 100;
+
+    const [yearStr, monthStr, dayStr] = (firstDueDate || '2026-04-30').split('-');
+    const baseYear = parseInt(yearStr, 10) || 2026;
+    const month = monthStr || '04';
+    const day = dayStr || '30';
+
+    const generated: OrderPaymentSchedule[] = [];
+    for (let i = 1; i <= numSafrasToGenerate; i++) {
+      const year = baseYear + (i - 1);
+      const harvestLabel = `Safra ${year - 1}/${year}`;
+      const cycleInfo = DEFAULT_SAFRA_CYCLES.find(c => c.cycle === i) || {
+        cycle: i,
+        label: `Ano ${i} (${harvestLabel})`
+      };
+
+      const val = i === 1 ? baseVal + remainder : baseVal;
+
+      generated.push({
+        id: `sched-pay-${Date.now()}-${i}`,
+        installmentNumber: i,
+        totalInstallments: numSafrasToGenerate,
+        cycleYear: i,
+        cycleLabel: cycleInfo.label,
+        description: `${i}ª Parcela - ${harvestLabel}`,
+        dueDate: `${year}-${month}-${day}`,
+        amount: val,
+        status: 'Pendente'
+      });
+    }
+
+    setSchedulesList(generated);
+  };
+
+  // Adicionar Parcela Avulsa Manualmente
+  const handleAddManualInstallment = () => {
+    const clean = newInstAmount.replace(/[R$\s.]/g, '').replace(',', '.');
+    const val = parseFloat(clean) || 0;
+    if (val <= 0 || !newInstDueDate) return;
+
+    const cycleInfo = DEFAULT_SAFRA_CYCLES.find(c => c.cycle === newInstCycle) || {
+      cycle: newInstCycle,
+      label: `Ano ${newInstCycle}`
+    };
+
+    const nextInstNumber = schedulesList.length + 1;
+    const newItem: OrderPaymentSchedule = {
+      id: `sched-pay-${Date.now()}`,
+      installmentNumber: nextInstNumber,
+      totalInstallments: nextInstNumber,
+      cycleYear: newInstCycle,
+      cycleLabel: cycleInfo.label,
+      description: newInstDesc.trim() || `${nextInstNumber}ª Parcela - ${cycleInfo.label}`,
+      dueDate: newInstDueDate,
+      amount: val,
+      status: 'Pendente'
+    };
+
+    const updated = [...schedulesList, newItem].map((item, idx, arr) => ({
+      ...item,
+      totalInstallments: arr.length
+    }));
+
+    setSchedulesList(updated);
+    setNewInstDesc('');
+    setNewInstAmount('');
+  };
+
+  // Remover Parcela do Cronograma
+  const handleRemoveSchedule = (id: string) => {
+    const updated = schedulesList.filter(s => s.id !== id);
+    setSchedulesList(updated);
+  };
+
+  // Salvar Cronograma Completo de Parcelas
+  const handleSaveCronograma = async () => {
+    if (!order) return;
+    setSubmitting(true);
+    try {
+      if (onSavePaymentSchedules) {
+        await onSavePaymentSchedules(order.id, schedulesList);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Executar Baixa na Parcela Específica
+  const handleConfirmInstallmentPayment = async (scheduleId: string) => {
+    if (!order) return;
+    const target = schedulesList.find(s => s.id === scheduleId);
+    if (!target) return;
+
+    setSubmitting(true);
+    try {
+      if (onPayScheduledInstallment) {
+        await onPayScheduledInstallment(order.id, scheduleId, {
+          amount: target.amount,
+          method: paySchedMethod,
+          date: paySchedDate,
+          notes: paySchedNotes.trim() || undefined
+        });
+      } else {
+        await onRecordPayment(order.id, {
+          amount: target.amount,
+          method: paySchedMethod,
+          notes: paySchedNotes.trim() || `${target.description} quitada`,
+          date: paySchedDate
+        });
+      }
+      setPayingScheduleId(null);
+      setPaySchedNotes('');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Confirmar Recebimento Avulso
+  const handleConfirmSinglePayment = async () => {
     if (!order || parsedAmount <= 0) return;
 
     setSubmitting(true);
@@ -96,171 +283,511 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-lg">
-            <DollarSign className="h-5 w-5 text-emerald-600" />
-            Dar Baixa no Pedido / Cobrança
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            Registrar baixa ou pagamento do pedido
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <DollarSign className="h-5 w-5 text-emerald-600" />
+              Gestão Financeira & Cobrança
+            </DialogTitle>
+            {isEqualiza && (
+              <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                Contrato Plurianual Equaliza
+              </Badge>
+            )}
+          </div>
+          <DialogDescription className="text-xs">
+            Planejamento de safras futuras, cronograma de pagamentos agendados e registro de baixas
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
-          {/* Card Resumo Financeiro */}
-          <div className="p-3 border rounded-lg bg-muted/30 space-y-2 text-xs">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Cliente / Fazenda:</span>
-              <span className="font-semibold text-foreground">
-                {order.client?.name || order.clientId} • {order.farm?.name || order.farmId}
-              </span>
+        {/* Resumo Financeiro Superior */}
+        <div className="p-3 border rounded-lg bg-muted/20 space-y-2 text-xs">
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+            <span className="text-muted-foreground">Cliente / Fazenda:</span>
+            <span className="font-semibold text-foreground">
+              {order.client?.name || order.clientId} • {order.farm?.name || order.farmId}
+            </span>
+          </div>
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+            <span className="text-muted-foreground">Serviço Contratado:</span>
+            <span className="font-medium text-foreground">{order.serviceName || order.type}</span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 pt-2 border-t text-center">
+            <div className="p-2 bg-background rounded border">
+              <span className="block text-[11px] text-muted-foreground">Valor Total:</span>
+              <strong className="text-xs sm:text-sm text-foreground">{formatBRL(totalValue)}</strong>
             </div>
-            <div className="flex justify-between border-t pt-1.5">
-              <span className="text-muted-foreground">Valor Total do Pedido:</span>
-              <strong>{formatBRL(totalValue)}</strong>
+            <div className="p-2 bg-emerald-50/50 rounded border border-emerald-100">
+              <span className="block text-[11px] text-emerald-700">Total Já Quitado:</span>
+              <strong className="text-xs sm:text-sm text-emerald-700">{formatBRL(paidAmount)}</strong>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Total Já Quitado:</span>
-              <strong className="text-emerald-700">{formatBRL(paidAmount)}</strong>
-            </div>
-            <div className="flex justify-between font-bold text-amber-700 bg-amber-50/80 p-1.5 rounded">
-              <span>Saldo Devedor Atual:</span>
-              <span>{formatBRL(remainingAmount)}</span>
+            <div className="p-2 bg-amber-50/50 rounded border border-amber-100">
+              <span className="block text-[11px] text-amber-700">Saldo a Receber:</span>
+              <strong className="text-xs sm:text-sm text-amber-700">{formatBRL(remainingAmount)}</strong>
             </div>
           </div>
 
-          {remainingAmount <= 0 ? (
-            <div className="p-3 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-md text-sm flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5" />
-              Este pedido já foi 100% quitado!
+          {/* Barra de Progresso Financeira */}
+          <div className="space-y-1 pt-1">
+            <div className="flex justify-between text-[11px] text-muted-foreground">
+              <span>Progresso de Liquidação:</span>
+              <span className="font-semibold text-foreground">{percentPaid.toFixed(1)}%</span>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {/* Input com máscara monetária */}
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <Label htmlFor="pay-amount-masked" className="text-xs font-semibold">
-                    Valor Deste Pagamento (R$):
-                  </Label>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setDisplayAmount((remainingAmount / 2).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}
-                      className="text-[11px] text-muted-foreground hover:text-foreground font-medium"
-                    >
-                      50% ({formatBRL(remainingAmount / 2)})
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDisplayAmount(remainingAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}
-                      className="text-[11px] text-emerald-600 hover:underline font-semibold"
-                    >
-                      Quitar Saldo Total
-                    </button>
-                  </div>
-                </div>
+            <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-300 ${percentPaid >= 100 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                style={{ width: `${percentPaid}%` }}
+              />
+            </div>
+          </div>
+        </div>
 
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-xs text-muted-foreground font-semibold">R$</span>
-                  <Input
-                    id="pay-amount-masked"
-                    value={displayAmount}
-                    onChange={handleAmountChange}
-                    placeholder="0,00"
-                    className="pl-9 font-bold text-base text-foreground"
-                    autoFocus
-                  />
-                </div>
+        {/* Abas: Cronograma de Safras / Parcelas vs Recebimento Avulso */}
+        <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="cronograma" className="flex items-center gap-1.5 text-xs">
+              <CalendarClock className="h-4 w-4 text-purple-600" />
+              <span>Cronograma de Safras / Parcelas</span>
+              {schedulesList.length > 0 && (
+                <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px]">
+                  {schedulesList.filter(s => s.status === 'Pago').length}/{schedulesList.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="recebimento" className="flex items-center gap-1.5 text-xs">
+              <ArrowDownLeft className="h-4 w-4 text-emerald-600" />
+              <span>Recebimento Avulso & Histórico</span>
+              {order.payments && order.payments.length > 0 && (
+                <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px]">
+                  {order.payments.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
 
-                {/* Previsão do Saldo Restante */}
-                <div className="mt-1.5 flex justify-between items-center text-xs p-1.5 rounded bg-muted/40 border">
-                  <span className="text-muted-foreground">Saldo Restante Após Esta Baixa:</span>
-                  <strong className={projectedRemaining === 0 ? "text-emerald-600" : "text-amber-600"}>
-                    {formatBRL(projectedRemaining)} {projectedRemaining === 0 ? "(Quitado)" : "(Parcial)"}
-                  </strong>
-                </div>
+          {/* ========================================================================= */}
+          {/* ABA 1: CRONOGRAMA DE SAFRAS E PARCELAS AGENDADAS (EQUALIZA / MULTIANUAL)  */}
+          {/* ========================================================================= */}
+          <TabsContent value="cronograma" className="space-y-4 pt-2">
+            {/* Gerador Automático de Parcelas de Safra */}
+            <div className="p-3 bg-purple-50/50 border border-purple-100 rounded-lg space-y-2 text-xs">
+              <div className="flex items-center gap-1.5 font-semibold text-purple-900">
+                <Sparkles className="h-4 w-4 text-purple-600" />
+                <span>Gerador Rápido de Parcelamento por Safra (Contrato Multianual):</span>
               </div>
+              <p className="text-muted-foreground text-[11px]">
+                Divide o valor total do pedido igualmente pelas safras futuras (ex: safras anuais de 2 a 5 anos):
+              </p>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end pt-1">
                 <div>
-                  <Label htmlFor="pay-date" className="text-xs font-semibold">Data do Recebimento:</Label>
-                  <Input
-                    id="pay-date"
-                    type="date"
-                    value={paymentDate}
-                    onChange={(e) => setPaymentDate(e.target.value)}
-                    className="mt-1 text-xs"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="pay-method" className="text-xs font-semibold">Forma de Pagamento:</Label>
-                  <Select value={method} onValueChange={setMethod}>
-                    <SelectTrigger id="pay-method" className="mt-1 text-xs">
+                  <Label className="text-[11px]">Quantidade de Safras / Anos:</Label>
+                  <Select value={String(numSafrasToGenerate)} onValueChange={(v) => setNumSafrasToGenerate(Number(v))}>
+                    <SelectTrigger className="h-8 text-xs bg-white">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="PIX">PIX</SelectItem>
-                      <SelectItem value="Boleto">Boleto Bancário</SelectItem>
-                      <SelectItem value="Cheque">Cheque</SelectItem>
-                      <SelectItem value="Transferência">Transferência Bancária</SelectItem>
-                      <SelectItem value="Dinheiro">Dinheiro / Carteira</SelectItem>
-                      <SelectItem value="Cartão">Cartão</SelectItem>
+                      <SelectItem value="2">2 Safras (2 Anos)</SelectItem>
+                      <SelectItem value="3">3 Safras (3 Anos)</SelectItem>
+                      <SelectItem value="4">4 Safras (4 Anos)</SelectItem>
+                      <SelectItem value="5">5 Safras (5 Anos)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
 
-              <div>
-                <Label htmlFor="pay-notes" className="text-xs font-semibold">Observações / Comprovante (Opcional):</Label>
-                <Input
-                  id="pay-notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Ex: 1ª parcela via PIX, comprovante enviado"
-                  className="mt-1 text-xs"
-                />
+                <div>
+                  <Label className="text-[11px]">Vencimento da 1ª Safra:</Label>
+                  <Input
+                    type="date"
+                    value={firstDueDate}
+                    onChange={(e) => setFirstDueDate(e.target.value)}
+                    className="h-8 text-xs bg-white"
+                  />
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={handleGenerateSafrasSchedule}
+                  className="h-8 bg-purple-600 hover:bg-purple-700 text-white text-xs gap-1.5"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Gerar {numSafrasToGenerate} Safras
+                </Button>
               </div>
             </div>
-          )}
 
-          {/* Histórico de Recebimentos */}
-          {order.payments && order.payments.length > 0 && (
-            <div className="space-y-1.5 pt-2 border-t text-xs">
-              <Label className="font-semibold flex items-center gap-1 text-muted-foreground">
-                <History className="h-3.5 w-3.5" />
-                Histórico de Recebimentos ({order.payments.length}):
-              </Label>
-              <div className="max-h-28 overflow-y-auto space-y-1">
-                {order.payments.map((p, idx) => (
-                  <div key={p.id || idx} className="p-2 bg-muted/40 rounded flex justify-between items-center text-[11px]">
-                    <div>
-                      <span className="font-semibold">{p.date}</span>: {formatBRL(p.amount)} ({p.method})
-                      {p.notes && <div className="text-muted-foreground italic text-[10px]">{p.notes}</div>}
-                    </div>
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+            {/* Listagem das Parcelas Agendadas */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label className="font-semibold text-xs text-foreground flex items-center gap-1.5">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  Parcelas e Safras Programadas ({schedulesList.length}):
+                </Label>
+                {schedulesList.length > 0 && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleSaveCronograma}
+                    disabled={submitting}
+                    className="h-7 text-xs text-purple-700 border-purple-200 hover:bg-purple-50"
+                  >
+                    Salvar Cronograma
+                  </Button>
+                )}
+              </div>
+
+              {schedulesList.length === 0 ? (
+                <div className="p-6 text-center border rounded-lg bg-muted/10 text-muted-foreground text-xs space-y-1">
+                  <CalendarClock className="h-8 w-8 mx-auto text-muted-foreground/40 mb-1" />
+                  <p className="font-medium">Nenhum cronograma de safras programado ainda.</p>
+                  <p className="text-[11px]">Use o gerador acima ou adicione parcelas avulsas abaixo para agendar os pagamentos plurianuais.</p>
+                </div>
+              ) : (
+                <div className="border rounded-lg overflow-hidden bg-background">
+                  <Table className="text-xs">
+                    <TableHeader className="bg-muted/40">
+                      <TableRow className="h-8">
+                        <TableHead className="py-1">Safra / Parcela</TableHead>
+                        <TableHead className="py-1">Vencimento</TableHead>
+                        <TableHead className="py-1">Valor</TableHead>
+                        <TableHead className="py-1">Status</TableHead>
+                        <TableHead className="py-1 text-right">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {schedulesList.map((sched) => {
+                        const isPaid = sched.status === 'Pago';
+                        return (
+                          <TableRow key={sched.id} className="hover:bg-muted/30">
+                            <TableCell className="py-2">
+                              <div className="font-medium text-foreground">{sched.description}</div>
+                              {sched.cycleLabel && (
+                                <Badge variant="outline" className="text-[10px] mt-0.5 bg-purple-50 text-purple-700 border-purple-200">
+                                  {sched.cycleLabel}
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="py-2 text-muted-foreground">
+                              {sched.dueDate.split('-').reverse().join('/')}
+                            </TableCell>
+                            <TableCell className="py-2 font-semibold text-foreground">
+                              {formatBRL(sched.amount)}
+                            </TableCell>
+                            <TableCell className="py-2">
+                              {isPaid ? (
+                                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-[10px]">
+                                  Quitado
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]">
+                                  A Vencer
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="py-2 text-right">
+                              {isPaid ? (
+                                <span className="text-[11px] text-muted-foreground italic">
+                                  {sched.paymentMethod || 'Pago'}
+                                </span>
+                              ) : (
+                                <div className="flex justify-end items-center gap-1.5">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    onClick={() => {
+                                      setPayingScheduleId(sched.id);
+                                      setPaySchedDate(getLocalDateISO());
+                                    }}
+                                    className="h-6 text-[11px] px-2 bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
+                                  >
+                                    <Check className="h-3 w-3" />
+                                    Dar Baixa
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleRemoveSchedule(sched.id)}
+                                    className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+
+              {/* Mini-painel de Baixa Rápida na Parcela */}
+              {payingScheduleId && (
+                <div className="p-3 border-2 border-emerald-400 bg-emerald-50/40 rounded-lg space-y-2 text-xs animate-in fade-in">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-emerald-900 flex items-center gap-1.5">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      Confirmar Baixa na Parcela: {schedulesList.find(s => s.id === payingScheduleId)?.description}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPayingScheduleId(null)}
+                      className="h-5 text-xs text-muted-foreground"
+                    >
+                      Cancelar
+                    </Button>
                   </div>
-                ))}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div>
+                      <Label className="text-[11px]">Data Efetiva do Pagamento:</Label>
+                      <Input
+                        type="date"
+                        value={paySchedDate}
+                        onChange={(e) => setPaySchedDate(e.target.value)}
+                        className="h-8 text-xs bg-white"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[11px]">Forma de Pagamento:</Label>
+                      <Select value={paySchedMethod} onValueChange={setPaySchedMethod}>
+                        <SelectTrigger className="h-8 text-xs bg-white">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="PIX">PIX</SelectItem>
+                          <SelectItem value="Boleto">Boleto Bancário</SelectItem>
+                          <SelectItem value="Cheque">Cheque</SelectItem>
+                          <SelectItem value="Transferência">Transferência Bancária</SelectItem>
+                          <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-[11px]">Obs / Comprovante:</Label>
+                      <Input
+                        value={paySchedNotes}
+                        onChange={(e) => setPaySchedNotes(e.target.value)}
+                        placeholder="Ex: Pago com soja safra"
+                        className="h-8 text-xs bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <Button
+                      type="button"
+                      onClick={() => handleConfirmInstallmentPayment(payingScheduleId)}
+                      disabled={submitting}
+                      className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5"
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      Confirmar Quitação ({formatBRL(schedulesList.find(s => s.id === payingScheduleId)?.amount || 0)})
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Adicionar Parcela Avulsa Manual */}
+              <div className="p-2.5 border rounded-lg bg-muted/10 space-y-2 text-xs">
+                <span className="font-semibold text-foreground text-[11px] block">
+                  + Adicionar Parcela Avulsa ao Cronograma:
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 items-end">
+                  <div className="sm:col-span-1">
+                    <Label className="text-[11px]">Ciclo / Safra:</Label>
+                    <Select value={String(newInstCycle)} onValueChange={(v) => setNewInstCycle(Number(v))}>
+                      <SelectTrigger className="h-8 text-xs bg-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {DEFAULT_SAFRA_CYCLES.map(c => (
+                          <SelectItem key={c.cycle} value={String(c.cycle)}>
+                            {c.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-[11px]">Vencimento:</Label>
+                    <Input
+                      type="date"
+                      value={newInstDueDate}
+                      onChange={(e) => setNewInstDueDate(e.target.value)}
+                      className="h-8 text-xs bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-[11px]">Valor da Parcela (R$):</Label>
+                    <Input
+                      placeholder="0,00"
+                      value={newInstAmount}
+                      onChange={(e) => setNewInstAmount(e.target.value)}
+                      className="h-8 text-xs bg-white"
+                    />
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleAddManualInstallment}
+                    className="h-8 text-xs border-dashed gap-1"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Incluir Parcela
+                  </Button>
+                </div>
               </div>
             </div>
-          )}
-        </div>
+          </TabsContent>
+
+          {/* ========================================================================= */}
+          {/* ABA 2: RECEBIMENTO AVULSO & HISTÓRICO DE BAIXAS REALIZADAS                */}
+          {/* ========================================================================= */}
+          <TabsContent value="recebimento" className="space-y-3 pt-2">
+            {remainingAmount <= 0 ? (
+              <div className="p-3 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-md text-xs flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5" />
+                Este pedido já foi 100% quitado!
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* Input com máscara monetária */}
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <Label htmlFor="pay-amount-masked" className="text-xs font-semibold">
+                      Valor Deste Pagamento (R$):
+                    </Label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setDisplayAmount((remainingAmount / 2).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}
+                        className="text-[11px] text-muted-foreground hover:text-foreground font-medium"
+                      >
+                        50% ({formatBRL(remainingAmount / 2)})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDisplayAmount(remainingAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }))}
+                        className="text-[11px] text-emerald-600 hover:underline font-semibold"
+                      >
+                        Quitar Saldo Total
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <span className="absolute left-3 top-2 text-xs text-muted-foreground font-semibold">R$</span>
+                    <Input
+                      id="pay-amount-masked"
+                      value={displayAmount}
+                      onChange={handleAmountChange}
+                      placeholder="0,00"
+                      className="pl-9 font-bold text-sm text-foreground h-9"
+                    />
+                  </div>
+
+                  {/* Previsão do Saldo Restante */}
+                  <div className="mt-1.5 flex justify-between items-center text-xs p-1.5 rounded bg-muted/40 border">
+                    <span className="text-muted-foreground">Saldo Restante Após Esta Baixa:</span>
+                    <strong className={projectedRemaining === 0 ? "text-emerald-600" : "text-amber-600"}>
+                      {formatBRL(projectedRemaining)} {projectedRemaining === 0 ? "(Quitado)" : "(Parcial)"}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="pay-date" className="text-xs font-semibold">Data do Recebimento:</Label>
+                    <Input
+                      id="pay-date"
+                      type="date"
+                      value={paymentDate}
+                      onChange={(e) => setPaymentDate(e.target.value)}
+                      className="mt-1 text-xs h-8"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="pay-method" className="text-xs font-semibold">Forma de Pagamento:</Label>
+                    <Select value={method} onValueChange={setMethod}>
+                      <SelectTrigger id="pay-method" className="mt-1 text-xs h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PIX">PIX</SelectItem>
+                        <SelectItem value="Boleto">Boleto Bancário</SelectItem>
+                        <SelectItem value="Cheque">Cheque</SelectItem>
+                        <SelectItem value="Transferência">Transferência Bancária</SelectItem>
+                        <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                        <SelectItem value="Cartão">Cartão</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="pay-notes" className="text-xs font-semibold">Observações / Comprovante (Opcional):</Label>
+                  <Input
+                    id="pay-notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Ex: Parcela safra paga via PIX"
+                    className="mt-1 text-xs h-8"
+                  />
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <Button
+                    type="button"
+                    onClick={handleConfirmSinglePayment}
+                    disabled={submitting || parsedAmount <= 0}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5"
+                  >
+                    <Check className="h-4 w-4" />
+                    Confirmar Recebimento ({formatBRL(parsedAmount)})
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Histórico de Recebimentos Realizados */}
+            {order.payments && order.payments.length > 0 && (
+              <div className="space-y-1.5 pt-3 border-t text-xs">
+                <Label className="font-semibold flex items-center gap-1 text-muted-foreground">
+                  <History className="h-3.5 w-3.5" />
+                  Histórico de Recebimentos Realizados ({order.payments.length}):
+                </Label>
+                <div className="max-h-36 overflow-y-auto space-y-1">
+                  {order.payments.map((p, idx) => (
+                    <div key={p.id || idx} className="p-2 bg-muted/40 rounded flex justify-between items-center text-[11px]">
+                      <div>
+                        <span className="font-semibold">{p.date.split('-').reverse().join('/')}</span>: {formatBRL(p.amount)} ({p.method})
+                        {p.notes && <div className="text-muted-foreground italic text-[10px]">{p.notes}</div>}
+                      </div>
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0 ml-2" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
 
         <DialogFooter className="pt-2 border-t flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
+          <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+            Fechar
           </Button>
-          {remainingAmount > 0 && (
-            <Button
-              type="button"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              onClick={handleConfirm}
-              disabled={submitting || parsedAmount <= 0}
-            >
-              Confirmar Recebimento ({formatBRL(parsedAmount)})
-            </Button>
-          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
