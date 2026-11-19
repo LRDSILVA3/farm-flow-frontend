@@ -215,6 +215,7 @@ export const SchedulePage = () => {
 
   const [collaboratorsList, setCollaboratorsList] = useState<CollaboratorOption[]>([]);
   const [equipmentList, setEquipmentList] = useState<EquipmentOption[]>([]);
+  const [farmsList, setFarmsList] = useState<any[]>([]);
 
   // Modais
   const [selectedExecution, setSelectedExecution] = useState<Execution | null>(null);
@@ -251,15 +252,26 @@ export const SchedulePage = () => {
     adjustmentNote: "",
   });
 
-  // Form State: Incluir Análises Recomendadas
+  // Form State: Incluir Análises Recomendadas (suporte a importação parcial, total e análises extras)
   const [recommendedAnalysesList, setRecommendedAnalysesList] = useState<Array<{
     type: string;
     description?: string;
     suggestedQty: number;
+    alreadyImportedQty: number;
+    remainingQty: number;
     currentQty: number;
     unitPrice: number;
     isModified: boolean;
+    isExtra?: boolean;
   }>>([]);
+  const [includeAnalysesPartialMode, setIncludeAnalysesPartialMode] = useState<boolean>(false);
+  const [includeAnalysesExecId, setIncludeAnalysesExecId] = useState<string>("all");
+  const [includeAnalysesPlotId, setIncludeAnalysesPlotId] = useState<string>("geral");
+  const [includeAnalysesAlreadyImportedExecIds, setIncludeAnalysesAlreadyImportedExecIds] = useState<string[]>([]);
+  const [loadingIncludeAnalyses, setLoadingIncludeAnalyses] = useState<boolean>(false);
+  const [extraAnalysisType, setExtraAnalysisType] = useState<string>("");
+  const [extraAnalysisCustomName, setExtraAnalysisCustomName] = useState<string>("");
+  const [extraAnalysisQty, setExtraAnalysisQty] = useState<number>(1);
 
   // Form State: Agendamento Geral
   const [scheduleForm, setScheduleForm] = useState({
@@ -274,7 +286,17 @@ export const SchedulePage = () => {
     fetchExecutions();
     fetchEquipment();
     fetchCollaborators();
+    fetchFarms();
   }, []);
+
+  const fetchFarms = async () => {
+    try {
+      const data = await api.get<any[]>('/farms');
+      if (Array.isArray(data)) {
+        setFarmsList(data);
+      }
+    } catch {}
+  };
 
   const fetchCollaborators = async () => {
     try {
@@ -410,6 +432,129 @@ export const SchedulePage = () => {
     });
   }, [executions, searchTerm, filterClient, filterFarm, filterService, filterCollaborator, filterEquipment, filterState, filterCity, filterStatus]);
 
+  // Identifica se o serviço selecionado é uma aplicação que envolve produtos (ATV, Pulverização, Insumos)
+  const isSelectedApplicationService = useMemo(() => {
+    if (!selectedExecution) return false;
+    const service = (selectedExecution.serviceName || selectedExecution.type || '').toLowerCase();
+    
+    // Serviços que NÃO possuem aplicação de insumos/produtos:
+    if (
+      service.includes('amostragem') ||
+      service.includes('amostr') ||
+      service.includes('conferência') ||
+      service.includes('conferencia') ||
+      service.includes('compactação') ||
+      service.includes('compactacao') ||
+      service.includes('mapeamento') ||
+      service.includes('foliar') ||
+      service.includes('equaliza')
+    ) {
+      return false;
+    }
+
+    // Serviços de aplicação:
+    return (
+      service.includes('atv') ||
+      service.includes('pulveriz') ||
+      service.includes('biol') ||
+      service.includes('aplica') ||
+      selectedExecution.type === 'Produto' ||
+      (Array.isArray(selectedExecution.productsData) &&
+        selectedExecution.productsData.some(
+          (p: any) => p.produto || (p.unit && ['Ton', 'Kg', 'L', 'L/ha', 'Kg/ha', 'sc'].includes(p.unit))
+        ))
+    );
+  }, [selectedExecution]);
+
+  // Extrai prioritariamente os produtos definidos na ordem/pedido
+  const availableExecutionProducts = useMemo(() => {
+    if (!selectedExecution) return [];
+    const found: string[] = [];
+    const pData = selectedExecution.productsData || [];
+    if (Array.isArray(pData)) {
+      pData.forEach((p: any) => {
+        if (p.produto && typeof p.produto === 'string') {
+          found.push(p.produto);
+        } else if (
+          p.name &&
+          !p.name.toLowerCase().includes('serviço') &&
+          !p.name.toLowerCase().includes('análise') &&
+          !p.name.toLowerCase().includes('analise') &&
+          !p.name.toLowerCase().includes('coleta') &&
+          !p.id?.startsWith('servico_') &&
+          p.unit !== 'ALQ' &&
+          p.unit !== 'PTOS'
+        ) {
+          found.push(p.name);
+        }
+      });
+    }
+
+    if (found.length === 0) {
+      const sName = (selectedExecution.serviceName || selectedExecution.type || '').toLowerCase();
+      if (sName.includes('atv')) {
+        return [
+          'Calcário Dolomítico',
+          'Calcário Calcítico',
+          'Gesso Agrícola',
+          'Cama de Frango',
+          'Pó de Rocha',
+          'KCl (Cloreto de Potássio)',
+          'Superfosfato Simples (SSP)',
+          'Ureia Agrícola 46% N',
+          'Adjuvante Espalhante Adesivo',
+          'Biológico Trichoderma Harzianum',
+        ];
+      }
+      return [];
+    }
+
+    return Array.from(new Set(found));
+  }, [selectedExecution]);
+
+  // Extrai talhões disponíveis para o apontamento (da ordem ou da fazenda)
+  const availableExecutionPlots = useMemo(() => {
+    if (!selectedExecution) return [];
+    const list: Array<{ id: string; name: string; area?: number }> = [];
+
+    // 1. Plots cadastrados diretamente na ordem
+    const orderPlots = selectedExecution.rawOrder?.plots;
+    if (Array.isArray(orderPlots) && orderPlots.length > 0) {
+      orderPlots.forEach((p: any, idx: number) => {
+        if (typeof p === 'string' && p.trim()) {
+          list.push({ id: `order-plot-${idx}`, name: p.trim() });
+        } else if (p && p.name) {
+          list.push({ id: p.id || `order-plot-${idx}`, name: p.name, area: p.area ? Number(p.area) : undefined });
+        }
+      });
+    }
+
+    // 2. Plots da fazenda selecionada
+    const farmId = selectedExecution.farmId || selectedExecution.rawOrder?.farm_id || selectedExecution.rawOrder?.farm?.id;
+    const farmName = selectedExecution.farmName || selectedExecution.rawOrder?.farm?.name;
+    const farm = farmsList.find((f: any) => (farmId && f.id === farmId) || (farmName && f.name?.toLowerCase() === farmName?.toLowerCase()));
+
+    if (farm && Array.isArray(farm.plots)) {
+      farm.plots.forEach((p: any) => {
+        if (p && p.name && !list.some(existing => existing.name.toLowerCase() === p.name.toLowerCase())) {
+          list.push({ id: p.id, name: p.name, area: p.area ? Number(p.area) : undefined });
+        }
+      });
+    }
+
+    if (list.length === 0) {
+      list.push(
+        { id: 'default-1', name: 'Talhão 01' },
+        { id: 'default-2', name: 'Talhão 02' },
+        { id: 'default-3', name: 'Talhão 03' },
+        { id: 'default-4', name: 'Talhão 04' },
+        { id: 'default-sede', name: 'Área da Sede' }
+      );
+    }
+
+    return list;
+  }, [selectedExecution, farmsList]);
+
   // Abrir Modal de Nova Execução com preenchimento automático do saldo restante
   const openExecutionModal = (execution: Execution) => {
     setSelectedExecution(execution);
@@ -427,9 +572,31 @@ export const SchedulePage = () => {
     setExecutionSplits([]);
     setSplitOperator(execution.collaborators[0] || "");
     setSplitEquipment(execution.equipmentNames[0] || "");
-    setSplitProduct("");
+
+    // Inicializa produto se for serviço de aplicação
+    const pData = execution.productsData || [];
+    const prodsFound: string[] = [];
+    if (Array.isArray(pData)) {
+      pData.forEach((p: any) => {
+        if (p.produto) prodsFound.push(p.produto);
+        else if (p.name && !p.name.toLowerCase().includes('serviço') && !p.name.toLowerCase().includes('análise') && p.unit !== 'ALQ' && p.unit !== 'PTOS') {
+          prodsFound.push(p.name);
+        }
+      });
+    }
+    setSplitProduct(prodsFound[0] || "");
     setSplitQuantity("");
-    setSplitPlot("");
+
+    // Inicializa talhão
+    const orderPlots = execution.rawOrder?.plots;
+    const farmId = execution.farmId || execution.rawOrder?.farm_id || execution.rawOrder?.farm?.id;
+    const farmName = execution.farmName || execution.rawOrder?.farm?.name;
+    const farm = farmsList.find((f: any) => (farmId && f.id === farmId) || (farmName && f.name?.toLowerCase() === farmName?.toLowerCase()));
+    const firstPlot =
+      (Array.isArray(orderPlots) && orderPlots.length > 0 ? (typeof orderPlots[0] === 'string' ? orderPlots[0] : orderPlots[0]?.name) : null) ||
+      (farm && Array.isArray(farm.plots) && farm.plots.length > 0 ? farm.plots[0]?.name : "");
+
+    setSplitPlot(firstPlot || "");
     setSplitArea("");
     setIsExecutionModalOpen(true);
   };
@@ -617,12 +784,63 @@ export const SchedulePage = () => {
     }
   };
 
-  // Modal de Inclusão de Análises Recomendadas da Planilha (budget.xlsm)
-  const openIncludeAnalysesModal = (execution: Execution) => {
+  const getCostVar = (code: string, fallback: number): number => {
+    const found = (costVariables || []).find((v: any) => v.code === code);
+    const val = found ? Number(found.value) : 0;
+    return val > 0 ? val : fallback;
+  };
+
+  // Modal de Inclusão de Análises Recomendadas da Planilha (com suporte a serviço parcial, BIOAS e saldo restante)
+  const openIncludeAnalysesModal = async (execution: Execution) => {
     setSelectedExecution(execution);
+    setIncludeAnalysesExecId("all");
+    setIncludeAnalysesPlotId("geral");
+    setExtraAnalysisType("");
+    setExtraAnalysisCustomName("");
+    setExtraAnalysisQty(1);
+    const isOrderPartial =
+      (execution.status || "").toLowerCase() === "em andamento" ||
+      (execution.partialExecutions && execution.partialExecutions.length > 0 && (execution.status || "").toLowerCase() !== "concluído");
+    setIncludeAnalysesPartialMode(isOrderPartial);
+    setLoadingIncludeAnalyses(true);
+    setIsIncludeAnalysesModalOpen(true);
+
+    // Busca análises já importadas anteriormente para este pedido (controle de saldo parcial)
+    const importedByType = new Map<string, number>();
+    const importedExecIds: string[] = [];
+    if (execution.orderId) {
+      try {
+        const allAnalyses = await api.get<any[]>('/analyses').catch(() => []);
+        if (Array.isArray(allAnalyses)) {
+          allAnalyses
+            .filter((a) => a.order_id === execution.orderId)
+            .forEach((a) => {
+              const t = a.type || "";
+              const q = Number(a.results?.quantity ?? a.quantity ?? 0) || 0;
+              if (t && q > 0) {
+                importedByType.set(t, (importedByType.get(t) || 0) + q);
+              }
+              if (a.results?.executionId) {
+                importedExecIds.push(a.results.executionId);
+              }
+            });
+        }
+      } catch {}
+    }
+    setIncludeAnalysesAlreadyImportedExecIds(importedExecIds);
+    setLoadingIncludeAnalyses(false);
+
     const areaHa = parseFloat(execution.area || "0") || 0;
     const alq = areaHa > 0 ? areaHa / 2.42 : 0;
     const service = (execution.serviceName || "").toLowerCase();
+
+    // Preços dinâmicos das variáveis de custo 2026
+    const priceCompleta = getCostVar('VALOR_ANALISE_COMPLETA_UNITARIO', 91.40);
+    const priceMacro = getCostVar('ANALISE_MACRO_VALOR_ANALISE', getCostVar('VALOR_ANALISE_NOVA_AREA', 61.40));
+    const price20_40 = getCostVar('ANALISE_20_40_CM_VALOR_ANALISE', 73.90);
+    const priceFisica = getCostVar('VALOR_ANALISE_FISICA_UNITARIO', 33.30);
+    const priceBioas = getCostVar('VALOR_LAB_BIOAS', 205.20);
+    const priceFoliar = getCostVar('VALOR_ANALISE_FOLIAR', 90.00);
 
     // 1. Extração prioritária a partir dos produtos gravados no pedido (productsData)
     const products = execution.productsData || [];
@@ -631,14 +849,21 @@ export const SchedulePage = () => {
     let macroQty: number | null = null;
     let foliarQty: number | null = null;
     let fisicaQty: number | null = null;
+    let bioasQty: number | null = null;
 
     if (Array.isArray(products) && products.length > 0) {
       for (const p of products) {
+        const id = (p.id || "").toLowerCase();
         const t = (p.type || "").toUpperCase();
         const n = (p.name || "").toUpperCase();
         const q = parseInt(p.quantity?.toString() || "0") || 0;
 
-        if (t === "MACRO+S+P_REM" || n.includes("MACRO+S+P_REM") || n.includes("COMPLETA")) {
+        if (id.startsWith("servico_") || t.startsWith("SERVICO_") || p.unit === "ALQ") {
+          continue;
+        }
+        if (id === "analises_bioas" || t === "BIOAS" || n.includes("BIOAS")) {
+          bioasQty = (bioasQty || 0) + q;
+        } else if (t === "MACRO+S+P_REM" || n.includes("MACRO+S+P_REM") || n.includes("COMPLETA")) {
           macroSPRemQty = (macroSPRemQty || 0) + q;
         } else if (t === "MACRO+S" || n.includes("20-40") || n.includes("PROFUNDIDADE")) {
           macroSQty = (macroSQty || 0) + q;
@@ -652,30 +877,25 @@ export const SchedulePage = () => {
       }
     }
 
-    const list: Array<{
+    const rawItems: Array<{
       type: string;
       description?: string;
       suggestedQty: number;
-      currentQty: number;
       unitPrice: number;
-      isModified: boolean;
     }> = [];
 
     if (service.includes("solo") || service.includes("ap") || service.includes("amostragem")) {
-      // Cálculo idêntico a budget.xlsm (INPUT DADOS e PEDIDO VIA EMPRESA)
       let calcCompleta = 0;
       let calcMacro = 0;
       let calc20_40 = 0;
       let calcFisica = 0;
 
       if (macroSPRemQty !== null || macroQty !== null || macroSQty !== null) {
-        // Usa as quantidades exatas originadas do pedido
         calcCompleta = macroSPRemQty || 0;
         calcMacro = macroQty || 0;
         calc20_40 = macroSQty || 0;
         calcFisica = fisicaQty || 0;
       } else {
-        // Fallback dinâmico executando o motor de cálculo do Excel (INPUT DADOS B15, B17, B21, B22, B23)
         let points = 0;
         if (alq > 0) {
           if (alq < 5) points = Math.floor(alq) + 1;
@@ -710,152 +930,201 @@ export const SchedulePage = () => {
         }
       }
 
-      // 1. Completa (Macro + Enxofre + P-Rem + Micro): Amostras superficiais completas
-      list.push({
-        type: "MACRO+S+P_REM",
-        description: "Completa (0-20 cm)",
-        suggestedQty: calcCompleta,
-        currentQty: calcCompleta,
-        unitPrice: 125.30,
-        isModified: false
-      });
-
-      // 2. Macro Simples: Amostras superficiais complementares do rateio da planilha
-      list.push({
-        type: "MACRO",
-        description: "Simples (0-20 cm)",
-        suggestedQty: calcMacro,
-        currentQty: calcMacro,
-        unitPrice: 52.30,
-        isModified: false
-      });
-
-      // 3. Profundidade 20-40 cm: Subsuperficial (MACRO+S)
-      list.push({
-        type: "MACRO+S",
-        description: "Profundidade (20-40 cm)",
-        suggestedQty: calc20_40,
-        currentQty: calc20_40,
-        unitPrice: 70.00,
-        isModified: false
-      });
-
-      // 4. Análise Física se houver
+      rawItems.push({ type: "MACRO+S+P_REM", description: "Completa (0-20 cm)", suggestedQty: calcCompleta, unitPrice: priceCompleta });
+      rawItems.push({ type: "MACRO", description: "Simples (0-20 cm)", suggestedQty: calcMacro, unitPrice: priceMacro });
+      rawItems.push({ type: "MACRO+S", description: "Profundidade (20-40 cm)", suggestedQty: calc20_40, unitPrice: price20_40 });
       if (calcFisica > 0) {
-        list.push({
-          type: "ANÁLISE FÍSICA",
-          description: "Granulometria (% Argila)",
-          suggestedQty: calcFisica,
-          currentQty: calcFisica,
-          unitPrice: 42.30,
-          isModified: false
-        });
+        rawItems.push({ type: "ANÁLISE FÍSICA", description: "Granulometria (% Argila)", suggestedQty: calcFisica, unitPrice: priceFisica });
+      }
+      if (bioasQty && bioasQty > 0) {
+        rawItems.push({ type: "ANÁLISE BIOAS", description: "Biológica do Solo", suggestedQty: bioasQty, unitPrice: priceBioas });
       }
     } else if (service.includes("confer") || service.includes("conferência")) {
-      // 1. Completa (Macro + Enxofre + P-Rem): Padrão na conferência (INPUT CONFERENCIA)
       let confPoints = macroSPRemQty;
       if (confPoints === null || confPoints <= 0) {
         confPoints = alq > 0 ? (alq <= 10 ? 10 : Math.round(alq)) : 10;
       }
-
       let depthPoints = macroSQty;
       if (depthPoints === null) {
         depthPoints = Math.round(confPoints * 0.1) <= 1 ? 1 : Math.round(confPoints * 0.1);
       }
 
-      list.push({
-        type: "MACRO+S+P_REM",
-        description: "Completa (0-20 cm)",
-        suggestedQty: confPoints,
-        currentQty: confPoints,
-        unitPrice: 105.30,
-        isModified: false
-      });
-
-      // 2. Profundidade 20-40 cm: MACRO+S
-      list.push({
-        type: "MACRO+S",
-        description: "Profundidade (20-40 cm)",
-        suggestedQty: depthPoints,
-        currentQty: depthPoints,
-        unitPrice: 70.00,
-        isModified: false
-      });
-
-      // 3. Simples: Alternativa caso cliente queira converter
-      list.push({
-        type: "MACRO",
-        description: "Simples",
-        suggestedQty: macroQty || 0,
-        currentQty: macroQty || 0,
-        unitPrice: 52.30,
-        isModified: false
-      });
-
+      rawItems.push({ type: "MACRO+S+P_REM", description: "Completa (0-20 cm)", suggestedQty: confPoints, unitPrice: priceCompleta });
+      rawItems.push({ type: "MACRO+S", description: "Profundidade (20-40 cm)", suggestedQty: depthPoints, unitPrice: price20_40 });
+      if (bioasQty && bioasQty > 0) {
+        rawItems.push({ type: "ANÁLISE BIOAS", description: "Biológica do Solo", suggestedQty: bioasQty, unitPrice: priceBioas });
+      }
+      rawItems.push({ type: "MACRO", description: "Simples", suggestedQty: macroQty || 0, unitPrice: priceMacro });
       if (fisicaQty && fisicaQty > 0) {
-        list.push({
-          type: "ANÁLISE FÍSICA",
-          description: "Física",
-          suggestedQty: fisicaQty,
-          currentQty: fisicaQty,
-          unitPrice: 42.30,
-          isModified: false
-        });
+        rawItems.push({ type: "ANÁLISE FÍSICA", description: "Física", suggestedQty: fisicaQty, unitPrice: priceFisica });
       }
     } else if (service.includes("foliar") || service.includes("folha")) {
       let leafPoints = foliarQty;
       if (leafPoints === null || leafPoints <= 0) {
         leafPoints = Math.max(1, Math.round(areaHa / 10) || 5);
       }
-
-      list.push({
-        type: "ANALISE DE FOLIAR",
-        description: "Nutrição Foliar",
-        suggestedQty: leafPoints,
-        currentQty: leafPoints,
-        unitPrice: 70.00,
-        isModified: false
-      });
+      rawItems.push({ type: "ANALISE DE FOLIAR", description: "Nutrição Foliar", suggestedQty: leafPoints, unitPrice: priceFoliar });
     } else {
-      list.push({
-        type: "MACRO+S+P_REM",
-        description: "Completa (0-20 cm)",
-        suggestedQty: macroSPRemQty || 0,
-        currentQty: macroSPRemQty || 0,
-        unitPrice: 105.30,
-        isModified: false
-      });
-      list.push({
-        type: "MACRO+S",
-        description: "Profundidade (20-40 cm)",
-        suggestedQty: macroSQty || 0,
-        currentQty: macroSQty || 0,
-        unitPrice: 70.00,
-        isModified: false
-      });
-      list.push({
-        type: "MACRO",
-        description: "Simples",
-        suggestedQty: macroQty || 0,
-        currentQty: macroQty || 0,
-        unitPrice: 52.30,
-        isModified: false
-      });
+      rawItems.push({ type: "MACRO+S+P_REM", description: "Completa (0-20 cm)", suggestedQty: macroSPRemQty || 0, unitPrice: priceCompleta });
+      rawItems.push({ type: "MACRO+S", description: "Profundidade (20-40 cm)", suggestedQty: macroSQty || 0, unitPrice: price20_40 });
+      rawItems.push({ type: "MACRO", description: "Simples", suggestedQty: macroQty || 0, unitPrice: priceMacro });
+      if (bioasQty && bioasQty > 0) {
+        rawItems.push({ type: "ANÁLISE BIOAS", description: "Biológica do Solo", suggestedQty: bioasQty, unitPrice: priceBioas });
+      }
     }
 
+    const list = rawItems.map((item) => {
+      const alreadyImportedQty = importedByType.get(item.type) || 0;
+      const remainingQty = Math.max(0, item.suggestedQty - alreadyImportedQty);
+      return {
+        ...item,
+        alreadyImportedQty,
+        remainingQty,
+        currentQty: remainingQty,
+        isModified: false,
+      };
+    });
+
     setRecommendedAnalysesList(list);
-    setIsIncludeAnalysesModalOpen(true);
+  };
+
+  const handleSelectPartialStageForAnalyses = (execId: string) => {
+    setIncludeAnalysesExecId(execId);
+    setIncludeAnalysesPlotId("geral");
+    if (!selectedExecution) return;
+
+    if (execId === "all") {
+      setRecommendedAnalysesList((prev) =>
+        prev.map((item) => ({
+          ...item,
+          currentQty: item.remainingQty,
+          isModified: false,
+        }))
+      );
+      return;
+    }
+
+    setIncludeAnalysesPartialMode(true);
+    const rawExecs: any[] = Array.isArray(selectedExecution.rawOrder?.executions)
+      ? selectedExecution.rawOrder.executions
+      : [];
+    const execObj = rawExecs.find((e: any) => e.id === execId);
+    const execSamples = Number(execObj?.samplesExecuted) || 0;
+    const orderArea = parseFloat(selectedExecution.area || "0") || 0;
+    const execArea = Number(execObj?.areaExecuted || execObj?.hectares) || 0;
+
+    setRecommendedAnalysesList((prev) => {
+      if (execSamples > 0) {
+        let left = execSamples;
+        return prev.map((item) => {
+          const alloc = Math.min(item.remainingQty, Math.max(0, left));
+          left -= alloc;
+          return { ...item, currentQty: alloc, isModified: false };
+        });
+      }
+      const ratio = orderArea > 0 && execArea > 0 ? Math.min(1, execArea / orderArea) : 1;
+      return prev.map((item) => ({
+        ...item,
+        currentQty: Math.min(item.remainingQty, Math.max(0, Math.round(item.suggestedQty * ratio))),
+        isModified: false,
+      }));
+    });
+  };
+
+  const EXTRA_ANALYSIS_CATALOG = [
+    { type: "MACRO+S+P_REM", description: "Completa (0-20 cm)", varCode: "VALOR_ANALISE_COMPLETA_UNITARIO", fallbackPrice: 91.40 },
+    { type: "MACRO", description: "Simples (0-20 cm)", varCode: "ANALISE_MACRO_VALOR_ANALISE", fallbackPrice: 61.40 },
+    { type: "MACRO+S", description: "Profundidade (20-40 cm)", varCode: "ANALISE_20_40_CM_VALOR_ANALISE", fallbackPrice: 73.90 },
+    { type: "ANÁLISE FÍSICA", description: "Granulometria (% Argila)", varCode: "VALOR_ANALISE_FISICA_UNITARIO", fallbackPrice: 33.30 },
+    { type: "ANÁLISE BIOAS", description: "Biológica do Solo", varCode: "VALOR_LAB_BIOAS", fallbackPrice: 205.20 },
+    { type: "ANALISE DE FOLIAR", description: "Nutrição Foliar", varCode: "VALOR_ANALISE_FOLIAR", fallbackPrice: 90.00 },
+    { type: "MICRONUTRIENTES", description: "Adicional Micronutrientes", varCode: "VALOR_ANALISE_MICRONUTRIENTES", fallbackPrice: 29.55 },
+    { type: "NEMATOIDES", description: "Análise Nematológica", varCode: "", fallbackPrice: 0 },
+  ];
+
+  const handleAddExtraAnalysis = () => {
+    if (!extraAnalysisType) return;
+    const isCustom = extraAnalysisType === "__CUSTOM__";
+    const finalType = isCustom ? extraAnalysisCustomName.trim().toUpperCase() : extraAnalysisType;
+    if (!finalType) return;
+    const qty = Math.max(1, extraAnalysisQty || 1);
+
+    const existingIdx = recommendedAnalysesList.findIndex((i) => i.type.toUpperCase() === finalType.toUpperCase());
+    if (existingIdx >= 0) {
+      setRecommendedAnalysesList((prev) => {
+        const updated = [...prev];
+        updated[existingIdx] = {
+          ...updated[existingIdx],
+          currentQty: updated[existingIdx].currentQty + qty,
+          isModified: true,
+        };
+        return updated;
+      });
+    } else {
+      const cat = EXTRA_ANALYSIS_CATALOG.find((c) => c.type === finalType);
+      const unitPrice = cat && cat.varCode ? getCostVar(cat.varCode, cat.fallbackPrice) : 0;
+      setRecommendedAnalysesList((prev) => [
+        ...prev,
+        {
+          type: finalType,
+          description: cat?.description || "Análise Avulsa / Extra",
+          suggestedQty: 0,
+          alreadyImportedQty: 0,
+          remainingQty: 0,
+          currentQty: qty,
+          unitPrice,
+          isModified: true,
+          isExtra: true,
+        },
+      ]);
+    }
+
+    setExtraAnalysisType("");
+    setExtraAnalysisCustomName("");
+    setExtraAnalysisQty(1);
+  };
+
+  const handleRemoveExtraAnalysis = (idx: number) => {
+    setRecommendedAnalysesList((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const handleConfirmIncludeAnalyses = async () => {
     if (!selectedExecution) return;
+    const itemsToSave = recommendedAnalysesList.filter((i) => i.currentQty > 0);
+    if (itemsToSave.length === 0) {
+      toast({
+        title: "Nenhuma quantidade informada",
+        description: "Informe ao menos 1 amostra para importar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const rawPlots: any[] = Array.isArray(selectedExecution.rawOrder?.plots)
+      ? selectedExecution.rawOrder.plots
+      : [];
+    const selectedPlotObj = rawPlots.find(
+      (p: any) => (p.id || p.name) === includeAnalysesPlotId
+    );
+    const plotId = includeAnalysesPlotId !== "geral" && selectedPlotObj?.id ? selectedPlotObj.id : null;
+    const plotName = selectedPlotObj?.name || (includeAnalysesPlotId !== "geral" ? includeAnalysesPlotId : "Geral");
+
+    const isPartialShipment =
+      includeAnalysesPartialMode ||
+      includeAnalysesExecId !== "all" ||
+      recommendedAnalysesList.some((i) => i.currentQty < i.remainingQty);
+
     try {
-      for (const item of recommendedAnalysesList) {
-        if (item.currentQty <= 0) continue;
+      for (const item of itemsToSave) {
+        const exceedsContracted = item.alreadyImportedQty + item.currentQty > item.suggestedQty;
+        const isCommercialDiff = exceedsContracted || (!isPartialShipment && item.currentQty !== item.remainingQty);
+
         await api.post('/analyses', {
           type: item.type,
+          order_id: selectedExecution.orderId || null,
           client_id: selectedExecution.clientId || null,
           farm_id: selectedExecution.farmId || null,
+          plot_id: plotId,
           quantity: item.currentQty,
           status: "Pendente",
           date: getLocalDateISO(),
@@ -863,19 +1132,31 @@ export const SchedulePage = () => {
             serviceName: selectedExecution.serviceName,
             clientName: selectedExecution.clientName,
             farmName: selectedExecution.farmName,
+            plotName,
             quantity: item.currentQty,
             suggestedQuantity: item.suggestedQty,
             unitPrice: item.unitPrice,
             totalValue: item.currentQty * item.unitPrice,
-            isModified: item.isModified,
-            financialTag: item.isModified ? "Quantidade Alterada (Comercial)" : "Conforme Orçamento"
+            isModified: isCommercialDiff,
+            isPartialImport: isPartialShipment,
+            executionId: includeAnalysesExecId !== "all" ? includeAnalysesExecId : undefined,
+            financialTag: item.isExtra
+              ? "Análise Extra (Fora do Orçamento)"
+              : isCommercialDiff
+              ? "Quantidade Alterada (Comercial)"
+              : isPartialShipment
+              ? "Remessa Parcial"
+              : "Conforme Orçamento",
           }
         });
       }
 
+      const totalSent = itemsToSave.reduce((s, i) => s + i.currentQty, 0);
       toast({
-        title: "Análises Cadastradas no Laboratório!",
-        description: "As análises recomendadas foram incluídas com sucesso na tabela de análises."
+        title: isPartialShipment
+          ? "Remessa Parcial de Análises Importada!"
+          : "Análises Cadastradas no Laboratório!",
+        description: `${totalSent} amostras foram registradas na tela de Análises${plotName !== "Geral" ? ` (${plotName})` : ""}.`
       });
 
       setIsIncludeAnalysesModalOpen(false);
@@ -1470,48 +1751,72 @@ export const SchedulePage = () => {
                       </Select>
                     </div>
 
-                    <div>
-                      <Label className="text-[11px]">Produto Aplicado</Label>
-                      <Input
-                        placeholder="Ex: Calcário, Gesso..."
-                        value={splitProduct}
-                        onChange={(e) => setSplitProduct(e.target.value)}
-                        className="h-8 text-xs bg-background"
-                      />
-                    </div>
+                    {isSelectedApplicationService && (
+                      <>
+                        <div>
+                          <Label className="text-[11px]">Produto Aplicado</Label>
+                          {availableExecutionProducts.length > 0 ? (
+                            <Select value={splitProduct} onValueChange={setSplitProduct}>
+                              <SelectTrigger className="h-8 text-xs bg-background">
+                                <SelectValue placeholder="Selecione o produto do pedido..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {availableExecutionProducts.map((p, i) => (
+                                  <SelectItem key={i} value={p}>{p}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input
+                              placeholder="Ex: Calcário, Gesso..."
+                              value={splitProduct}
+                              onChange={(e) => setSplitProduct(e.target.value)}
+                              className="h-8 text-xs bg-background"
+                            />
+                          )}
+                        </div>
 
-                    <div>
-                      <Label className="text-[11px]">Qtd Aplicada</Label>
-                      <div className="flex gap-1">
-                        <Input
-                          type="number"
-                          step="any"
-                          placeholder="Ex: 18"
-                          value={splitQuantity}
-                          onChange={(e) => setSplitQuantity(e.target.value)}
-                          className="h-8 text-xs bg-background"
-                        />
-                        <Select value={splitUnit} onValueChange={setSplitUnit}>
-                          <SelectTrigger className="h-8 text-xs w-16 bg-background shrink-0">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Ton">Ton</SelectItem>
-                            <SelectItem value="Kg">Kg</SelectItem>
-                            <SelectItem value="L">L</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
+                        <div>
+                          <Label className="text-[11px]">Qtd Aplicada</Label>
+                          <div className="flex gap-1">
+                            <Input
+                              type="number"
+                              step="any"
+                              placeholder="Ex: 18"
+                              value={splitQuantity}
+                              onChange={(e) => setSplitQuantity(e.target.value)}
+                              className="h-8 text-xs bg-background"
+                            />
+                            <Select value={splitUnit} onValueChange={setSplitUnit}>
+                              <SelectTrigger className="h-8 text-xs w-16 bg-background shrink-0">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Ton">Ton</SelectItem>
+                                <SelectItem value="Kg">Kg</SelectItem>
+                                <SelectItem value="L">L</SelectItem>
+                                <SelectItem value="sc">sc</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </>
+                    )}
 
                     <div>
                       <Label className="text-[11px]">Talhão</Label>
-                      <Input
-                        placeholder="Ex: Talhão 01"
-                        value={splitPlot}
-                        onChange={(e) => setSplitPlot(e.target.value)}
-                        className="h-8 text-xs bg-background"
-                      />
+                      <Select value={splitPlot} onValueChange={setSplitPlot}>
+                        <SelectTrigger className="h-8 text-xs bg-background">
+                          <SelectValue placeholder="Selecione o talhão..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableExecutionPlots.map((p) => (
+                            <SelectItem key={p.id} value={p.name}>
+                              {p.name}{p.area ? ` (${p.area} ha)` : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="flex gap-1.5">
@@ -1694,88 +1999,310 @@ export const SchedulePage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* MODAL 3: INCLUIR ANÁLISES RECOMENDADAS DA PLANILHA */}
+      {/* MODAL 3: INCLUIR ANÁLISES RECOMENDADAS DA PLANILHA (COM SUPORTE A SERVIÇO PARCIAL) */}
       <Dialog open={isIncludeAnalysesModalOpen} onOpenChange={setIsIncludeAnalysesModalOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FlaskConical className="h-5 w-5 text-indigo-600" />
               Importar Análises do Serviço
             </DialogTitle>
             <DialogDescription className="sr-only">
-              Confirmar e lançar análises laboratoriais recomendadas para o pedido
+              Confirmar e lançar análises laboratoriais recomendadas para o pedido, com suporte a envio parcial por etapa e talhão
             </DialogDescription>
           </DialogHeader>
 
-          {selectedExecution && (
-            <div className="space-y-4">
-              <p className="text-xs text-muted-foreground">
-                Com base no serviço <strong>{selectedExecution.serviceName}</strong> ({selectedExecution.area} ha),
-                as seguintes quantidades foram recomendadas pelo gabarito agronômico:
-              </p>
+          {selectedExecution && (() => {
+            const rawExecs: any[] = Array.isArray(selectedExecution.rawOrder?.executions)
+              ? selectedExecution.rawOrder.executions
+              : [];
+            const rawPlots: any[] = Array.isArray(selectedExecution.rawOrder?.plots)
+              ? selectedExecution.rawOrder.plots
+              : [];
+            const totalContracted = recommendedAnalysesList.reduce((s, i) => s + i.suggestedQty, 0);
+            const totalAlreadyImported = recommendedAnalysesList.reduce((s, i) => s + i.alreadyImportedQty, 0);
+            const totalRemaining = recommendedAnalysesList.reduce((s, i) => s + i.remainingQty, 0);
+            const totalSendingNow = recommendedAnalysesList.reduce((s, i) => s + i.currentQty, 0);
 
-              <div className="space-y-2 border rounded-md p-2 bg-muted/20">
-                {recommendedAnalysesList.map((item, idx) => (
-                  <div key={item.type} className="flex items-center justify-between p-2.5 bg-background border rounded">
-                    <div>
-                      <div className="font-semibold text-xs text-foreground flex items-center gap-1.5 flex-wrap">
-                        <span>{item.type}</span>
-                        {item.description && (
-                          <span className="text-[10px] font-normal text-muted-foreground bg-muted/70 px-1.5 py-0.5 rounded border">
-                            {item.description}
-                          </span>
-                        )}
-                        {item.isModified && (
-                          <Badge variant="destructive" className="text-[10px] py-0 px-1">
-                            Qtd Alterada
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="text-[11px] text-muted-foreground">
-                        Sugerido: {item.suggestedQty} amostras (R$ {item.unitPrice.toFixed(2)}/un)
-                      </div>
-                    </div>
+            return (
+              <div className="space-y-4">
+                <div className="p-2.5 rounded-md border bg-muted/30 text-xs space-y-1">
+                  <div className="flex items-center justify-between flex-wrap gap-1">
+                    <span>
+                      Serviço: <strong>{selectedExecution.serviceName}</strong> ({selectedExecution.area} ha)
+                    </span>
+                    <Badge variant="outline" className="text-[10px]">
+                      {selectedExecution.status}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span>
+                      Contratado: <strong>{totalContracted}</strong> • Já importado: <strong>{totalAlreadyImported}</strong>
+                    </span>
+                    <span className="font-semibold text-indigo-700">
+                      Saldo restante: {totalRemaining} amostras
+                    </span>
+                  </div>
+                </div>
 
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs">Qtd:</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        value={item.currentQty}
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value) || 0;
-                          setRecommendedAnalysesList(prev => {
-                            const updated = [...prev];
-                            updated[idx] = {
-                              ...updated[idx],
-                              currentQty: val,
-                              isModified: val !== item.suggestedQty
-                            };
-                            return updated;
-                          });
-                        }}
-                        className="w-20 text-center font-bold text-xs h-8"
+                {/* Controle de Importação Parcial (Etapa + Talhão) */}
+                <div className="p-3 rounded-md border bg-indigo-50/40 border-indigo-200/80 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="flex items-center gap-2 text-xs font-semibold text-indigo-950 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={includeAnalysesPartialMode}
+                        onChange={(e) => setIncludeAnalysesPartialMode(e.target.checked)}
+                        className="rounded border-indigo-400"
                       />
+                      Importação Parcial (enviar parte das amostras agora e manter saldo)
+                    </label>
+                    {includeAnalysesPartialMode && (
+                      <Badge className="bg-indigo-100 text-indigo-800 border-indigo-300 text-[10px]">
+                        Modo Parcial
+                      </Badge>
+                    )}
+                  </div>
+
+                  {(rawExecs.length > 0 || rawPlots.length > 0) && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {rawExecs.length > 0 && (
+                        <div>
+                          <Label className="text-[11px] text-indigo-950">Etapa de Execução:</Label>
+                          <Select
+                            value={includeAnalysesExecId}
+                            onValueChange={handleSelectPartialStageForAnalyses}
+                          >
+                            <SelectTrigger className="h-8 text-xs bg-background mt-0.5">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Saldo Geral do Pedido</SelectItem>
+                              {rawExecs.map((ex: any, eIdx: number) => {
+                                const alreadySent = includeAnalysesAlreadyImportedExecIds.includes(ex.id);
+                                const plotNames =
+                                  Array.isArray(ex.plotExecutions) && ex.plotExecutions.length > 0
+                                    ? ` • ${ex.plotExecutions.map((pe: any) => pe.plotName).join(", ")}`
+                                    : "";
+                                return (
+                                  <SelectItem key={ex.id || eIdx} value={ex.id || String(eIdx)}>
+                                    Etapa {eIdx + 1} ({ex.date}) • {ex.areaExecuted || ex.hectares} ha
+                                    {ex.samplesExecuted ? ` • ${ex.samplesExecuted} pts` : ""}
+                                    {plotNames}
+                                    {alreadySent ? " [Já importada]" : ""}
+                                  </SelectItem>
+                                );
+                              })}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      {rawPlots.length > 0 && (
+                        <div>
+                          <Label className="text-[11px] text-indigo-950">Talhão da Remessa:</Label>
+                          <Select
+                            value={includeAnalysesPlotId}
+                            onValueChange={setIncludeAnalysesPlotId}
+                          >
+                            <SelectTrigger className="h-8 text-xs bg-background mt-0.5">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="geral">Todos / Geral da Fazenda</SelectItem>
+                              {rawPlots.map((p: any, pIdx: number) => {
+                                const pid = p.id || p.name || String(pIdx);
+                                const pname = typeof p === "string" ? p : p.name;
+                                return (
+                                  <SelectItem key={pid} value={pid}>
+                                    {pname}
+                                  </SelectItem>
+                                );
+                              })}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {loadingIncludeAnalyses ? (
+                  <div className="p-4 text-center text-xs text-muted-foreground">
+                    Verificando remessas anteriores do pedido...
+                  </div>
+                ) : (
+                  <div className="space-y-2 border rounded-md p-2 bg-muted/20">
+                    {recommendedAnalysesList.map((item, idx) => {
+                      const exceedsContracted = item.alreadyImportedQty + item.currentQty > item.suggestedQty;
+                      const showPartialBadge =
+                        includeAnalysesPartialMode &&
+                        item.currentQty > 0 &&
+                        item.currentQty < item.remainingQty;
+                      const showWarningBadge =
+                        exceedsContracted || (!includeAnalysesPartialMode && item.currentQty !== item.remainingQty);
+
+                      return (
+                        <div key={`${item.type}-${idx}`} className="flex items-center justify-between p-2.5 bg-background border rounded gap-2">
+                          <div className="min-w-0">
+                            <div className="font-semibold text-xs text-foreground flex items-center gap-1.5 flex-wrap">
+                              <span>{item.type}</span>
+                              {item.description && (
+                                <span className="text-[10px] font-normal text-muted-foreground bg-muted/70 px-1.5 py-0.5 rounded border">
+                                  {item.description}
+                                </span>
+                              )}
+                              {item.isExtra && (
+                                <Badge variant="outline" className="text-[10px] py-0 px-1 bg-purple-50 text-purple-800 border-purple-300">
+                                  Extra / Avulsa
+                                </Badge>
+                              )}
+                              {!item.isExtra && showPartialBadge && (
+                                <Badge variant="outline" className="text-[10px] py-0 px-1 bg-indigo-50 text-indigo-800 border-indigo-300">
+                                  Parcial (resta {item.remainingQty - item.currentQty})
+                                </Badge>
+                              )}
+                              {!item.isExtra && showWarningBadge && (
+                                <Badge variant="destructive" className="text-[10px] py-0 px-1">
+                                  {exceedsContracted ? "Acima do Contratado" : "Qtd Alterada"}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground">
+                              {item.isExtra ? (
+                                <>Não estava no pedido original{item.unitPrice > 0 ? ` • Tabela: R$ ${item.unitPrice.toFixed(2)}/un` : ""}</>
+                              ) : (
+                                <>
+                                  Contratado: <strong>{item.suggestedQty}</strong>
+                                  {item.alreadyImportedQty > 0 && (
+                                    <> • Já importado: <strong>{item.alreadyImportedQty}</strong> • Saldo: <strong>{item.remainingQty}</strong></>
+                                  )}{" "}
+                                  (R$ {item.unitPrice.toFixed(2)}/un)
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <Label className="text-xs">Qtd:</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={item.currentQty}
+                              onChange={(e) => {
+                                const val = Math.max(0, parseInt(e.target.value, 10) || 0);
+                                setRecommendedAnalysesList(prev => {
+                                  const updated = [...prev];
+                                  updated[idx] = {
+                                    ...updated[idx],
+                                    currentQty: val,
+                                    isModified: val !== item.remainingQty
+                                  };
+                                  return updated;
+                                });
+                              }}
+                              className="w-20 text-center font-bold text-xs h-8"
+                            />
+                            {item.isExtra && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleRemoveExtraAnalysis(idx)}
+                                className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                                title="Remover análise extra"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Barra para incluir outro tipo de análise que não estava no pedido */}
+                    <div className="pt-2 mt-2 border-t border-dashed space-y-2">
+                      <Label className="text-[11px] font-semibold text-muted-foreground block">
+                        + Incluir outra análise (fora do orçamento original):
+                      </Label>
+                      <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
+                        <Select value={extraAnalysisType} onValueChange={setExtraAnalysisType}>
+                          <SelectTrigger className="h-8 text-xs bg-background flex-1 min-w-[180px]">
+                            <SelectValue placeholder="Selecione outro tipo de análise..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {EXTRA_ANALYSIS_CATALOG.filter(
+                              (c) => !recommendedAnalysesList.some((r) => r.type.toUpperCase() === c.type.toUpperCase())
+                            ).map((c) => (
+                              <SelectItem key={c.type} value={c.type}>
+                                {c.type} — {c.description}
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="__CUSTOM__">Outro tipo (digitar nome)...</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        {extraAnalysisType === "__CUSTOM__" && (
+                          <Input
+                            placeholder="Nome da análise..."
+                            value={extraAnalysisCustomName}
+                            onChange={(e) => setExtraAnalysisCustomName(e.target.value)}
+                            className="h-8 text-xs bg-background flex-1 min-w-[140px]"
+                          />
+                        )}
+
+                        <Input
+                          type="number"
+                          min="1"
+                          value={extraAnalysisQty}
+                          onChange={(e) => setExtraAnalysisQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                          className="w-16 h-8 text-center text-xs bg-background"
+                          title="Quantidade de amostras"
+                        />
+
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={handleAddExtraAnalysis}
+                          disabled={
+                            !extraAnalysisType ||
+                            (extraAnalysisType === "__CUSTOM__" && !extraAnalysisCustomName.trim())
+                          }
+                          className="h-8 text-xs border-indigo-300 text-indigo-700 hover:bg-indigo-50 shrink-0"
+                        >
+                          <Plus className="h-3.5 w-3.5 mr-1" />
+                          Incluir
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
+                )}
 
-              <div className="text-[11px] text-muted-foreground flex items-center gap-1">
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                Caso as quantidades sejam alteradas, uma etiqueta de alerta será enviada ao setor financeiro e laboratório.
-              </div>
+                <div className="text-[11px] text-muted-foreground flex items-center gap-1">
+                  <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                  {includeAnalysesPartialMode
+                    ? "No modo parcial, o saldo restante ficará disponível para as próximas remessas sem gerar alerta comercial."
+                    : "Caso as quantidades ultrapassem o contratado ou sejam alteradas no envio total, uma etiqueta de alerta será enviada ao financeiro e laboratório."}
+                </div>
 
-              <DialogFooter className="pt-2 border-t flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsIncludeAnalysesModalOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleConfirmIncludeAnalyses} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                  Confirmar e Cadastrar Análises
-                </Button>
-              </DialogFooter>
-            </div>
-          )}
+                <DialogFooter className="pt-2 border-t flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setIsIncludeAnalysesModalOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleConfirmIncludeAnalyses}
+                    disabled={totalSendingNow <= 0 || loadingIncludeAnalyses}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                  >
+                    {includeAnalysesPartialMode
+                      ? `Importar Parcial (${totalSendingNow} amostras)`
+                      : `Confirmar e Cadastrar (${totalSendingNow} amostras)`}
+                  </Button>
+                </DialogFooter>
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>

@@ -8,13 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Edit, Search, Plus, Trash2, Layers, CheckCircle2 } from "lucide-react";
+import { Edit, Search, Plus, Trash2, Layers, CheckCircle2, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/api";
 import { getLocalDateISO } from "@/lib/utils";
+import { ImportOrderAnalysesDialog } from "./analyses/ImportOrderAnalysesDialog";
 
 interface AnalysisExecution {
   id: string;
+  orderId?: string;
+  executionId?: string;
+  isPartialImport?: boolean;
   analysisName: string;
   collaborator: string;
   clientId: string;
@@ -34,6 +38,7 @@ const STANDARD_ANALYSIS_TYPES = [
   { code: "MACRO+S+P_REM", label: "MACRO+S+P_REM (Completa)", defaultQty: 0 },
   { code: "MACRO+S", label: "MACRO+S (Profundidade 20-40 cm)", defaultQty: 0 },
   { code: "MACRO", label: "MACRO (Análise Simples)", defaultQty: 0 },
+  { code: "ANÁLISE BIOAS", label: "ANÁLISE BIOAS (Biológica do Solo)", defaultQty: 0 },
   { code: "ANALISE DE FOLIAR", label: "ANALISE DE FOLIAR (Nutrição Foliar)", defaultQty: 0 },
   { code: "ANÁLISE FÍSICA", label: "ANÁLISE FÍSICA (Granulometria / Textura)", defaultQty: 0 },
   { code: "ANÁLISE 20-40 CM", label: "ANÁLISE 20-40 CM (Subsuperficial)", defaultQty: 0 },
@@ -59,6 +64,7 @@ const AnalisesPrincipalPage = () => {
   const [analysesPerPage, setAnalysesPerPage] = useState(10);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [editingAnalysis, setEditingAnalysis] = useState<AnalysisExecution | null>(null);
 
   // Estado para lote de análises
@@ -71,6 +77,7 @@ const AnalisesPrincipalPage = () => {
     "MACRO": 0,
     "MACRO+S": 0,
     "MACRO+S+P_REM": 0,
+    "ANÁLISE BIOAS": 0,
     "ANALISE DE FOLIAR": 0,
     "ANÁLISE FÍSICA": 0,
     "ANÁLISE 20-40 CM": 0,
@@ -111,6 +118,9 @@ const AnalisesPrincipalPage = () => {
 
       const mapped: AnalysisExecution[] = (Array.isArray(analysesRes) ? analysesRes : []).map(a => ({
         id: a.id,
+        orderId: a.order_id || undefined,
+        executionId: (a.results && a.results.executionId) || undefined,
+        isPartialImport: Boolean(a.results && a.results.isPartialImport),
         analysisName: a.type || a.analysis_name || "MACRO+S",
         collaborator: (a.results && a.results.collaborator) || a.collaborator || "Laboratório Solo Forte",
         clientId: a.client_id || "",
@@ -118,7 +128,7 @@ const AnalisesPrincipalPage = () => {
         farmId: a.farm_id || "",
         farmName: (a.results && a.results.farmName) || a.farm_name || "Fazenda",
         plotId: a.plot_id || "",
-        plotName: a.plot_name || "Geral",
+        plotName: (a.results && a.results.plotName) || a.plot_name || "Geral",
         quantity: (a.results && a.results.quantity) || a.quantity || 1,
         status: a.status || "Pendente",
         sendDate: a.date || a.send_date || "",
@@ -308,13 +318,23 @@ const AnalisesPrincipalPage = () => {
             Lançamento em lote por fazenda, controle de remessas e laudos laboratoriais.
           </p>
         </div>
-        <Button 
-          className="bg-green-600 hover:bg-green-700 shadow-sm gap-2"
-          onClick={handleOpenBatchModal}
-        >
-          <Layers className="h-4 w-4" />
-          Lançar Análises por Fazenda
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            className="border-emerald-600 text-emerald-700 hover:bg-emerald-50 shadow-sm gap-2"
+            onClick={() => setShowImportModal(true)}
+          >
+            <Download className="h-4 w-4" />
+            Importar de Pedido (Parcial / Total)
+          </Button>
+          <Button 
+            className="bg-green-600 hover:bg-green-700 shadow-sm gap-2"
+            onClick={handleOpenBatchModal}
+          >
+            <Layers className="h-4 w-4" />
+            Lançar Análises por Fazenda
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -373,8 +393,18 @@ const AnalisesPrincipalPage = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="font-medium">{a.clientName}</div>
-                        <div className="text-xs text-muted-foreground">{a.farmName}</div>
+                        <div className="font-medium flex items-center gap-1.5">
+                          <span>{a.clientName}</span>
+                          {a.isPartialImport && (
+                            <Badge variant="outline" className="text-[10px] py-0 px-1.5 bg-amber-50 text-amber-800 border-amber-300">
+                              Parcial
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {a.farmName}
+                          {a.plotName && a.plotName !== "Geral" ? ` • ${a.plotName}` : ""}
+                        </div>
                       </TableCell>
                       <TableCell>{a.collaborator}</TableCell>
                       <TableCell>
@@ -693,6 +723,13 @@ const AnalisesPrincipalPage = () => {
           </form>
         </DialogContent>
       </Dialog>
+      <ImportOrderAnalysesDialog
+        open={showImportModal}
+        onOpenChange={setShowImportModal}
+        existingAnalyses={analyses}
+        laboratories={collaboratorsConfig}
+        onImported={fetchData}
+      />
     </div>
   );
 };

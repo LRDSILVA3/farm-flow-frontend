@@ -320,6 +320,9 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
     if (!calculationResult || !onProductsChangeRef.current) return;
 
     const valorUnitarioAnalise = calculationResult.details.valorUnitarioAnalise;
+    const precoMacro = soilSamplingService.getVariableValue('ANALISE_MACRO_VALOR_ANALISE') || soilSamplingService.getVariableValue('VALOR_ANALISE_NOVA_AREA') || 61.40;
+    const preco20_40 = soilSamplingService.getVariableValue('ANALISE_20_40_CM_VALOR_ANALISE') || 73.90;
+    const precoFisica = soilSamplingService.getVariableValue('VALOR_ANALISE_FISICA_UNITARIO') || 33.30;
 
     const products = [
       ...(effectiveCompleta > 0 ? [{
@@ -336,7 +339,7 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
         name: 'ANÁLISE DE SOLO SIMPLES (MACRO)',
         quantity: effectiveMacro,
         unit: 'PTOS',
-        price: 52.30
+        price: precoMacro
       }] : []),
       ...((desejaAnalise20_40cm || effective20_40 > 0) && effective20_40 > 0 ? [{
         id: 'analises_20_40',
@@ -344,7 +347,7 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
         name: 'ANÁLISE DE SOLO 20-40 CM (MACRO+S)',
         quantity: effective20_40,
         unit: 'PTOS',
-        price: 70.00
+        price: preco20_40
       }] : []),
       ...((desejaAnaliseFisica || effectiveFisicas > 0) && effectiveFisicas > 0 ? [{
         id: 'analise_fisica',
@@ -352,7 +355,7 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
         name: 'ANÁLISE FÍSICA (% ARGILA)',
         quantity: effectiveFisicas,
         unit: 'UNID',
-        price: 42.30
+        price: precoFisica
       }] : []),
       {
         id: 'servico_ap',
@@ -576,21 +579,27 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
               <Label htmlFor="ap-corretiva" className="text-xs leading-snug">
                 Adubação Corretiva{" "}
                 <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold text-[10px] whitespace-nowrap">
-                  Incluso - R$ 52,30
+                  Incluso - {soilSamplingService.formatCurrency(soilSamplingService.getVariableValue('VALOR_ANALISE_NOVA_AREA') || 61.40)}
                 </span>
               </Label>
             </div>
             <div className="flex items-center space-x-2">
               <Switch id="ap-adubo" checked={desejaAduboBase} onCheckedChange={setDesejaAduboBase} />
-              <Label htmlFor="ap-adubo" className="text-xs cursor-pointer">Adubo de Base (+R$ 35,30)</Label>
+              <Label htmlFor="ap-adubo" className="text-xs cursor-pointer">
+                Adubo de Base (+{soilSamplingService.formatCurrency(soilSamplingService.getVariableValue('VALOR_ANALISE_ADUBO_BASE') || 17.50)})
+              </Label>
             </div>
             <div className="flex items-center space-x-2">
               <Switch id="ap-enxofre" checked={desejaEnxofre} onCheckedChange={setDesejaEnxofre} />
-              <Label htmlFor="ap-enxofre" className="text-xs cursor-pointer">Enxofre (+R$ 17,70)</Label>
+              <Label htmlFor="ap-enxofre" className="text-xs cursor-pointer">
+                Enxofre (+{soilSamplingService.formatCurrency(soilSamplingService.getVariableValue('VALOR_ANALISE_ENXOFRE') || 12.50)})
+              </Label>
             </div>
             <div className="flex items-center space-x-2">
               <Switch id="ap-micro" checked={desejaMicronutrientes} onCheckedChange={setDesejaMicronutrientes} />
-              <Label htmlFor="ap-micro" className="text-xs cursor-pointer">Micronutrientes (+R$ 20,00)</Label>
+              <Label htmlFor="ap-micro" className="text-xs cursor-pointer">
+                Micronutrientes (+{soilSamplingService.formatCurrency(soilSamplingService.getVariableValue('VALOR_ANALISE_MICRONUTRIENTES') || 29.55)})
+              </Label>
             </div>
             <div className="flex items-center space-x-2">
               <Switch id="ap-20-40" checked={desejaAnalise20_40cm} onCheckedChange={setDesejaAnalise20_40cm} />
@@ -601,7 +610,7 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
             <div className="flex items-center space-x-2">
               <Switch id="ap-fisica" checked={desejaAnaliseFisica} onCheckedChange={setDesejaAnaliseFisica} />
               <Label htmlFor="ap-fisica" className="text-xs cursor-pointer">
-                Análise Física (+R$ 42,30) {details?.numAnalisesFisicas ? `(${details.numAnalisesFisicas} un)` : ''}
+                Análise Física (+{soilSamplingService.formatCurrency(soilSamplingService.getVariableValue('VALOR_ANALISE_FISICA_UNITARIO') || 33.30)}) {details?.numAnalisesFisicas ? `(${details.numAnalisesFisicas} un)` : ''}
               </Label>
             </div>
           </div>

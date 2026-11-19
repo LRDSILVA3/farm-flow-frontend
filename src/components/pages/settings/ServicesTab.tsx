@@ -247,7 +247,43 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
                             {service.status}
                           </span>
                         </TableCell>
-                        <TableCell>{service.products || "-"}</TableCell>
+                        <TableCell className="max-w-[320px]">
+                          {service.service_products && service.service_products.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {service.service_products.slice(0, 3).map((sp) => (
+                                <span
+                                  key={sp.id}
+                                  className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                                >
+                                  {sp.product?.name || "Produto"}
+                                </span>
+                              ))}
+                              {service.service_products.length > 3 && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground">
+                                  +{service.service_products.length - 3} mais
+                                </span>
+                              )}
+                            </div>
+                          ) : service.products ? (
+                            <div className="flex flex-wrap gap-1">
+                              {service.products.split(",").slice(0, 3).map((p, idx) => (
+                                <span
+                                  key={idx}
+                                  className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300"
+                                >
+                                  {p.trim()}
+                                </span>
+                              ))}
+                              {service.products.split(",").length > 3 && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground">
+                                  +{service.products.split(",").length - 3} mais
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-xs italic">Nenhum</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             <Button 

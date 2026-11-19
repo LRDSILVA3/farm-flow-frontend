@@ -16,11 +16,13 @@ import { cn } from '@/lib/utils';
 interface DroneMappingServiceFormProps {
   initialAlqueires: number;
   onValuesChange: (calculatedValue: number) => void;
+  onProductsChange?: (products: any[]) => void;
 }
 
 export const DroneMappingServiceForm: React.FC<DroneMappingServiceFormProps> = ({
   initialAlqueires,
   onValuesChange,
+  onProductsChange,
 }) => {
   const { costVariables, loading: loadingCostVariables } = useCostVariables();
 
@@ -42,6 +44,11 @@ export const DroneMappingServiceForm: React.FC<DroneMappingServiceFormProps> = (
     return null;
   }, [costVariables]);
 
+  const onProductsChangeRef = React.useRef(onProductsChange);
+  React.useEffect(() => {
+    onProductsChangeRef.current = onProductsChange;
+  }, [onProductsChange]);
+
   useEffect(() => {
     setAlqueires(initialAlqueires === 0 ? null : initialAlqueires);
   }, [initialAlqueires]);
@@ -61,6 +68,28 @@ export const DroneMappingServiceForm: React.FC<DroneMappingServiceFormProps> = (
 
       setCalculationResult(result);
       onValuesChange(result.totalValue);
+
+      if (onProductsChangeRef.current) {
+        const alq = alqueires || 0;
+        onProductsChangeRef.current([
+          ...(result.details.subtotalArea > 0 ? [{
+            id: 'servico_drone_map',
+            type: 'SERVICO_DRONE',
+            name: `${result.details.nomeServico}`,
+            quantity: alq,
+            unit: 'ALQ',
+            price: result.details.precoUnitarioAlq
+          }] : []),
+          ...(result.details.subtotalDeslocamento > 0 ? [{
+            id: 'deslocamento_drone_map',
+            type: 'DESLOCAMENTO',
+            name: `DESLOCAMENTO DRONE (${distanciaKm || 0} Km)`,
+            quantity: distanciaKm || 0,
+            unit: 'KM',
+            price: result.details.precoUnitarioKm
+          }] : [])
+        ]);
+      }
     }
   }, [
     alqueires,
@@ -117,7 +146,7 @@ export const DroneMappingServiceForm: React.FC<DroneMappingServiceFormProps> = (
               htmlFor="drone-servico-fungo"
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
             >
-              Ortomosaico / Mapeamento de Fungo e Nematóide (Base: R$ 50/alq)
+              Ortomosaico / Mapeamento de Fungo e Nematóide (Base: {droneMappingService.formatCurrency(droneMappingService.getVariableValue('VOO_DRONE_ALQ_ANO') || 50)}/alq)
             </label>
           </div>
           <div className="flex items-center space-x-2">
@@ -130,7 +159,7 @@ export const DroneMappingServiceForm: React.FC<DroneMappingServiceFormProps> = (
               htmlFor="drone-servico-curvas"
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
             >
-              Ortomosaico / Projeto de Curvas de Nível (Base: R$ 100/alq)
+              Ortomosaico / Projeto de Curvas de Nível (Base: {droneMappingService.formatCurrency((droneMappingService.getVariableValue('VOO_DRONE_ALQ_ANO') || 50) * 2)}/alq)
             </label>
           </div>
         </div>
@@ -244,7 +273,7 @@ export const DroneMappingServiceForm: React.FC<DroneMappingServiceFormProps> = (
             )}
             {details.jurosFactor > 1 && (
               <div className="flex justify-between text-muted-foreground pt-1 border-t">
-                <span>Fator de juros até vencimento (3,0%/mês):</span>
+                <span>Fator de juros até vencimento ({(droneMappingService.getVariableValue('JUROS_PAGAMENTO_PRAZO_PERCENTUAL') || 1.2).toFixed(1)}%/mês):</span>
                 <span>{details.jurosFactor.toFixed(4)}x</span>
               </div>
             )}

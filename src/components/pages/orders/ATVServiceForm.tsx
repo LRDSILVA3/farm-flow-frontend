@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ATVService, ATVCalculationResult, ATVItemParam } from '../../../services/ATVService';
 import { useCostVariables } from '../../../hooks/useCostVariables';
+import { useProducts } from '../../../hooks/useProducts';
+import { useServices } from '../../../hooks/useServices';
 import { Input } from '@/components/ui/input';
 import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
@@ -15,25 +17,47 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 
 interface ATVServiceFormProps {
-  initialDistanciaKm: number;
+  initialDistanciaKm?: number;
+  initialAreaHa?: number;
   onValuesChange: (calculatedValue: number) => void;
+  onProductsChange?: (products: any[]) => void;
 }
 
-const AVAILABLE_PRODUCTS = [
-  'Calc. Dolomítico',
-  'Calc. Calcítico',
-  'Gesso',
+const DEFAULT_ATV_PRODUCTS = [
+  'Calcário Dolomítico',
+  'Calcário Calcítico',
+  'Gesso Agrícola',
   'Cama de Frango',
   'Pó de Rocha',
-  'KCl',
+  'KCl (Cloreto de Potássio)',
+  'Superfosfato Simples (SSP)',
   'Outro',
 ];
 
 export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
   initialDistanciaKm,
+  initialAreaHa,
   onValuesChange,
+  onProductsChange,
 }) => {
   const { costVariables, loading: loadingCostVariables } = useCostVariables();
+  const { products: systemProducts } = useProducts();
+  const { services } = useServices();
+
+  const availableProducts = useMemo(() => {
+    const atv = services.find((s) => s.name.toLowerCase().includes('atv') || s.name.toLowerCase().includes('taxa variável'));
+    if (atv?.service_products && atv.service_products.length > 0) {
+      const names = atv.service_products.map((sp) => sp.product?.name).filter(Boolean);
+      if (!names.includes('Outro')) names.push('Outro');
+      return names;
+    }
+    if (systemProducts.length > 0) {
+      const names = systemProducts.filter((p) => p.status === 'Ativo').map((p) => p.name);
+      if (!names.includes('Outro')) names.push('Outro');
+      return names;
+    }
+    return DEFAULT_ATV_PRODUCTS;
+  }, [services, systemProducts]);
 
   const [distanciaIdaKm, setDistanciaIdaKm] = useState<number | null>(initialDistanciaKm || 40);
   const [vencimentoServico, setVencimentoServico] = useState<Date | undefined>(undefined);
@@ -49,7 +73,7 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
 
   const [itens, setItens] = useState<ATVItemParam[]>([
     {
-      produto: 'Calc. Dolomítico',
+      produto: 'Calcário Dolomítico',
       idTalhao: 'TL44',
       areaHa: 72,
       toneladas: 20,
@@ -70,7 +94,7 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
     setItens([
       ...itens,
       {
-        produto: 'Calc. Dolomítico',
+        produto: availableProducts[0] || 'Calcário Dolomítico',
         idTalhao: '',
         areaHa: 0,
         toneladas: 0,
@@ -110,6 +134,19 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
 
       setCalculationResult(result);
       onValuesChange(result.totalValue);
+
+      if (onProductsChange && itens.length > 0) {
+        const prods = itens.map((item, idx) => ({
+          id: `atv_prod_${idx}`,
+          name: item.produto,
+          produto: item.produto,
+          quantity: item.toneladas,
+          unit: 'Ton',
+          areaHa: item.areaHa,
+          plotName: item.idTalhao,
+        }));
+        onProductsChange(prods);
+      }
     }
   }, [
     distanciaIdaKm,
@@ -123,6 +160,7 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
     descontoManual,
     itens,
     onValuesChange,
+    onProductsChange,
     atvService,
   ]);
 
@@ -319,7 +357,7 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {AVAILABLE_PRODUCTS.map((prod) => (
+                      {availableProducts.map((prod) => (
                         <SelectItem key={prod} value={prod}>
                           {prod}
                         </SelectItem>

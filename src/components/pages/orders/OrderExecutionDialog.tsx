@@ -13,10 +13,11 @@ import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Order, OrderExecutionSplit } from '@/hooks/useOrders';
+import { Order, OrderExecutionSplit, OrderPlotExecution } from '@/hooks/useOrders';
 import { Play, CheckCircle2, History, Users, Wrench, X, FlaskConical, Tractor, Plus, Trash2, MapPin } from 'lucide-react';
 import { api } from '@/services/api';
 
@@ -29,6 +30,7 @@ interface OrderExecutionDialogProps {
     samplesExecuted?: number;
     samplesTotal?: number;
     splits?: OrderExecutionSplit[];
+    plotExecutions?: OrderPlotExecution[];
     appliedProducts?: Array<{ id?: string; name: string; quantity?: number; unit?: string }>;
     notes?: string;
     collaboratorName?: string;
@@ -38,14 +40,16 @@ interface OrderExecutionDialogProps {
 }
 
 const DEFAULT_ATV_PRODUCTS = [
-  'Calc. Dolomítico',
-  'Calc. Calcítico',
-  'Gesso',
+  'Calcário Dolomítico',
+  'Calcário Calcítico',
+  'Gesso Agrícola',
   'Cama de Frango',
   'Pó de Rocha',
-  'KCl',
-  'Super Simples',
-  'Super Triplo',
+  'KCl (Cloreto de Potássio)',
+  'Superfosfato Simples (SSP)',
+  'Ureia Agrícola 46% N',
+  'Adjuvante Espalhante Adesivo',
+  'Biológico Trichoderma Harzianum',
   'Outro',
 ];
 
@@ -73,18 +77,26 @@ export const OrderExecutionDialog: React.FC<OrderExecutionDialogProps> = ({
   const [splitUnit, setSplitUnit] = useState<string>('Ton');
   const [splitArea, setSplitArea] = useState<string>('');
 
+  // Controle de execução individual por talhão (para pedidos com múltiplos talhões)
+  const [plotEntries, setPlotEntries] = useState<
+    Record<string, { selected: boolean; areaExecuted: string; samplesExecuted: string }>
+  >({});
+
   const [collaboratorsList, setCollaboratorsList] = useState<{ id: string; name: string; role?: string }[]>([]);
   const [equipmentList, setEquipmentList] = useState<{ id: string; name: string; type?: string }[]>([]);
+  const [farmsList, setFarmsList] = useState<any[]>([]);
 
   useEffect(() => {
     if (open) {
       fetchOptions();
       // Reseta formulário ao abrir
       setSplits([]);
+      setPlotEntries({});
       setSplitQuantity('');
       setSplitArea('');
       setNotes('');
       setStepSamples('');
+      setPartialArea('');
       setSelectedCollaborators([]);
       setSelectedEquipment([]);
       setExecutionType('total');
@@ -93,12 +105,14 @@ export const OrderExecutionDialog: React.FC<OrderExecutionDialogProps> = ({
 
   const fetchOptions = async () => {
     try {
-      const [collabs, equips] = await Promise.all([
+      const [collabs, equips, farms] = await Promise.all([
         api.get<any[]>('/collaborators').catch(() => []),
-        api.get<any[]>('/equipment').catch(() => [])
+        api.get<any[]>('/equipment').catch(() => []),
+        api.get<any[]>('/farms').catch(() => [])
       ]);
       if (Array.isArray(collabs)) setCollaboratorsList(collabs);
       if (Array.isArray(equips)) setEquipmentList(equips);
+      if (Array.isArray(farms)) setFarmsList(farms);
     } catch {}
   };
 
@@ -121,14 +135,40 @@ export const OrderExecutionDialog: React.FC<OrderExecutionDialogProps> = ({
   }, [serviceCombined]);
 
   const isApplicationService = useMemo(() => {
+    if (!order) return false;
+    const name = (order.serviceName || order.type || '').toLowerCase();
+    const group = (order.serviceGroup || '').toLowerCase();
+    const combined = `${name} ${group}`;
+
+    // Serviços que NÃO possuem aplicação de insumos/produtos:
+    if (
+      combined.includes('amostragem') ||
+      combined.includes('amostr') ||
+      combined.includes('conferência') ||
+      combined.includes('conferencia') ||
+      combined.includes('compactação') ||
+      combined.includes('compactacao') ||
+      combined.includes('mapeamento') ||
+      combined.includes('foliar') ||
+      combined.includes('equaliza')
+    ) {
+      return false;
+    }
+
+    // Serviços de aplicação de produtos (ATV, Pulverização, Insumos):
     return (
-      serviceCombined.includes('atv') ||
-      serviceCombined.includes('pulveriz') ||
-      serviceCombined.includes('aplica') ||
-      serviceCombined.includes('biol') ||
-      order?.type === 'Produto'
+      combined.includes('atv') ||
+      combined.includes('pulveriz') ||
+      combined.includes('biol') ||
+      combined.includes('aplicação atv') ||
+      combined.includes('aplicacao atv') ||
+      order?.type === 'Produto' ||
+      (Array.isArray(order?.productsData) &&
+        order.productsData.some(
+          (p: any) => p.produto || (p.unit && ['Ton', 'Kg', 'L', 'L/ha', 'Kg/ha', 'sc'].includes(p.unit))
+        ))
     );
-  }, [serviceCombined, order?.type]);
+  }, [order]);
 
   // Total e Saldo de Análises Contratadas (Pilar 2)
   const totalSamples = useMemo(() => {
@@ -175,33 +215,82 @@ export const OrderExecutionDialog: React.FC<OrderExecutionDialogProps> = ({
 
   // Produtos disponíveis no pedido para rateio de ATV/Aplicação
   const availableOrderProducts = useMemo(() => {
-    if (!order) return DEFAULT_ATV_PRODUCTS;
+    if (!order) return [];
     const found: string[] = [];
     if (Array.isArray(order.productsData)) {
       order.productsData.forEach((p: any) => {
-        if (p.name && !p.name.includes('SERVIÇO') && !p.id?.startsWith('servico_') && p.unit !== 'ALQ') {
-          found.push(p.name);
-        }
         if (p.produto && typeof p.produto === 'string') {
           found.push(p.produto);
+        } else if (
+          p.name &&
+          !p.name.toLowerCase().includes('serviço') &&
+          !p.name.toLowerCase().includes('análise') &&
+          !p.name.toLowerCase().includes('analise') &&
+          !p.name.toLowerCase().includes('coleta') &&
+          !p.id?.startsWith('servico_') &&
+          p.unit !== 'ALQ' &&
+          p.unit !== 'PTOS'
+        ) {
+          found.push(p.name);
         }
       });
     }
+
     if (found.length === 0) {
-      return DEFAULT_ATV_PRODUCTS;
+      // Se for serviço de ATV e nenhum produto foi cadastrado explicitamente, oferece a lista padrão
+      const sName = (order.serviceName || order.type || '').toLowerCase();
+      if (sName.includes('atv')) {
+        return DEFAULT_ATV_PRODUCTS;
+      }
+      return [];
     }
-    // Adiciona produtos padrão de ATV caso queira aplicar outro
-    return Array.from(new Set([...found, ...DEFAULT_ATV_PRODUCTS]));
+
+    return Array.from(new Set(found));
   }, [order]);
 
-  // Talhões disponíveis no pedido
+  // Talhões disponíveis no pedido ou na fazenda
   const availablePlots = useMemo(() => {
     if (!order) return [];
+    const list: Array<{ id: string; name: string; area?: number }> = [];
+
+    // 1. Plots cadastrados diretamente na ordem
     if (Array.isArray(order.plots) && order.plots.length > 0) {
-      return order.plots;
+      order.plots.forEach((p: any, idx: number) => {
+        if (typeof p === 'string' && p.trim()) {
+          list.push({ id: `order-plot-${idx}`, name: p.trim() });
+        } else if (p && p.name) {
+          list.push({ id: p.id || `order-plot-${idx}`, name: p.name, area: p.area ? Number(p.area) : undefined });
+        }
+      });
     }
-    return [];
-  }, [order]);
+
+    // 2. Plots da fazenda vinculada ao pedido
+    const farmId = order.farmId || order.farm_id || (order.farm as any)?.id;
+    const farmName = (order.farm as any)?.name || (order as any).farm_name;
+    const farm = farmsList.find(
+      (f: any) => (farmId && f.id === farmId) || (farmName && f.name?.toLowerCase() === farmName?.toLowerCase())
+    );
+
+    if (farm && Array.isArray(farm.plots)) {
+      farm.plots.forEach((p: any) => {
+        if (p && p.name && !list.some((existing) => existing.name.toLowerCase() === p.name.toLowerCase())) {
+          list.push({ id: p.id, name: p.name, area: p.area ? Number(p.area) : undefined });
+        }
+      });
+    }
+
+    if (list.length === 0) {
+      list.push(
+        { id: 'default-1', name: 'Talhão 01' },
+        { id: 'default-2', name: 'Talhão 02' },
+        { id: 'default-3', name: 'Talhão 03' },
+        { id: 'default-4', name: 'Talhão 04' },
+        { id: 'default-sede', name: 'Área da Sede' }
+      );
+    }
+
+    return list;
+  }, [order, farmsList]);
 
   // Inicializa selects de rateio
   useEffect(() => {
@@ -218,6 +307,33 @@ export const OrderExecutionDialog: React.FC<OrderExecutionDialogProps> = ({
       setSplitPlot(availablePlots[0].name);
     }
   }, [collaboratorsList, equipmentList, availableOrderProducts, availablePlots, splitOperator, splitEquipment, splitProduct, splitPlot]);
+
+  // Progresso acumulado por talhão (calculado a partir das execuções anteriores)
+  const plotProgressMap = useMemo(() => {
+    const map: Record<string, { executedHa: number; executedSamples: number }> = {};
+    if (!order || !Array.isArray(order.executions)) return map;
+
+    order.executions.forEach((ex: any) => {
+      if (Array.isArray(ex.plotExecutions) && ex.plotExecutions.length > 0) {
+        ex.plotExecutions.forEach((pe: any) => {
+          const key = (pe.plotName || '').toLowerCase();
+          if (!key) return;
+          if (!map[key]) map[key] = { executedHa: 0, executedSamples: 0 };
+          map[key].executedHa += Number(pe.areaExecuted) || 0;
+          map[key].executedSamples += Number(pe.samplesExecuted) || 0;
+        });
+      } else if (Array.isArray(ex.splits) && ex.splits.length > 0) {
+        ex.splits.forEach((s: any) => {
+          const key = (s.plotName || '').toLowerCase();
+          if (!key) return;
+          if (!map[key]) map[key] = { executedHa: 0, executedSamples: 0 };
+          map[key].executedHa += Number(s.areaHa) || 0;
+        });
+      }
+    });
+
+    return map;
+  }, [order]);
 
   // Subtotais de rateio por produto (Hook declarado no topo para respeitar as regras do React)
   const splitProductTotals = useMemo(() => {
@@ -238,6 +354,92 @@ export const OrderExecutionDialog: React.FC<OrderExecutionDialogProps> = ({
   const executedArea = order.executedArea || 0;
   const remainingArea = Math.max(0, totalArea - executedArea);
   const percentExecuted = totalArea > 0 ? (executedArea / totalArea) * 100 : 0;
+
+  const syncTotalsFromPlots = (
+    nextEntries: Record<string, { selected: boolean; areaExecuted: string; samplesExecuted: string }>
+  ) => {
+    let sumArea = 0;
+    let sumSamples = 0;
+    let anySelected = false;
+
+    Object.values(nextEntries).forEach((entry) => {
+      if (entry.selected) {
+        anySelected = true;
+        sumArea += parseFloat(entry.areaExecuted) || 0;
+        sumSamples += parseInt(entry.samplesExecuted, 10) || 0;
+      }
+    });
+
+    if (anySelected) {
+      setExecutionType('partial');
+      setPartialArea(sumArea > 0 ? sumArea.toFixed(2) : '');
+      if (totalSamples > 0) {
+        setStepSamples(sumSamples > 0 ? String(sumSamples) : '');
+      }
+    } else {
+      setPartialArea('');
+      setStepSamples('');
+    }
+  };
+
+  const handleTogglePlot = (plot: { id: string; name: string; area?: number }, checked: boolean) => {
+    const progress = plotProgressMap[plot.name.toLowerCase()] || { executedHa: 0, executedSamples: 0 };
+    const plotTotal = plot.area || 0;
+    const plotRem = plotTotal > 0 ? Math.max(0, plotTotal - progress.executedHa) : 0;
+
+    setPlotEntries((prev) => {
+      const next = {
+        ...prev,
+        [plot.id]: checked
+          ? {
+              selected: true,
+              areaExecuted: plotRem > 0 ? plotRem.toFixed(2) : '',
+              samplesExecuted: prev[plot.id]?.samplesExecuted || '',
+            }
+          : { selected: false, areaExecuted: '', samplesExecuted: '' },
+      };
+      syncTotalsFromPlots(next);
+      return next;
+    });
+  };
+
+  const handlePlotFieldChange = (
+    plotId: string,
+    field: 'areaExecuted' | 'samplesExecuted',
+    value: string
+  ) => {
+    setPlotEntries((prev) => {
+      const current = prev[plotId] || { selected: true, areaExecuted: '', samplesExecuted: '' };
+      const next = {
+        ...prev,
+        [plotId]: {
+          ...current,
+          selected: true,
+          [field]: value,
+        },
+      };
+      syncTotalsFromPlots(next);
+      return next;
+    });
+  };
+
+  const handleSelectAllPendingPlots = () => {
+    const next: Record<string, { selected: boolean; areaExecuted: string; samplesExecuted: string }> = {};
+    availablePlots.forEach((plot) => {
+      const progress = plotProgressMap[plot.name.toLowerCase()] || { executedHa: 0, executedSamples: 0 };
+      const plotTotal = plot.area || 0;
+      const plotRem = plotTotal > 0 ? Math.max(0, plotTotal - progress.executedHa) : 0;
+      if (plotTotal === 0 || plotRem > 0.01) {
+        next[plot.id] = {
+          selected: true,
+          areaExecuted: plotRem > 0 ? plotRem.toFixed(2) : '',
+          samplesExecuted: plotEntries[plot.id]?.samplesExecuted || '',
+        };
+      }
+    });
+    setPlotEntries(next);
+    syncTotalsFromPlots(next);
+  };
 
   const toggleCollaborator = (name: string) => {
     setSelectedCollaborators(prev =>
@@ -324,6 +526,39 @@ export const OrderExecutionDialog: React.FC<OrderExecutionDialogProps> = ({
       }
     }
 
+    // Monta o detalhamento de execução por talhão
+    let plotExecutions: OrderPlotExecution[] = [];
+    if (executionType === 'total') {
+      plotExecutions = availablePlots
+        .map((plot) => {
+          const progress = plotProgressMap[plot.name.toLowerCase()] || { executedHa: 0, executedSamples: 0 };
+          const plotTotal = plot.area || 0;
+          const plotRem = plotTotal > 0 ? Math.max(0, plotTotal - progress.executedHa) : 0;
+          return {
+            plotId: plot.id,
+            plotName: plot.name,
+            areaExecuted: Number(plotRem.toFixed(2)),
+          };
+        })
+        .filter((pe) => pe.areaExecuted > 0);
+    } else {
+      plotExecutions = availablePlots
+        .map((plot) => {
+          const entry = plotEntries[plot.id];
+          if (!entry || !entry.selected) return null;
+          const areaVal = parseFloat(entry.areaExecuted) || 0;
+          const sampleVal = parseInt(entry.samplesExecuted, 10) || 0;
+          if (areaVal <= 0 && sampleVal <= 0) return null;
+          return {
+            plotId: plot.id,
+            plotName: plot.name,
+            areaExecuted: Number(areaVal.toFixed(2)),
+            samplesExecuted: sampleVal > 0 ? sampleVal : undefined,
+          };
+        })
+        .filter((pe): pe is OrderPlotExecution => pe !== null);
+    }
+
     setSubmitting(true);
     try {
       await onRecordExecution(order.id, {
@@ -331,6 +566,7 @@ export const OrderExecutionDialog: React.FC<OrderExecutionDialogProps> = ({
         samplesExecuted: samplesToExecute,
         samplesTotal: totalSamples > 0 ? totalSamples : undefined,
         splits: splits.length > 0 ? splits : undefined,
+        plotExecutions: plotExecutions.length > 0 ? plotExecutions : undefined,
         collaborators: selectedCollaborators,
         collaboratorName: selectedCollaborators.join(', ') || undefined,
         equipmentNames: selectedEquipment,
@@ -457,45 +693,164 @@ export const OrderExecutionDialog: React.FC<OrderExecutionDialogProps> = ({
                   <div className="flex items-center space-x-2 border rounded p-2.5 cursor-pointer hover:bg-muted/20">
                     <RadioGroupItem value="partial" id="exec-partial" />
                     <Label htmlFor="exec-partial" className="text-xs cursor-pointer font-semibold">
-                      Execução Parcial
+                      Execução Parcial / Por Talhão
                     </Label>
                   </div>
                 </RadioGroup>
               </div>
 
-              {/* Campos de Execução Parcial: Área e Análises (Pilar 2) */}
+              {/* Campos de Execução Parcial: Por Talhão + Totais Consolidados */}
               {executionType === 'partial' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 border rounded-md bg-muted/20">
-                  <div>
-                    <Label htmlFor="partial-area" className="text-xs font-semibold">
-                      Área Executada nesta Etapa (ha):
-                    </Label>
-                    <DecimalInput
-                      id="partial-area"
-                      value={partialArea}
-                      onValueChange={(_, normalized) => setPartialArea(normalized)}
-                      placeholder={'Máximo: ' + remainingArea.toFixed(1).replace('.', ',') + ' ha'}
-                    />
-                  </div>
+                <div className="space-y-3">
+                  {/* Apontamento Individual por Talhão */}
+                  {availablePlots.length > 0 && (
+                    <div className="p-3 border rounded-md bg-blue-50/30 border-blue-200/80 space-y-2.5">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <Label className="text-xs font-bold text-blue-950 flex items-center gap-1.5">
+                          <MapPin className="h-3.5 w-3.5 text-blue-600" />
+                          Informar Execução por Talhão ({availablePlots.length} {availablePlots.length === 1 ? 'talhão' : 'talhões'}):
+                        </Label>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleSelectAllPendingPlots}
+                          className="h-6 text-[11px] px-2 text-blue-700 hover:bg-blue-100"
+                        >
+                          Selecionar pendentes
+                        </Button>
+                      </div>
 
-                  {totalSamples > 0 && (
-                    <div>
-                      <Label htmlFor="step-samples" className="text-xs font-semibold text-emerald-800 flex items-center gap-1">
-                        <FlaskConical className="h-3 w-3" />
-                        Análises / Pontos Realizados (nesta Etapa):
-                      </Label>
-                      <Input
-                        id="step-samples"
-                        type="number"
-                        min="0"
-                        max={remainingSamples}
-                        value={stepSamples}
-                        onChange={(e) => setStepSamples(e.target.value)}
-                        placeholder={`Ex: 3 (Restam ${remainingSamples} de ${totalSamples})`}
-                        className="text-xs h-9 bg-background"
-                      />
+                      <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                        {availablePlots.map((plot) => {
+                          const progress = plotProgressMap[plot.name.toLowerCase()] || {
+                            executedHa: 0,
+                            executedSamples: 0,
+                          };
+                          const plotTotal = plot.area || 0;
+                          const plotRem = plotTotal > 0 ? Math.max(0, plotTotal - progress.executedHa) : 0;
+                          const isPlotDone = plotTotal > 0 && plotRem <= 0.01;
+                          const entry = plotEntries[plot.id] || {
+                            selected: false,
+                            areaExecuted: '',
+                            samplesExecuted: '',
+                          };
+
+                          return (
+                            <div
+                              key={plot.id}
+                              className={`p-2 rounded border text-xs transition-colors ${
+                                entry.selected
+                                  ? 'bg-background border-blue-400 shadow-xs'
+                                  : isPlotDone
+                                  ? 'bg-emerald-50/40 border-emerald-200 opacity-75'
+                                  : 'bg-background/70 border-border'
+                              }`}
+                            >
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <Checkbox
+                                    id={`plot-exec-${plot.id}`}
+                                    checked={entry.selected}
+                                    onCheckedChange={(checked) => handleTogglePlot(plot, !!checked)}
+                                  />
+                                  <div className="min-w-0">
+                                    <label
+                                      htmlFor={`plot-exec-${plot.id}`}
+                                      className="font-semibold cursor-pointer block truncate"
+                                    >
+                                      {plot.name}
+                                    </label>
+                                    <span className="text-[11px] text-muted-foreground">
+                                      {plotTotal > 0 ? (
+                                        <>
+                                          Total: <strong>{plotTotal.toFixed(1)} ha</strong> • Exec:{' '}
+                                          <strong>{progress.executedHa.toFixed(1)} ha</strong> • Restam:{' '}
+                                          <strong className={isPlotDone ? 'text-emerald-700' : 'text-amber-700'}>
+                                            {plotRem.toFixed(1)} ha
+                                          </strong>
+                                        </>
+                                      ) : (
+                                        <>Já executado: {progress.executedHa.toFixed(1)} ha</>
+                                      )}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {isPlotDone && !entry.selected ? (
+                                  <Badge variant="outline" className="bg-emerald-100 text-emerald-800 border-emerald-300 text-[10px] self-start sm:self-center">
+                                    Concluído
+                                  </Badge>
+                                ) : (
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <div className="w-28">
+                                      <DecimalInput
+                                        value={entry.areaExecuted}
+                                        onValueChange={(_, normalized) =>
+                                          handlePlotFieldChange(plot.id, 'areaExecuted', normalized)
+                                        }
+                                        placeholder={plotRem > 0 ? `${plotRem.toFixed(1)} ha` : 'Área (ha)'}
+                                        className="h-8 text-xs"
+                                      />
+                                    </div>
+                                    {totalSamples > 0 && (
+                                      <div className="w-20">
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          value={entry.samplesExecuted}
+                                          onChange={(e) =>
+                                            handlePlotFieldChange(plot.id, 'samplesExecuted', e.target.value)
+                                          }
+                                          placeholder="Pts"
+                                          title="Pontos / Análises neste talhão"
+                                          className="h-8 text-xs bg-background"
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
+
+                  {/* Totais Consolidados da Etapa (preenchidos automaticamente pelos talhões ou editáveis) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 border rounded-md bg-muted/20">
+                    <div>
+                      <Label htmlFor="partial-area" className="text-xs font-semibold">
+                        Área Total Executada nesta Etapa (ha):
+                      </Label>
+                      <DecimalInput
+                        id="partial-area"
+                        value={partialArea}
+                        onValueChange={(_, normalized) => setPartialArea(normalized)}
+                        placeholder={'Máximo: ' + remainingArea.toFixed(1).replace('.', ',') + ' ha'}
+                      />
+                    </div>
+
+                    {totalSamples > 0 && (
+                      <div>
+                        <Label htmlFor="step-samples" className="text-xs font-semibold text-emerald-800 flex items-center gap-1">
+                          <FlaskConical className="h-3 w-3" />
+                          Análises / Pontos Realizados (nesta Etapa):
+                        </Label>
+                        <Input
+                          id="step-samples"
+                          type="number"
+                          min="0"
+                          max={remainingSamples}
+                          value={stepSamples}
+                          onChange={(e) => setStepSamples(e.target.value)}
+                          placeholder={`Ex: 3 (Restam ${remainingSamples} de ${totalSamples})`}
+                          className="text-xs h-9 bg-background"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -555,21 +910,21 @@ export const OrderExecutionDialog: React.FC<OrderExecutionDialogProps> = ({
                       </Select>
                     </div>
 
-                    {availablePlots.length > 0 && (
-                      <div>
-                        <Label className="text-[11px]">Talhão</Label>
-                        <Select value={splitPlot} onValueChange={setSplitPlot}>
-                          <SelectTrigger className="h-8 text-xs bg-card">
-                            <SelectValue placeholder="Talhão..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availablePlots.map((p: any) => (
-                              <SelectItem key={p.id} value={p.name}>{p.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
+                    <div>
+                      <Label className="text-[11px]">Talhão</Label>
+                      <Select value={splitPlot} onValueChange={setSplitPlot}>
+                        <SelectTrigger className="h-8 text-xs bg-card">
+                          <SelectValue placeholder="Selecione o talhão..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availablePlots.map((p: any) => (
+                            <SelectItem key={p.id} value={p.name}>
+                              {p.name}{p.area ? ` (${p.area} ha)` : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
                     <div>
                       <Label className="text-[11px]">Qtd Aplicada</Label>
@@ -793,6 +1148,27 @@ export const OrderExecutionDialog: React.FC<OrderExecutionDialogProps> = ({
                       <div className="text-emerald-700 font-medium flex items-center gap-1">
                         <FlaskConical className="h-3 w-3" />
                         {ex.samplesExecuted} {ex.samplesTotal ? `de ${ex.samplesTotal}` : ''} análises/amostras realizadas nesta etapa
+                      </div>
+                    )}
+
+                    {/* Exibe detalhamento por talhão se houver */}
+                    {Array.isArray(ex.plotExecutions) && ex.plotExecutions.length > 0 && (
+                      <div className="pt-1 border-t space-y-0.5 text-[10px] text-blue-950">
+                        <div className="font-semibold text-muted-foreground flex items-center gap-1">
+                          <MapPin className="h-3 w-3 text-blue-600" />
+                          Talhões Executados:
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {ex.plotExecutions.map((pe: any, pIdx: number) => (
+                            <span
+                              key={pe.plotId || pIdx}
+                              className="bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 font-medium"
+                            >
+                              {pe.plotName}: <strong>{Number(pe.areaExecuted).toFixed(1)} ha</strong>
+                              {pe.samplesExecuted ? ` (${pe.samplesExecuted} pts)` : ''}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     )}
 

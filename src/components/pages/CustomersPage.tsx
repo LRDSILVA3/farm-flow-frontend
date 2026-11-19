@@ -6,6 +6,7 @@ import { useClients, Client } from "@/hooks/useClients";
 import { CustomersForm } from "./customers/CustomersForm";
 import { CustomersFilters } from "./customers/CustomersFilters";
 import { CustomersTable } from "./customers/CustomersTable";
+import { CustomerDossierDialog } from "./customers/CustomerDossierDialog";
 
 interface CustomersPageProps {
   onNavigateToFarms: (customerCpf: string, customerName?: string, customerId?: string) => void;
@@ -23,6 +24,7 @@ const CustomersPage = ({ onNavigateToFarms, canNavigateToFarms = true }: Custome
   } = useClients();
 
   const [showForm, setShowForm] = useState(false);
+  const [dossierClient, setDossierClient] = useState<Client | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [cidadeEstadoFilter, setCidadeEstadoFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -118,6 +120,7 @@ const CustomersPage = ({ onNavigateToFarms, canNavigateToFarms = true }: Custome
             clients={filteredClients}
             onEdit={handleEdit}
             onNavigateToFarms={handleNavigateToFarms}
+            onViewDossier={(client) => setDossierClient(client)}
             canNavigateToFarms={canNavigateToFarms}
             currentPage={currentPage}
             itemsPerPage={itemsPerPage}
@@ -126,6 +129,13 @@ const CustomersPage = ({ onNavigateToFarms, canNavigateToFarms = true }: Custome
           />
         </CardContent>
       </Card>
+
+      <CustomerDossierDialog
+        client={dossierClient}
+        open={!!dossierClient}
+        onOpenChange={(isOpen) => !isOpen && setDossierClient(null)}
+        onNavigateToFarms={handleNavigateToFarms}
+      />
 
       <CustomersForm
         open={showForm}

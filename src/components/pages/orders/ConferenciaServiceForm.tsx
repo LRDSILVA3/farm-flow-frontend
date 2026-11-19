@@ -37,6 +37,7 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
   const [vencimentoServico, setVencimentoServico] = useState<Date | undefined>(new Date());
   const [desejaAnaliseFisica, setDesejaAnaliseFisica] = useState<boolean>(false);
   const [percentualAnalises20_40cm, setPercentualAnalises20_40cm] = useState<number | null>(10);
+  const [percentualAnalisesBIOAS, setPercentualAnalisesBIOAS] = useState<number | null>(0);
   const [alqueires, setAlqueires] = useState<number | null>(initialAlqueires === 0 ? null : initialAlqueires);
   const [numAnalises, setNumAnalises] = useState<number | null>(initialNumAnalises === 0 ? null : initialNumAnalises);
   const [isAllPlotsSelected, setIsAllPlotsSelected] = useState<boolean>(false);
@@ -77,6 +78,7 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
         vencimentoServico: formattedVencimento,
         desejaAnaliseFisica: desejaAnaliseFisica ? 'S' : 'N',
         percentualAnalises20_40cm: percentualAnalises20_40cm === null ? 0 : percentualAnalises20_40cm,
+        percentualAnalisesBIOAS: percentualAnalisesBIOAS === null ? 0 : percentualAnalisesBIOAS,
         alqueires: alqueiresToCalculate,
         numAnalises: numAnalises === null ? 0 : numAnalises,
         totalAlqueires: totalFarmAlqueires,
@@ -92,12 +94,20 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
       if (onProductsChangeRef.current) {
         onProductsChangeRef.current([
           {
+            id: 'servico_coleta',
+            type: 'SERVICO_CONFERENCIA',
+            name: `SERVIÇO DE COLETA DE ANÁLISE DE CONFERÊNCIA (DISTÂNCIA: ${((distanciaFazendaKm || 0) * 2).toFixed(1)} Km)`,
+            quantity: alqueiresToCalculate || 10,
+            unit: 'ALQ',
+            price: result.details.breakdown.coletaServicoPerAlq
+          },
+          {
             id: 'analises_macro_prem',
             type: 'MACRO+S+P_REM',
-            name: 'ANÁLISE DE SOLO (MACRO+S+P_REM)',
-            quantity: numAnalises || 10,
+            name: `ANÁLISE DE SOLO (MACRO+S+P_REM${desejaAnaliseFisica ? '+FÍSICA' : ''})`,
+            quantity: numAnalises || 0,
             unit: 'PTOS',
-            price: result.details.custoAnaliseFisica || 105.30
+            price: result.details.custoAnaliseFisica || 91.40
           },
           ...(result.details.numAnalises20_40cm > 0 ? [{
             id: 'analises_20_40',
@@ -105,15 +115,15 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
             name: 'ANÁLISE DE SOLO 20-40 CM (MACRO+S)',
             quantity: result.details.numAnalises20_40cm,
             unit: 'PTOS',
-            price: 70.00
+            price: result.details.breakdown.analise20_40Unit || 73.90
           }] : []),
-          ...(desejaAnaliseFisica ? [{
-            id: 'analise_fisica',
-            type: 'FISICA',
-            name: 'ANÁLISE FÍSICA',
-            quantity: 1,
-            unit: 'UNID',
-            price: 42.30
+          ...(result.details.numAnalisesBIOAS > 0 ? [{
+            id: 'analises_bioas',
+            type: 'BIOAS',
+            name: 'ANÁLISE BIOAS',
+            quantity: result.details.numAnalisesBIOAS,
+            unit: 'PTOS',
+            price: result.details.breakdown.analiseBIOASUnit || 205.20
           }] : []),
         ]);
       }
@@ -124,6 +134,7 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
     vencimentoServico,
     desejaAnaliseFisica,
     percentualAnalises20_40cm,
+    percentualAnalisesBIOAS,
     alqueires,
     numAnalises,
     totalFarmAlqueires,
@@ -220,22 +231,44 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
           <Label htmlFor="analise-fisica">Deseja análise física (fins bancários)?</Label>
         </div>
 
-        <div>
-          <Label htmlFor="perc-analises-20-40cm">% das análises de 20-40cm:</Label>
-          <div className="flex items-center">
-            <Input
-              id="perc-analises-20-40cm"
-              type="number" step="any"
-              value={percentualAnalises20_40cm === null ? '' : percentualAnalises20_40cm}
-              onChange={(e) => {
-                const value = e.target.value;
-                setPercentualAnalises20_40cm(value === '' ? null : parseFloat(value));
-              }}
-              min="0"
-              max="100"
-              className="w-full rounded-r-none"
-            />
-            <span className="flex items-center h-10 px-3 border border-l-0 rounded-r-md bg-muted text-muted-foreground">%</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="perc-analises-20-40cm">% das análises de 20-40cm:</Label>
+            <div className="flex items-center">
+              <Input
+                id="perc-analises-20-40cm"
+                type="number" step="any"
+                value={percentualAnalises20_40cm === null ? '' : percentualAnalises20_40cm}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setPercentualAnalises20_40cm(value === '' ? null : parseFloat(value));
+                }}
+                min="0"
+                max="100"
+                className="w-full rounded-r-none"
+              />
+              <span className="flex items-center h-10 px-3 border border-l-0 rounded-r-md bg-muted text-muted-foreground">%</span>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="perc-analises-bioas">% das Análises BIOAS:</Label>
+            <div className="flex items-center">
+              <Input
+                id="perc-analises-bioas"
+                type="number" step="any"
+                value={percentualAnalisesBIOAS === null ? '' : percentualAnalisesBIOAS}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setPercentualAnalisesBIOAS(value === '' ? null : parseFloat(value));
+                }}
+                min="0"
+                max="100"
+                className="w-full rounded-r-none"
+                placeholder="0"
+              />
+              <span className="flex items-center h-10 px-3 border border-l-0 rounded-r-md bg-muted text-muted-foreground">%</span>
+            </div>
           </div>
         </div>
         
@@ -325,6 +358,12 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
               <div className="flex justify-between">
                 <span>Análise de Solo 20-40cm ({details.numAnalises20_40cm} un):</span>
                 <span className="font-medium">{conferenciaService.formatCurrency(details.breakdown.analise20_40Total)} ({conferenciaService.formatCurrency(details.breakdown.analise20_40Unit)}/un)</span>
+              </div>
+            )}
+            {details.numAnalisesBIOAS > 0 && (
+              <div className="flex justify-between">
+                <span>Análise BIOAS ({details.numAnalisesBIOAS} un):</span>
+                <span className="font-medium">{conferenciaService.formatCurrency(details.breakdown.analiseBIOASTotal)} ({conferenciaService.formatCurrency(details.breakdown.analiseBIOASUnit)}/un)</span>
               </div>
             )}
             <div className="flex justify-between text-muted-foreground pt-1 border-t">

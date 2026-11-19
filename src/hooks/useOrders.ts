@@ -30,6 +30,13 @@ export interface OrderExecutionSplit {
   areaHa: number;
 }
 
+export interface OrderPlotExecution {
+  plotId: string;
+  plotName: string;
+  areaExecuted: number;
+  samplesExecuted?: number;
+}
+
 export interface OrderExecution {
   id: string;
   date: string;
@@ -45,6 +52,7 @@ export interface OrderExecution {
     unit?: string;
   }>;
   splits?: OrderExecutionSplit[];
+  plotExecutions?: OrderPlotExecution[];
   notes?: string;
   collaboratorName?: string;
   collaborators?: string[];
@@ -352,8 +360,14 @@ export const useOrders = () => {
 
   const addOrder = async (order: Omit<Order, 'id'>) => {
     try {
-      const numVal = parseValue(order.value);
+      if (!order.clientId || order.clientId.trim() === '') {
+        throw new Error('Por favor, selecione um cliente para o pedido.');
+      }
       const numArea = order.area ? parseFloat(order.area) : null;
+      if (!numArea || numArea <= 0) {
+        throw new Error('A área do pedido deve ser informada e maior que zero.');
+      }
+      const numVal = parseValue(order.value);
       const sName = order.serviceName || order.type || "Serviço";
 
       const initLog = createLogEntry("Criação", `Pedido criado no valor de ${formatCurrencyBRL(numVal || 0)} para o serviço ${sName}`);
@@ -405,8 +419,14 @@ export const useOrders = () => {
 
   const updateOrder = async (order: Order) => {
     try {
-      const numVal = parseValue(order.value) ?? order.numericValue;
+      if (!order.clientId || order.clientId.trim() === '') {
+        throw new Error('Por favor, selecione um cliente para o pedido.');
+      }
       const numArea = order.area ? parseFloat(order.area) : null;
+      if (!numArea || numArea <= 0) {
+        throw new Error('A área do pedido deve ser informada e maior que zero.');
+      }
+      const numVal = parseValue(order.value) ?? order.numericValue;
       const sName = order.serviceName || order.type || "Serviço";
 
       try {
@@ -501,6 +521,7 @@ export const useOrders = () => {
     samplesExecuted?: number;
     samplesTotal?: number;
     splits?: OrderExecutionSplit[];
+    plotExecutions?: OrderPlotExecution[];
     appliedProducts?: Array<{ id?: string; name: string; quantity?: number; unit?: string }>;
     notes?: string;
     collaboratorName?: string;
@@ -525,6 +546,8 @@ export const useOrders = () => {
       const equips = execution.equipmentNames || [];
       const splits = execution.splits || [];
 
+      const plotExecutions = execution.plotExecutions || [];
+
       const newExecution: OrderExecution = {
         id: generateUUID(),
         date: getLocalDateISO(),
@@ -534,6 +557,7 @@ export const useOrders = () => {
         samplesExecuted: stepSamples > 0 ? stepSamples : undefined,
         samplesTotal: totalSamples > 0 ? totalSamples : undefined,
         splits: splits.length > 0 ? splits : undefined,
+        plotExecutions: plotExecutions.length > 0 ? plotExecutions : undefined,
         appliedProducts: execution.appliedProducts,
         notes: execution.notes,
         collaboratorName: collabs.join(', ') || execution.collaboratorName,
@@ -556,6 +580,16 @@ export const useOrders = () => {
       const teamStr = collabs.length > 0 ? collabs.join(', ') : (execution.collaboratorName || 'Não informado');
       const equipStr = equips.length > 0 ? equips.join(', ') : 'Padrão';
       const sampleStr = stepSamples > 0 ? ` • ${stepSamples}/${totalSamples} análises realizadas` : '';
+      const plotStr =
+        plotExecutions.length > 0
+          ? ' • Talhões: ' +
+            plotExecutions
+              .map(
+                (pe) =>
+                  `${pe.plotName} (${pe.areaExecuted} ha${pe.samplesExecuted ? `, ${pe.samplesExecuted} pts` : ''})`
+              )
+              .join(', ')
+          : '';
       
       let splitStr = '';
       if (splits.length > 0) {
@@ -564,7 +598,7 @@ export const useOrders = () => {
         ).join('; ');
       }
 
-      const execLog = createLogEntry("Execução", `Execução de ${execution.areaExecuted} ha registrada (${percentage.toFixed(1)}% da área). Equipe: ${teamStr}.${sampleStr}${splitStr}. Obs: ${execution.notes || 'Sem observações'}`);
+      const execLog = createLogEntry("Execução", `Execução de ${execution.areaExecuted} ha registrada (${percentage.toFixed(1)}% da área). Equipe: ${teamStr}.${plotStr}${sampleStr}${splitStr}. Obs: ${execution.notes || 'Sem observações'}`);
       const updatedLogs = [...(order.logs || []), execLog];
 
       await updateOrder({

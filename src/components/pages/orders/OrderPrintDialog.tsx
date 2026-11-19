@@ -98,38 +98,47 @@ export const OrderPrintDialog: React.FC<OrderPrintDialogProps> = ({
 
     // 1. CONFERÊNCIA DE AMOSTRAGEM
     if (combinedType.includes('confer')) {
-      const numMacro = order.productsData?.find((p: any) => p.id === 'analises_macro')?.quantity || 10;
-      const num2040 = order.productsData?.find((p: any) => p.id === 'analises_20_40')?.quantity || 1;
-      const hasFisica = order.productsData?.some((p: any) => p.id === 'analise_fisica') || false;
+      const pColeta = order.productsData?.find((p: any) => p.id === 'servico_coleta' || p.type === 'SERVICO_CONFERENCIA');
+      const pMacro = order.productsData?.find((p: any) => p.id === 'analises_macro_prem' || p.id === 'analises_macro' || p.type === 'MACRO+S+P_REM');
+      const p2040 = order.productsData?.find((p: any) => p.id === 'analises_20_40' || p.type === 'MACRO+S');
+      const pBioas = order.productsData?.find((p: any) => p.id === 'analises_bioas' || p.type === 'BIOAS');
+      const pFisica = order.productsData?.find((p: any) => p.id === 'analise_fisica' || p.type === 'FISICA');
 
-      const priceMacro = 105.30;
-      const price2040 = 70.00;
-      const priceFisica = 42.30;
-
-      const totMacro = numMacro * priceMacro;
-      const tot2040 = num2040 * price2040;
-      const totFisica = hasFisica ? priceFisica : 0;
-      const totAnalises = totMacro + tot2040 + totFisica;
-
-      // O valor da Coleta é o restante do valor do pedido
-      const totColeta = Math.max(0, orderTotal - totAnalises);
       const confAlq = totalArea > 0 ? Number((totalArea / 2.42).toFixed(2)) : 1;
+      const numMacro = pMacro ? parseNum(pMacro.quantity) : 5;
+      const priceMacro = pMacro?.price ? parseNum(pMacro.price) : (pFisica ? 124.70 : 91.40);
+      const totMacro = numMacro * priceMacro;
+
+      const num2040 = p2040 ? parseNum(p2040.quantity) : 0;
+      const price2040 = p2040?.price ? parseNum(p2040.price) : 73.90;
+      const tot2040 = num2040 * price2040;
+
+      const numBioas = pBioas ? parseNum(pBioas.quantity) : 0;
+      const priceBioas = pBioas?.price ? parseNum(pBioas.price) : 205.20;
+      const totBioas = numBioas * priceBioas;
+
+      const totFisica = pFisica ? parseNum(pFisica.price || 33.30) : 0;
+
+      // O valor da Coleta é o restante do valor do pedido ou o preço gravado
+      const totColeta = pColeta?.price
+        ? parseNum(pColeta.quantity || confAlq) * parseNum(pColeta.price)
+        : Math.max(0, orderTotal - (totMacro + tot2040 + totBioas + totFisica));
       const unitColeta = confAlq > 0 ? (totColeta / confAlq) : totColeta;
 
       items.push({
         id: 'coleta',
-        quantity: confAlq > 0 ? confAlq.toFixed(2) : '1,00',
-        unit: 'ALQ',
-        description: 'SERVIÇO DE COLETA DE ANÁLISE DE CONFERÊNCIA',
-        unitPrice: unitColeta,
+        quantity: pColeta?.quantity ? Number(pColeta.quantity).toFixed(2) : (confAlq > 0 ? confAlq.toFixed(2) : '1,00'),
+        unit: pColeta?.unit || 'ALQ',
+        description: pColeta?.name || 'SERVIÇO DE COLETA DE ANÁLISE DE CONFERÊNCIA',
+        unitPrice: pColeta?.price ? parseNum(pColeta.price) : unitColeta,
         totalPrice: totColeta,
       });
 
       items.push({
         id: 'analises_macro',
         quantity: numMacro,
-        unit: 'PTOS',
-        description: 'ANÁLISE DE SOLO (MACRO + S + P-REM)',
+        unit: pMacro?.unit || 'PTOS',
+        description: pMacro?.name || `ANÁLISE DE SOLO (MACRO + S + P-REM${pFisica ? '+FÍSICA' : ''})`,
         unitPrice: priceMacro,
         totalPrice: totMacro,
       });
@@ -138,20 +147,31 @@ export const OrderPrintDialog: React.FC<OrderPrintDialogProps> = ({
         items.push({
           id: 'analises_20_40',
           quantity: num2040,
-          unit: 'PTOS',
-          description: 'ANÁLISE DE SOLO 20-40 CM (MACRO + S)',
+          unit: p2040?.unit || 'PTOS',
+          description: p2040?.name || 'ANÁLISE DE SOLO 20-40 CM (MACRO + S)',
           unitPrice: price2040,
           totalPrice: tot2040,
         });
       }
 
-      if (hasFisica) {
+      if (numBioas > 0) {
+        items.push({
+          id: 'analises_bioas',
+          quantity: numBioas,
+          unit: pBioas?.unit || 'PTOS',
+          description: pBioas?.name || 'ANÁLISE BIOAS',
+          unitPrice: priceBioas,
+          totalPrice: totBioas,
+        });
+      }
+
+      if (pFisica && !pMacro?.name?.includes('FÍSICA')) {
         items.push({
           id: 'analise_fisica',
           quantity: 1,
           unit: 'UNID',
           description: 'ANÁLISE FÍSICA DE SOLO',
-          unitPrice: priceFisica,
+          unitPrice: parseNum(pFisica.price || 33.30),
           totalPrice: totFisica,
         });
       }
@@ -286,57 +306,65 @@ export const OrderPrintDialog: React.FC<OrderPrintDialogProps> = ({
     }
     // 3. COMPACTAÇÃO DE SOLO
     else if (combinedType.includes('compacta')) {
-      const numPontos = order.productsData?.find((p: any) => p.id === 'pontos')?.quantity || 4;
-      const valorPorPonto = 463.23;
-      const totPontos = numPontos * valorPorPonto;
-      const totDesloc = Math.max(0, orderTotal - totPontos);
+      const pPontos = order.productsData?.find((p: any) => p.id === 'pontos_compactacao' || p.type === 'COMPACTACAO');
+      const pDesloc = order.productsData?.find((p: any) => p.id === 'deslocamento_compactacao' || p.type === 'DESLOCAMENTO');
+
+      const numPontos = pPontos ? parseNum(pPontos.quantity) : (order.productsData?.find((p: any) => p.id === 'pontos')?.quantity || 4);
+      const valorPorPonto = pPontos?.price ? parseNum(pPontos.price) : (numPontos > 0 ? orderTotal / numPontos : 0);
+      const totPontos = pPontos?.price ? numPontos * valorPorPonto : (pDesloc ? Math.max(0, orderTotal - parseNum(pDesloc.price) * parseNum(pDesloc.quantity)) : orderTotal);
 
       items.push({
         id: 'compacta',
         quantity: numPontos,
         unit: 'PTOS',
-        description: 'AVALIAÇÃO DE COMPACTAÇÃO DO SOLO (PENETROMETRIA)',
+        description: pPontos?.name || 'AVALIAÇÃO DE COMPACTAÇÃO DO SOLO (PENETROMETRIA)',
         unitPrice: valorPorPonto,
         totalPrice: totPontos,
       });
 
-      if (totDesloc > 0) {
+      if (pDesloc || Math.max(0, orderTotal - totPontos) > 0) {
+        const qDesloc = pDesloc ? parseNum(pDesloc.quantity) : 50;
+        const totDesloc = pDesloc ? parseNum(pDesloc.price) * qDesloc : Math.max(0, orderTotal - totPontos);
+        const unitDesloc = qDesloc > 0 ? totDesloc / qDesloc : totDesloc;
         items.push({
           id: 'deslocamento',
-          quantity: 50,
+          quantity: qDesloc,
           unit: 'KM',
-          description: 'DESLOCAMENTO TÉCNICO E LOGÍSTICA',
-          unitPrice: totDesloc / 50,
+          description: pDesloc?.name || 'DESLOCAMENTO TÉCNICO E LOGÍSTICA',
+          unitPrice: unitDesloc,
           totalPrice: totDesloc,
         });
       }
     }
     // 4. DEMAIS SERVIÇOS (DRONE, FOLIAR, ATV)
     else {
-      const serviceAlq = totalArea > 0 ? Number((totalArea / 2.42).toFixed(2)) : 1;
-      const unitP = serviceAlq > 0 ? (orderTotal / serviceAlq) : orderTotal;
-      items.push({
-        id: 'principal',
-        quantity: serviceAlq > 0 ? serviceAlq.toFixed(2) : '1,00',
-        unit: 'ALQ',
-        description: `SERVIÇO ${(order.serviceName || order.type).toUpperCase()}`,
-        unitPrice: unitP,
-        totalPrice: orderTotal,
-      });
-
       if (Array.isArray(order.productsData) && order.productsData.length > 0) {
         order.productsData
           .filter((p: any) => p.id !== 'servico_ap' && p.type !== 'SERVICO_AP')
           .forEach((p: any) => {
+            const q = p.quantity !== undefined && p.quantity !== null ? parseNum(p.quantity) : 1;
+            const uPrice = p.price !== undefined && p.price !== null ? parseNum(p.price) : (p.unitPrice ? parseNum(p.unitPrice) : 'Incluso');
+            const tPrice = typeof uPrice === 'number' ? q * uPrice : (p.totalPrice ? parseNum(p.totalPrice) : 'Incluso');
             items.push({
               id: p.id,
-              quantity: p.quantity ?? 1,
-              unit: p.unit || 'PTOS',
-              description: p.name || 'ANÁLISE INCLUSA',
-              unitPrice: p.price ? p.price : 'Incluso',
-              totalPrice: p.price ? p.price * (p.quantity ?? 1) : 'Incluso',
+              quantity: q,
+              unit: p.unit || 'UNID',
+              description: p.name || p.produto || `SERVIÇO ${(order.serviceName || order.type).toUpperCase()}`,
+              unitPrice: uPrice,
+              totalPrice: tPrice,
             });
           });
+      } else {
+        const serviceAlq = totalArea > 0 ? Number((totalArea / 2.42).toFixed(2)) : 1;
+        const unitP = serviceAlq > 0 ? (orderTotal / serviceAlq) : orderTotal;
+        items.push({
+          id: 'principal',
+          quantity: serviceAlq > 0 ? serviceAlq.toFixed(2) : '1,00',
+          unit: 'ALQ',
+          description: `SERVIÇO ${(order.serviceName || order.type).toUpperCase()}`,
+          unitPrice: unitP,
+          totalPrice: orderTotal,
+        });
       }
     }
 

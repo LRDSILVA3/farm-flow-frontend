@@ -2,6 +2,20 @@ import { useState, useEffect, FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/api";
 
+export interface ServiceProductLink {
+  id: string;
+  service_id: string;
+  product_id: string;
+  product: {
+    id: string;
+    name: string;
+    category?: string;
+    unit?: string;
+    price?: number;
+    quantity?: number;
+  };
+}
+
 export interface Service {
   id: string;
   name: string;
@@ -9,6 +23,8 @@ export interface Service {
   status: string;
   products: string;
   isFixed: boolean;
+  service_products?: ServiceProductLink[];
+  product_ids?: string[];
 }
 
 export const useServices = () => {
@@ -26,7 +42,8 @@ export const useServices = () => {
     valuePerAlqueire: "",
     status: "Ativo",
     products: "",
-    isFixed: false
+    isFixed: false,
+    product_ids: [],
   });
 
   const fetchServices = async () => {
@@ -34,14 +51,19 @@ export const useServices = () => {
     try {
       const data = await api.get<any[]>('/services');
       if (Array.isArray(data)) {
-        setServices(data.map(s => ({
-          id: s.id,
-          name: s.name,
-          valuePerAlqueire: s.value_per_alqueire || s.valuePerAlqueire || "",
-          status: s.status || "Ativo",
-          products: s.products || "",
-          isFixed: s.is_fixed || s.isFixed || false
-        })));
+        setServices(data.map(s => {
+          const links = Array.isArray(s.service_products) ? s.service_products : [];
+          return {
+            id: s.id,
+            name: s.name,
+            valuePerAlqueire: s.value_per_alqueire || s.valuePerAlqueire || "",
+            status: s.status || "Ativo",
+            products: s.products || "",
+            isFixed: s.is_fixed || s.isFixed || false,
+            service_products: links,
+            product_ids: links.map((l: any) => l.product_id),
+          };
+        }));
       }
     } catch (err: any) {
       toast({ title: "Erro ao carregar serviços", description: err.message, variant: "destructive" });
@@ -56,7 +78,11 @@ export const useServices = () => {
 
   const handleEditService = (service: Service) => {
     setEditingService(service);
-    setServiceFormData(service);
+    const productIds = service.service_products?.map(sp => sp.product_id) || service.product_ids || [];
+    setServiceFormData({
+      ...service,
+      product_ids: productIds,
+    });
     setShowServiceForm(true);
   };
 
@@ -68,7 +94,8 @@ export const useServices = () => {
         value_per_alqueire: serviceFormData.valuePerAlqueire,
         status: serviceFormData.status,
         products: serviceFormData.products,
-        is_fixed: serviceFormData.isFixed
+        is_fixed: serviceFormData.isFixed,
+        product_ids: serviceFormData.product_ids || [],
       };
 
       if (editingService) {
@@ -92,10 +119,23 @@ export const useServices = () => {
       valuePerAlqueire: "",
       status: "Ativo",
       products: "",
-      isFixed: false
+      isFixed: false,
+      product_ids: [],
     });
     setEditingService(null);
     setShowServiceForm(false);
+  };
+
+  const syncServiceProducts = async (serviceId: string, productIds: string[]) => {
+    try {
+      await api.put(`/services/${serviceId}/products`, { product_ids: productIds });
+      toast({ title: "Produtos vinculados", description: "Vínculos de produtos atualizados com sucesso." });
+      fetchServices();
+      return true;
+    } catch (err: any) {
+      toast({ title: "Erro ao vincular produtos", description: err.message, variant: "destructive" });
+      return false;
+    }
   };
 
   const handleDeleteService = async (id: string) => {
@@ -108,7 +148,7 @@ export const useServices = () => {
     }
   };
 
-  const handleServiceInputChange = (field: keyof Service, value: string | boolean) => {
+  const handleServiceInputChange = (field: keyof Service, value: any) => {
     setServiceFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -134,11 +174,12 @@ export const useServices = () => {
     resetServiceForm,
     handleServiceInputChange,
     handleDeleteService,
+    syncServiceProducts,
     totalServices,
     totalServicesPages,
     servicesStartIndex,
     servicesEndIndex,
     currentServices,
-    fetchServices
+    fetchServices,
   };
 };

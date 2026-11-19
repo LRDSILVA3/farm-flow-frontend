@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { DroneSprayingService, DroneSprayingCalculationResult } from '../../../services/DroneSprayingService';
 import { useCostVariables } from '../../../hooks/useCostVariables';
+import { useProducts } from '../../../hooks/useProducts';
+import { useServices } from '../../../hooks/useServices';
 import { Input } from '@/components/ui/input';
 import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { format } from 'date-fns';
@@ -17,14 +20,30 @@ import { cn } from '@/lib/utils';
 interface DroneSprayingServiceFormProps {
   initialAreaHa: number;
   onValuesChange: (calculatedValue: number) => void;
+  onProductsChange?: (products: any[]) => void;
 }
 
 export const DroneSprayingServiceForm: React.FC<DroneSprayingServiceFormProps> = ({
   initialAreaHa,
   onValuesChange,
+  onProductsChange,
 }) => {
   const { costVariables, loading: loadingCostVariables } = useCostVariables();
+  const { products: systemProducts } = useProducts();
+  const { services } = useServices();
 
+  const availableProducts = useMemo(() => {
+    const pulv = services.find((s) => s.name.toLowerCase().includes('pulveriz') || s.name.toLowerCase().includes('spray'));
+    if (pulv?.service_products && pulv.service_products.length > 0) {
+      return pulv.service_products.map((sp) => sp.product?.name).filter(Boolean);
+    }
+    if (systemProducts.length > 0) {
+      return systemProducts.filter((p) => p.status === 'Ativo').map((p) => p.name);
+    }
+    return ['Adjuvante Espalhante Adesivo', 'Biológico Trichoderma Harzianum', 'Outro'];
+  }, [services, systemProducts]);
+
+  const [produto, setProduto] = useState<string>('');
   const [areaHa, setAreaHa] = useState<number | null>(initialAreaHa === 0 ? null : initialAreaHa);
   const [distanciaKm, setDistanciaKm] = useState<number | null>(null);
   const [vencimentoServico, setVencimentoServico] = useState<Date | undefined>(new Date());
@@ -92,6 +111,20 @@ export const DroneSprayingServiceForm: React.FC<DroneSprayingServiceFormProps> =
     droneSprayingService,
   ]);
 
+  useEffect(() => {
+    if (onProductsChange) {
+      const selectedProd = produto || availableProducts[0] || 'Adjuvante Espalhante Adesivo';
+      onProductsChange([
+        {
+          produto: selectedProd,
+          areaHa: areaHa || 0,
+          tipo: tipoSolidoOuLiquido === 'S' ? 'Sólido' : 'Líquido',
+          dose: doseSolidoKgAlq || 0,
+        },
+      ]);
+    }
+  }, [produto, areaHa, tipoSolidoOuLiquido, doseSolidoKgAlq, availableProducts, onProductsChange]);
+
   if (loadingCostVariables) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -121,6 +154,25 @@ export const DroneSprayingServiceForm: React.FC<DroneSprayingServiceFormProps> =
       </div>
 
       <div className="space-y-4">
+        <div className="p-3 bg-muted/40 rounded-lg border space-y-1.5">
+          <Label htmlFor="pulve-prod" className="text-xs font-semibold">Produto Aplicado / Vinculado</Label>
+          <Select
+            value={produto || availableProducts[0] || ''}
+            onValueChange={setProduto}
+          >
+            <SelectTrigger id="pulve-prod" className="bg-background">
+              <SelectValue placeholder="Selecione o produto da calda..." />
+            </SelectTrigger>
+            <SelectContent>
+              {availableProducts.map((p) => (
+                <SelectItem key={p} value={p}>
+                  {p}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="pulve-area">Área em Hectares (ha):</Label>

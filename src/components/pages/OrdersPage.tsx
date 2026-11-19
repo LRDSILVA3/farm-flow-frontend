@@ -9,8 +9,10 @@ import { OrderForm } from "./orders/OrderForm";
 import { useOrders, Order } from "@/hooks/useOrders";
 import { useClients } from "@/hooks/useClients";
 import { useFarms } from "@/hooks/useFarms";
+import { useToast } from "@/hooks/use-toast";
 
 const OrdersPage = () => {
+  const { toast } = useToast();
   const {
     orders,
     showOrderForm,
@@ -50,6 +52,23 @@ const OrdersPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.clientId || formData.clientId.trim() === '') {
+      toast({
+        title: "Cliente obrigatório",
+        description: "Por favor, selecione um cliente para o pedido.",
+        variant: "destructive"
+      });
+      return;
+    }
+    const numArea = parseFloat(formData.area || "0");
+    if (!formData.area || isNaN(numArea) || numArea <= 0) {
+      toast({
+        title: "Área obrigatória",
+        description: "Por favor, informe uma área válida (em hectares ou alqueires) maior que zero para o pedido.",
+        variant: "destructive"
+      });
+      return;
+    }
     const result = editingOrder
       ? await updateOrder(formData)
       : await addOrder(formData);

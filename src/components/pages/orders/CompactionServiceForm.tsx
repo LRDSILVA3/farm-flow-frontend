@@ -14,11 +14,13 @@ import { cn } from '@/lib/utils';
 interface CompactionServiceFormProps {
   initialNumPontos: number;
   onValuesChange: (calculatedValue: number) => void;
+  onProductsChange?: (products: any[]) => void;
 }
 
 export const CompactionServiceForm: React.FC<CompactionServiceFormProps> = ({
   initialNumPontos,
   onValuesChange,
+  onProductsChange,
 }) => {
   const { costVariables, loading: loadingCostVariables } = useCostVariables();
 
@@ -36,6 +38,11 @@ export const CompactionServiceForm: React.FC<CompactionServiceFormProps> = ({
     return null;
   }, [costVariables]);
 
+  const onProductsChangeRef = React.useRef(onProductsChange);
+  React.useEffect(() => {
+    onProductsChangeRef.current = onProductsChange;
+  }, [onProductsChange]);
+
   useEffect(() => {
     if (vencimentoServico && compactionService) {
       const formattedVencimento = format(vencimentoServico, 'dd/MM/yyyy');
@@ -49,6 +56,27 @@ export const CompactionServiceForm: React.FC<CompactionServiceFormProps> = ({
 
       setCalculationResult(result);
       onValuesChange(result.totalValue);
+
+      if (onProductsChangeRef.current) {
+        onProductsChangeRef.current([
+          {
+            id: 'pontos_compactacao',
+            type: 'COMPACTACAO',
+            name: 'AVALIAÇÃO DE COMPACTAÇÃO DO SOLO (PENETROMETRIA)',
+            quantity: numPontos || 0,
+            unit: 'PTOS',
+            price: result.details.precoUnitarioPonto
+          },
+          ...(result.details.subtotalDeslocamento > 0 ? [{
+            id: 'deslocamento_compactacao',
+            type: 'DESLOCAMENTO',
+            name: `DESLOCAMENTO TÉCNICO (${distanciaKm || 0} Km)`,
+            quantity: distanciaKm || 0,
+            unit: 'KM',
+            price: result.details.precoUnitarioKm
+          }] : [])
+        ]);
+      }
     }
   }, [
     numPontos,

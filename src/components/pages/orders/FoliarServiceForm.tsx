@@ -87,15 +87,27 @@ export const FoliarServiceForm: React.FC<FoliarServiceFormProps> = ({
 
       if (onProductsChangeRef.current) {
         const points = numPontos === null ? 0 : numPontos;
+        const precoLabFoliar = foliarService.getVariableValue('VALOR_ANALISE_FOLIAR') || 90.00;
+        const alq = alqToCalc > 0 ? alqToCalc : 1;
+        const precoServicoUnit = alqToCalc > 0 ? result.details.custoCampoCalculado / alqToCalc : result.details.custoCampoCalculado;
+
         onProductsChangeRef.current([
           {
+            id: 'servico_foliar',
+            type: 'SERVICO_FOLIAR',
+            name: `SERVIÇO DE COLETA DE ANÁLISE FOLIAR (${((distanciaFazendaKm || 0) * 2).toFixed(1)} Km ida/volta)`,
+            quantity: alqToCalc > 0 ? alqToCalc : points,
+            unit: alqToCalc > 0 ? 'ALQ' : 'PTOS',
+            price: precoServicoUnit
+          },
+          ...(points > 0 ? [{
             id: 'analise_foliar',
             type: 'ANALISE DE FOLIAR',
             name: 'ANÁLISE FOLIAR (NUTRIÇÃO FOLIAR)',
             quantity: points,
             unit: 'PTOS',
-            price: 70.00
-          }
+            price: precoLabFoliar
+          }] : [])
         ]);
       }
     }
@@ -139,28 +151,13 @@ export const FoliarServiceForm: React.FC<FoliarServiceFormProps> = ({
       </div>
 
       <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="calculo-por">Base de Cálculo do Orçamento:</Label>
-            <Select value={calculoPor} onValueChange={(val: 'A' | 'P') => setCalculoPor(val)}>
-              <SelectTrigger id="calculo-por">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="A">Por Alqueire (A) - Recomendado &lt; 50 alq</SelectItem>
-                <SelectItem value="P">Por Ponto (P) - Recomendado &gt; 50 alq</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center space-x-2 pt-6">
-            <Switch
-              id="foliar-nf"
-              checked={clienteDesejaNotaFiscal}
-              onCheckedChange={setClienteDesejaNotaFiscal}
-            />
-            <Label htmlFor="foliar-nf">Cliente deseja nota fiscal?</Label>
-          </div>
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="foliar-nf"
+            checked={clienteDesejaNotaFiscal}
+            onCheckedChange={setClienteDesejaNotaFiscal}
+          />
+          <Label htmlFor="foliar-nf">Cliente deseja nota fiscal?</Label>
         </div>
 
         <div>

@@ -4,7 +4,6 @@ import { DecimalInput } from "@/components/ui/decimal-input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Plus, Minus } from "lucide-react";
 import { Order } from "@/hooks/useOrders";
 import { CustomerSelect } from "../farms/CustomerSelect";
 import { FarmSelect } from "./FarmSelect";
@@ -17,9 +16,11 @@ import { ATVServiceForm } from "./ATVServiceForm";
 import { SoilSamplingServiceForm } from "./SoilSamplingServiceForm";
 import { DroneSprayingServiceForm } from "./DroneSprayingServiceForm";
 import { EqualizaServiceForm } from "./EqualizaServiceForm";
+import { ProductOrderForm } from "./ProductOrderForm";
 import React, { useMemo } from "react";
 import { useClients } from "@/hooks/useClients";
 import { useFarms } from "@/hooks/useFarms";
+import { useServices } from "@/hooks/useServices";
 
 interface OrderFormProps {
   open: boolean;
@@ -49,6 +50,7 @@ export const OrderForm = ({
   const [isConferenciaAllPlotsSelected, setIsConferenciaAllPlotsSelected] = React.useState<boolean>(false);
   const { clients } = useClients();
   const { farms } = useFarms();
+  const { services: catalogServices } = useServices();
 
   const availableFarms = useMemo(() => {
     if (!formData.clientId) return [];
@@ -79,24 +81,29 @@ export const OrderForm = ({
     return Number((ha / 2.42).toFixed(2));
   }, [formData.area]);
 
-  // Serviços Oficiais validados da Planilha Agronômica
-  const availableServices = [
-    { id: "1", name: "Amostragem de Solo (AP)", valorAlqueire: "278.30", status: "Ativo" },
-    { id: "2", name: "Conferência", valorAlqueire: "65.00", status: "Ativo" },
-    { id: "3", name: "Coleta Foliar", valorAlqueire: "60.00", status: "Ativo" },
-    { id: "4", name: "Compactação de Solo", valorAlqueire: "430.00", status: "Ativo" },
-    { id: "5", name: "Voo de Drone (Mapeamento)", valorAlqueire: "50.00", status: "Ativo" },
-    { id: "6", name: "Pulverização com Drone", valorAlqueire: "200.00", status: "Ativo" },
-    { id: "7", name: "Aplicação ATV", valorAlqueire: "260.00", status: "Ativo" },
-    { id: "8", name: "Sistema Equaliza", valorAlqueire: "671.65", status: "Ativo" },
-  ];
-
-  const availableProducts = [
-    { id: "1", name: "Defensivo A", valorUn: "45.00" },
-    { id: "2", name: "Sementes Milho", valorUn: "120.00" },
-    { id: "3", name: "Fertilizante NPK", valorUn: "80.00" },
-    { id: "4", name: "Herbicida", valorUn: "65.00" }
-  ];
+  const availableServices = useMemo(() => {
+    const active = catalogServices.filter(
+      (s) => !s.status || s.status.toLowerCase() === "ativo"
+    );
+    if (active.length > 0) {
+      return active.map((s) => ({
+        id: s.id,
+        name: s.name,
+        valorAlqueire: Number(s.valuePerAlqueire || 0).toFixed(2),
+        status: s.status || "Ativo",
+      }));
+    }
+    return [
+      { id: "1", name: "Amostragem de Solo (AP)", valorAlqueire: "345.12", status: "Ativo" },
+      { id: "2", name: "Conferência", valorAlqueire: "71.67", status: "Ativo" },
+      { id: "3", name: "Coleta Foliar", valorAlqueire: "18.00", status: "Ativo" },
+      { id: "4", name: "Compactação de Solo", valorAlqueire: "361.11", status: "Ativo" },
+      { id: "5", name: "Voo de Drone (Mapeamento)", valorAlqueire: "50.00", status: "Ativo" },
+      { id: "6", name: "Pulverização com Drone", valorAlqueire: "240.00", status: "Ativo" },
+      { id: "7", name: "Aplicação ATV", valorAlqueire: "315.00", status: "Ativo" },
+      { id: "8", name: "Sistema Equaliza", valorAlqueire: "671.65", status: "Ativo" },
+    ];
+  }, [catalogServices]);
 
   const activeSpecializedService = useMemo(() => {
     const valid = [
@@ -133,22 +140,6 @@ export const OrderForm = ({
       onInputChange("value", formatted);
     }
   }, [formData.value, onInputChange]);
-
-  const addProduct = () => {
-    const newProducts = [...(formData.productsData || []), { id: "", name: "", quantity: 1 }];
-    onInputChange("productsData", newProducts);
-  };
-
-  const removeProduct = (index: number) => {
-    const newProducts = (formData.productsData || []).filter((_, i) => i !== index);
-    onInputChange("productsData", newProducts);
-  };
-
-  const updateProduct = (index: number, field: string, value: string | number) => {
-    const newProducts = [...(formData.productsData || [])];
-    newProducts[index] = { ...newProducts[index], [field]: value };
-    onInputChange("productsData", newProducts);
-  };
 
   const handleCustomerChange = (id: string) => {
     onInputChange("clientId", id);
@@ -201,59 +192,11 @@ export const OrderForm = ({
     switch (formData.type) {
       case "Produto":
         return (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <Label>Produtos</Label>
-              <Button type="button" size="sm" onClick={addProduct}>
-                <Plus className="h-4 w-4 mr-1" />
-                Adicionar
-              </Button>
-            </div>
-            {(formData.productsData || []).map((product, index) => (
-              <div key={index} className="grid grid-cols-4 gap-2 items-end">
-                <div>
-                  <Label>Produto</Label>
-                  <Select
-                    value={product.id}
-                    onValueChange={(value) => {
-                      const selectedProduct = availableProducts.find(p => p.id === value);
-                      updateProduct(index, "id", value);
-                      updateProduct(index, "name", selectedProduct?.name || "");
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableProducts.map((product) => (
-                        <SelectItem key={product.id} value={product.id}>
-                          {product.name} - R$ {product.valorUn}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Quantidade</Label>
-                  <Input
-                    type="number" step="any"
-                    min="1"
-                    value={product.quantity}
-                    onChange={(e) => updateProduct(index, "quantity", parseInt(e.target.value) || 1)}
-                  />
-                </div>
-                <div></div>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => removeProduct(index)}
-                >
-                  <Minus className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
+          <ProductOrderForm
+            initialProducts={editingOrder ? formData.productsData : undefined}
+            onValuesChange={handleValuesChange}
+            onProductsChange={(products) => onInputChange("productsData", products as any)}
+          />
         );
 
       case "Serviço":
@@ -296,7 +239,9 @@ export const OrderForm = ({
         <form key={open ? (editingOrder?.id || 'new-order-clean') : 'closed'} onSubmit={onSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label htmlFor="customer">Cliente</Label>
+              <Label htmlFor="customer">
+                Cliente <span className="text-red-500 font-bold">*</span>
+              </Label>
               <CustomerSelect
                 value={formData.clientId}
                 onValueChange={handleCustomerChange}
@@ -304,7 +249,9 @@ export const OrderForm = ({
               />
             </div>
             <div>
-              <Label htmlFor="farm">Fazenda</Label>
+              <Label htmlFor="farm">
+                Fazenda <span className="text-red-500 font-bold">*</span>
+              </Label>
               <FarmSelect
                 value={formData.farmId}
                 onValueChange={handleFarmChange}
@@ -417,6 +364,7 @@ export const OrderForm = ({
             <CompactionServiceForm
               initialNumPontos={parseInt(formData.productsData?.[0]?.quantity?.toString() || "4")}
               onValuesChange={handleValuesChange}
+              onProductsChange={(products) => onInputChange("productsData", products)}
             />
           )}
 
@@ -424,6 +372,7 @@ export const OrderForm = ({
             <DroneMappingServiceForm
               initialAlqueires={calculatedAlqueires}
               onValuesChange={handleValuesChange}
+              onProductsChange={(products) => onInputChange("productsData", products)}
             />
           )}
 
@@ -431,6 +380,7 @@ export const OrderForm = ({
             <ATVServiceForm
               initialAreaHa={parseFloat(formData.area) || 10}
               onValuesChange={handleValuesChange}
+              onProductsChange={(products) => onInputChange("productsData", products)}
             />
           )}
 
@@ -465,6 +415,7 @@ export const OrderForm = ({
             <DroneSprayingServiceForm
               initialAreaHa={parseFloat(formData.area) || 0}
               onValuesChange={handleValuesChange}
+              onProductsChange={(products) => onInputChange("productsData", products)}
             />
           )}
 
@@ -524,9 +475,37 @@ export const OrderForm = ({
             <Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-auto">
               Cancelar
             </Button>
-            <Button type="submit" className="w-full sm:w-auto bg-green-600 hover:bg-green-700">
-              {editingOrder ? "Atualizar Pedido" : "Criar Pedido"}
-            </Button>
+            {(() => {
+              const numArea = parseFloat(formData.area || "0");
+              const isProductOrder = formData.type === "Produto";
+              const hasValidProduct =
+                !isProductOrder ||
+                (Array.isArray(formData.productsData) &&
+                  formData.productsData.some((p: any) => p.id && Number(p.quantity) > 0));
+              const isInvalid =
+                !formData.clientId ||
+                !formData.farmId ||
+                !formData.area ||
+                isNaN(numArea) ||
+                numArea <= 0 ||
+                !hasValidProduct;
+              return (
+                <Button
+                  type="submit"
+                  disabled={isInvalid}
+                  className="w-full sm:w-auto bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={
+                    !hasValidProduct
+                      ? "Selecione ao menos um produto válido para prosseguir"
+                      : isInvalid
+                      ? "Preencha cliente, fazenda e uma área válida para prosseguir"
+                      : ""
+                  }
+                >
+                  {editingOrder ? "Atualizar Pedido" : "Criar Pedido"}
+                </Button>
+              );
+            })()}
           </div>
         </form>
       </DialogContent>

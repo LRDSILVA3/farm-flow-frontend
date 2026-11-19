@@ -92,7 +92,7 @@ export const OperationalSection = () => {
         </TabsContent>
       </Tabs>
 
-      <ServiceModal {...servicesData} />
+      <ServiceModal {...servicesData} availableProducts={productsData.products} />
       <ProductModal {...productsData} />
       <EquipmentModal {...equipmentData} />
       <CollaboratorModal {...collaboratorsData} />

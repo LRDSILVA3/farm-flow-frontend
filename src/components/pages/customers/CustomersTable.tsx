@@ -4,13 +4,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { formatCPF, formatPhoneNumber } from "@/lib/utils";
-import { Edit, MapPin } from "lucide-react";
+import { Edit, MapPin, FileText } from "lucide-react";
 import { Client } from "../../../hooks/useClients";
 
 interface CustomersTableProps {
   clients: Client[];
   onEdit: (client: Client) => void;
   onNavigateToFarms: (cpf: string) => void;
+  onViewDossier?: (client: Client) => void;
   canNavigateToFarms?: boolean;
   currentPage: number;
   itemsPerPage: number;
@@ -22,6 +23,7 @@ export const CustomersTable = ({
   clients,
   onEdit,
   onNavigateToFarms,
+  onViewDossier,
   canNavigateToFarms = true,
   currentPage,
   itemsPerPage,
@@ -50,13 +52,39 @@ export const CustomersTable = ({
         <TableBody>
           {currentClients.map((client) => (
             <TableRow key={client.id}>
-              <TableCell className="font-medium">{client.name}</TableCell>
+              <TableCell className="font-medium">
+                {onViewDossier ? (
+                  <button
+                    type="button"
+                    onClick={() => onViewDossier(client)}
+                    className="text-left font-semibold text-emerald-800 hover:text-emerald-950 hover:underline cursor-pointer"
+                    title="Clique para abrir o Dossiê do Produtor"
+                  >
+                    {client.name}
+                  </button>
+                ) : (
+                  client.name
+                )}
+              </TableCell>
               <TableCell>{formatCPF(client.cpf)}</TableCell>
               <TableCell>{client.email}</TableCell>
               <TableCell>{formatPhoneNumber(client.phone)}</TableCell>
               <TableCell>{client.state}/{client.city}</TableCell>
               <TableCell>
                 <div className="flex space-x-2">
+                  {onViewDossier && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onViewDossier(client)}
+                      className="text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 border-emerald-300"
+                      title="Abrir Dossiê do Produtor"
+                      aria-label="Abrir Dossiê do Produtor"
+                    >
+                      <FileText className="h-4 w-4 mr-1 text-emerald-600" />
+                      <span className="text-xs font-semibold">Dossiê</span>
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
