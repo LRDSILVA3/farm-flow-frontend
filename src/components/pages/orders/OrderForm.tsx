@@ -40,7 +40,12 @@ export const OrderForm = ({
   onSubmit,
   onCancel,
 }: OrderFormProps) => {
-  const [selectedPlot, setSelectedPlot] = React.useState<string>("todos");
+  const [selectedPlotIds, setSelectedPlotIds] = React.useState<string[]>(() => {
+    if (editingOrder && (editingOrder as any).plots && Array.isArray((editingOrder as any).plots)) {
+      return (editingOrder as any).plots.map((p: any) => p.id || p);
+    }
+    return ["todos"];
+  });
   const [isConferenciaAllPlotsSelected, setIsConferenciaAllPlotsSelected] = React.useState<boolean>(false);
   const { clients } = useClients();
   const { farms } = useFarms();
@@ -113,10 +118,12 @@ export const OrderForm = ({
 
   React.useEffect(() => {
     if (!open) {
-      setSelectedPlot("todos");
+      setSelectedPlotIds(["todos"]);
       setIsConferenciaAllPlotsSelected(false);
+    } else if (editingOrder && (editingOrder as any).plots && Array.isArray((editingOrder as any).plots)) {
+      setSelectedPlotIds((editingOrder as any).plots.map((p: any) => p.id || p));
     }
-  }, [open]);
+  }, [open, editingOrder]);
 
   const handleValuesChange = React.useCallback((calculatedValue: number) => {
     const formatted = calculatedValue.toFixed(2);
@@ -146,42 +153,46 @@ export const OrderForm = ({
   const handleCustomerChange = (id: string) => {
     onInputChange("clientId", id);
     onInputChange("farmId", "");
-    setSelectedPlot("todos");
+    setSelectedPlotIds(["todos"]);
     onInputChange("area", "");
+    onInputChange("plots", []);
     setIsConferenciaAllPlotsSelected(false);
   };
 
   const handleFarmChange = (id: string) => {
     onInputChange("farmId", id);
-    setSelectedPlot("todos");
+    setSelectedPlotIds(["todos"]);
     const selectedFarm = farms.find(farm => farm.id === id);
     if (selectedFarm) {
       const farmArea = parseFloat(selectedFarm.area || "0") || 0;
       const plotsSum = selectedFarm.plots?.reduce((sum, p) => sum + (parseFloat(p.area || "0") || 0), 0) || 0;
       const totalArea = farmArea > 0 ? farmArea : plotsSum;
       onInputChange("area", totalArea.toFixed(2));
+      onInputChange("plots", selectedFarm.plots || []);
       setIsConferenciaAllPlotsSelected(true);
     } else {
       onInputChange("area", "");
+      onInputChange("plots", []);
       setIsConferenciaAllPlotsSelected(false);
     }
   };
 
-  const handlePlotChange = (plotId: string) => {
-    setSelectedPlot(plotId);
+  const handlePlotsChange = (plotIds: string[], selectedPlots: any[]) => {
+    setSelectedPlotIds(plotIds);
     const selectedFarm = farms.find(f => f.id === formData.farmId);
     if (!selectedFarm) return;
 
-    if (plotId === "todos") {
+    if (plotIds.includes("todos") || (selectedFarm.plots.length > 0 && plotIds.length === selectedFarm.plots.length)) {
       const farmArea = parseFloat(selectedFarm.area || "0") || 0;
       const plotsSum = selectedFarm.plots?.reduce((sum, p) => sum + (parseFloat(p.area || "0") || 0), 0) || 0;
       const totalArea = farmArea > 0 ? farmArea : plotsSum;
       onInputChange("area", totalArea.toFixed(2));
+      onInputChange("plots", selectedFarm.plots || []);
       setIsConferenciaAllPlotsSelected(true);
     } else {
-      const plot = selectedFarm.plots.find(p => p.id === plotId);
-      const plotArea = plot ? (parseFloat(plot.area || "0") || 0).toFixed(2) : "";
-      onInputChange("area", plotArea);
+      const sumArea = selectedPlots.reduce((sum: number, p: any) => sum + (parseFloat(p.area || "0") || 0), 0);
+      onInputChange("area", sumArea.toFixed(2));
+      onInputChange("plots", selectedPlots);
       setIsConferenciaAllPlotsSelected(false);
     }
   };
@@ -302,10 +313,10 @@ export const OrderForm = ({
               />
             </div>
             <div>
-              <Label htmlFor="plot">Talhão</Label>
+              <Label htmlFor="plot">Talhão(ões) do Pedido</Label>
               <PlotSelect
-                value={selectedPlot}
-                onValueChange={handlePlotChange}
+                selectedPlotIds={selectedPlotIds}
+                onPlotsChange={handlePlotsChange}
                 plots={availablePlots}
                 disabled={!formData.farmId}
               />

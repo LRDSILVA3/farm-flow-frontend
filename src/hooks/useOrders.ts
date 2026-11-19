@@ -19,20 +19,56 @@ import { api } from "@/services/api";
 import { generateUUID, getLocalDateISO } from "@/lib/utils";
 import { useSafeQueryClient } from "@/hooks/useSafeQueryClient";
 
+export interface OrderExecutionSplit {
+  id: string;
+  collaboratorName: string;
+  equipmentName: string;
+  productName?: string;
+  plotName?: string;
+  quantity?: number;
+  unit?: string;
+  areaHa: number;
+}
+
 export interface OrderExecution {
   id: string;
   date: string;
   areaExecuted: number;
+  hectares?: number;
   percentage: number;
+  samplesExecuted?: number;
+  samplesTotal?: number;
+  appliedProducts?: Array<{
+    id?: string;
+    name: string;
+    quantity?: number;
+    unit?: string;
+  }>;
+  splits?: OrderExecutionSplit[];
   notes?: string;
   collaboratorName?: string;
+  collaborators?: string[];
+  equipmentName?: string;
+  equipmentNames?: string[];
   createdAt: string;
 }
 
 export interface OrderSchedule {
   id: string;
   scheduledDate: string;
+  date?: string;
   description: string;
+  notes?: string;
+  plotName?: string;
+  plotId?: string;
+  plotNames?: string[];
+  yearCycle?: number;
+  cycleLabel?: string;
+  stageName?: string;
+  collaborators?: string[];
+  collaborator?: string;
+  equipmentNames?: string[];
+  equipment?: string;
   status: 'Agendado' | 'Realizado' | 'Cancelado';
   createdAt: string;
 }
@@ -70,6 +106,7 @@ export interface Order {
   type: string;
   serviceName: string;
   productsData: any[];
+  plots?: Array<{ id: string; name: string; area?: string }>;
   serviceGroup: string;
   area: string;
   value: string;
@@ -81,6 +118,8 @@ export interface Order {
   payments: OrderPayment[];
   logs: OrderActionLog[];
   executedArea: number;
+  executedSamples?: number;
+  totalSamples?: number;
   paidAmount: number;
   createdAt?: string;
 }
@@ -427,9 +466,13 @@ export const useOrders = () => {
     }
   };
 
-  // Lifecycle action: Registrar Execução (100% ou Parcial)
+  // Lifecycle action: Registrar Execução (100% ou Parcial, com rateio por operador e análises)
   const recordExecution = async (orderId: string, execution: {
     areaExecuted: number;
+    samplesExecuted?: number;
+    samplesTotal?: number;
+    splits?: OrderExecutionSplit[];
+    appliedProducts?: Array<{ id?: string; name: string; quantity?: number; unit?: string }>;
     notes?: string;
     collaboratorName?: string;
     collaborators?: string[];
@@ -440,19 +483,29 @@ export const useOrders = () => {
       if (!order) return;
 
       const totalArea = parseFloat(order.area) || 0;
-      const previousExecuted = order.executedArea || 0;
-      const newExecutedArea = Math.min(totalArea, previousExecuted + execution.areaExecuted);
+      const previousExecutedArea = order.executedArea || 0;
+      const newExecutedArea = Math.min(totalArea, previousExecutedArea + execution.areaExecuted);
       const percentage = totalArea > 0 ? (newExecutedArea / totalArea) * 100 : 100;
+
+      const previousExecutedSamples = order.executedSamples || 0;
+      const stepSamples = execution.samplesExecuted || 0;
+      const newExecutedSamples = previousExecutedSamples + stepSamples;
+      const totalSamples = execution.samplesTotal || order.totalSamples || 0;
 
       const collabs = execution.collaborators || (execution.collaboratorName ? [execution.collaboratorName] : []);
       const equips = execution.equipmentNames || [];
+      const splits = execution.splits || [];
 
-      const newExecution: any = {
+      const newExecution: OrderExecution = {
         id: generateUUID(),
         date: getLocalDateISO(),
         areaExecuted: execution.areaExecuted,
         hectares: execution.areaExecuted,
         percentage: Math.round(percentage * 100) / 100,
+        samplesExecuted: stepSamples > 0 ? stepSamples : undefined,
+        samplesTotal: totalSamples > 0 ? totalSamples : undefined,
+        splits: splits.length > 0 ? splits : undefined,
+        appliedProducts: execution.appliedProducts,
         notes: execution.notes,
         collaboratorName: collabs.join(', ') || execution.collaboratorName,
         collaborators: collabs,
@@ -470,22 +523,51 @@ export const useOrders = () => {
         newStatus = "Em Andamento";
       }
 
+      // Detalhamento para os logs
       const teamStr = collabs.length > 0 ? collabs.join(', ') : (execution.collaboratorName || 'Não informado');
       const equipStr = equips.length > 0 ? equips.join(', ') : 'Padrão';
-      const execLog = createLogEntry("Execução", `Execução de ${execution.areaExecuted} ha registrada (${percentage.toFixed(1)}% concluído). Equipe: ${teamStr}. Equipamentos: ${equipStr}. Obs: ${execution.notes || 'Sem observações'}`);
+      const sampleStr = stepSamples > 0 ? ` • ${stepSamples}/${totalSamples} análises realizadas` : '';
+      
+      let splitStr = '';
+      if (splits.length > 0) {
+        splitStr = ' • Rateio: ' + splits.map(s => 
+          `${s.collaboratorName} (${s.equipmentName || 'Máq'}): ${s.quantity ? s.quantity + ' ' + (s.unit || 'Ton') + ' de ' : ''}${s.productName || 'Aplicação'} em ${s.areaHa} ha`
+        ).join('; ');
+      }
+
+      const execLog = createLogEntry("Execução", `Execução de ${execution.areaExecuted} ha registrada (${percentage.toFixed(1)}% da área). Equipe: ${teamStr}.${sampleStr}${splitStr}. Obs: ${execution.notes || 'Sem observações'}`);
       const updatedLogs = [...(order.logs || []), execLog];
 
       await updateOrder({
         ...order,
         executions: updatedExecutions,
         executedArea: newExecutedArea,
+        executedSamples: newExecutedSamples,
+        totalSamples: totalSamples > 0 ? totalSamples : order.totalSamples,
         status: newStatus,
         logs: updatedLogs
       });
 
+      // Dispara persistência de splits em paralelo no endpoint de execuções do backend
+      if (splits.length > 0) {
+        Promise.all(splits.map(sp => 
+          api.post(`/orders/${order.id}/executions`, {
+            operator_name: sp.collaboratorName,
+            equipment_name: sp.equipmentName,
+            area_ha: sp.areaHa,
+            product_name: sp.productName,
+            quantity: sp.quantity,
+            unit: sp.unit,
+            plot_name: sp.plotName,
+            execution_date: getLocalDateISO(),
+            notes: `${sp.productName || 'Produto'}: ${sp.quantity || ''} ${sp.unit || ''} em ${sp.areaHa} ha (${sp.plotName || 'Talhão'})`
+          }).catch(err => console.warn("Erro ao persistir split no backend:", err))
+        ));
+      }
+
       toast({
-        title: "Execução registrada",
-        description: `Área executada: ${execution.areaExecuted} ha (Total: ${newExecutedArea}/${totalArea} ha - ${percentage.toFixed(1)}%)`,
+        title: "Execução registrada com sucesso",
+        description: `Área: ${execution.areaExecuted} ha (${newExecutedArea}/${totalArea} ha)${stepSamples > 0 ? ` • Análises: +${stepSamples} (${newExecutedSamples}/${totalSamples})` : ''}`,
       });
     } catch (err: any) {
       toast({
@@ -496,10 +578,16 @@ export const useOrders = () => {
     }
   };
 
-  // Lifecycle action: Agendar Visita / Etapa
+  // Lifecycle action: Agendar Visita / Etapa (com suporte a talhão e ciclos do Equaliza)
   const addSchedule = async (orderId: string, schedule: {
     scheduledDate: string;
     description: string;
+    plotName?: string;
+    plotId?: string;
+    plotNames?: string[];
+    yearCycle?: number;
+    cycleLabel?: string;
+    stageName?: string;
     collaborators?: string[];
     equipmentNames?: string[];
   }) => {
@@ -510,12 +598,18 @@ export const useOrders = () => {
       const collabs = schedule.collaborators || [];
       const equips = schedule.equipmentNames || [];
 
-      const newSchedule: any = {
+      const newSchedule: OrderSchedule = {
         id: generateUUID(),
         scheduledDate: schedule.scheduledDate,
         date: schedule.scheduledDate,
         description: schedule.description,
         notes: schedule.description,
+        plotName: schedule.plotName || (schedule.plotNames && schedule.plotNames.join(', ')),
+        plotId: schedule.plotId,
+        plotNames: schedule.plotNames,
+        yearCycle: schedule.yearCycle,
+        cycleLabel: schedule.cycleLabel,
+        stageName: schedule.stageName,
         collaborators: collabs,
         collaborator: collabs.join(', '),
         equipmentNames: equips,
@@ -526,9 +620,11 @@ export const useOrders = () => {
 
       const updatedSchedules = [...order.schedules, newSchedule];
 
+      const plotStr = newSchedule.plotName ? ` • Talhão: ${newSchedule.plotName}` : '';
+      const cycleStr = newSchedule.cycleLabel ? ` • Ciclo: ${newSchedule.cycleLabel}` : '';
       const teamStr = collabs.length > 0 ? ` • Equipe: ${collabs.join(', ')}` : '';
       const equipStr = equips.length > 0 ? ` • Equip: ${equips.join(', ')}` : '';
-      const schedLog = createLogEntry("Agendamento", `Serviço agendado para ${schedule.scheduledDate}. Detalhes: ${schedule.description}${teamStr}${equipStr}`);
+      const schedLog = createLogEntry("Agendamento", `Serviço agendado para ${schedule.scheduledDate}. Detalhes: ${schedule.description}${plotStr}${cycleStr}${teamStr}${equipStr}`);
       const updatedLogs = [...(order.logs || []), schedLog];
 
       // Optimistic update in local state for immediate UI feedback

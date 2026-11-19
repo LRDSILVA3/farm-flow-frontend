@@ -48,6 +48,10 @@ interface OperatorEquipmentSplit {
   id: string;
   collaboratorName: string;
   equipmentName: string;
+  productName?: string;
+  plotName?: string;
+  quantity?: number;
+  unit?: string;
   areaHa: number;
 }
 
@@ -231,6 +235,10 @@ export const SchedulePage = () => {
   const [executionSplits, setExecutionSplits] = useState<OperatorEquipmentSplit[]>([]);
   const [splitOperator, setSplitOperator] = useState("");
   const [splitEquipment, setSplitEquipment] = useState("");
+  const [splitProduct, setSplitProduct] = useState("");
+  const [splitQuantity, setSplitQuantity] = useState("");
+  const [splitUnit, setSplitUnit] = useState("Ton");
+  const [splitPlot, setSplitPlot] = useState("");
   const [splitArea, setSplitArea] = useState("");
 
   // Form State: Conclusão Financeira
@@ -419,17 +427,21 @@ export const SchedulePage = () => {
     setExecutionSplits([]);
     setSplitOperator(execution.collaborators[0] || "");
     setSplitEquipment(execution.equipmentNames[0] || "");
+    setSplitProduct("");
+    setSplitQuantity("");
+    setSplitPlot("");
     setSplitArea("");
     setIsExecutionModalOpen(true);
   };
 
-  // Adicionar linha de rateio (Operador + Máquina = Área ha)
+  // Adicionar linha de rateio (Operador + Máquina + Produto + Qtd + Área ha)
   const handleAddSplit = () => {
-    const areaNum = parseFloat(splitArea);
-    if (!splitOperator || !splitEquipment || isNaN(areaNum) || areaNum <= 0) {
+    const areaNum = parseFloat(splitArea) || 0;
+    const qtdNum = parseFloat(splitQuantity) || 0;
+    if (!splitOperator || !splitEquipment || (areaNum <= 0 && qtdNum <= 0)) {
       toast({
         title: "Dados incompletos no rateio",
-        description: "Selecione o operador, equipamento e informe a área em hectares.",
+        description: "Selecione o operador, equipamento e informe a quantidade ou área.",
         variant: "destructive"
       });
       return;
@@ -439,6 +451,10 @@ export const SchedulePage = () => {
       id: Date.now().toString(),
       collaboratorName: splitOperator,
       equipmentName: splitEquipment,
+      productName: splitProduct || undefined,
+      plotName: splitPlot || undefined,
+      quantity: qtdNum > 0 ? qtdNum : undefined,
+      unit: splitUnit,
       areaHa: areaNum
     };
 
@@ -447,13 +463,16 @@ export const SchedulePage = () => {
 
     // Soma automaticamente a área dos rateios
     const totalSplitArea = updatedSplits.reduce((sum, s) => sum + s.areaHa, 0);
-    setPartialExecutionForm(prev => ({
-      ...prev,
-      executedArea: totalSplitArea.toFixed(2),
-      collaborators: Array.from(new Set([...prev.collaborators, splitOperator])),
-      equipmentNames: Array.from(new Set([...prev.equipmentNames, splitEquipment]))
-    }));
+    if (totalSplitArea > 0) {
+      setPartialExecutionForm(prev => ({
+        ...prev,
+        executedArea: totalSplitArea.toFixed(2),
+        collaborators: Array.from(new Set([...prev.collaborators, splitOperator])),
+        equipmentNames: Array.from(new Set([...prev.equipmentNames, splitEquipment]))
+      }));
+    }
 
+    setSplitQuantity("");
     setSplitArea("");
   };
 
@@ -518,8 +537,12 @@ export const SchedulePage = () => {
             operator_name: s.collaboratorName,
             equipment_name: s.equipmentName,
             area_ha: s.areaHa,
+            product_name: s.productName,
+            quantity: s.quantity,
+            unit: s.unit,
+            plot_name: s.plotName,
             execution_date: partialExecutionForm.date,
-            notes: partialExecutionForm.notes
+            notes: `${s.productName || 'Aplicação'}: ${s.quantity ? s.quantity + ' ' + (s.unit || 'Ton') : ''} em ${s.areaHa} ha (${s.plotName || 'Talhão'})`
           }).catch(err => console.warn('Erro ao salvar split no backend:', err))
         ));
       } else {
@@ -1403,7 +1426,7 @@ export const SchedulePage = () => {
                     <span className="text-[11px] text-muted-foreground">Opcional, porém recomendado para relatórios</span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 items-end">
                     <div>
                       <Label className="text-[11px]">Operador</Label>
                       <Select value={splitOperator} onValueChange={setSplitOperator}>
@@ -1428,6 +1451,50 @@ export const SchedulePage = () => {
                       </Select>
                     </div>
 
+                    <div>
+                      <Label className="text-[11px]">Produto Aplicado</Label>
+                      <Input
+                        placeholder="Ex: Calcário, Gesso..."
+                        value={splitProduct}
+                        onChange={(e) => setSplitProduct(e.target.value)}
+                        className="h-8 text-xs bg-background"
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="text-[11px]">Qtd Aplicada</Label>
+                      <div className="flex gap-1">
+                        <Input
+                          type="number"
+                          step="any"
+                          placeholder="Ex: 18"
+                          value={splitQuantity}
+                          onChange={(e) => setSplitQuantity(e.target.value)}
+                          className="h-8 text-xs bg-background"
+                        />
+                        <Select value={splitUnit} onValueChange={setSplitUnit}>
+                          <SelectTrigger className="h-8 text-xs w-16 bg-background shrink-0">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Ton">Ton</SelectItem>
+                            <SelectItem value="Kg">Kg</SelectItem>
+                            <SelectItem value="L">L</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-[11px]">Talhão</Label>
+                      <Input
+                        placeholder="Ex: Talhão 01"
+                        value={splitPlot}
+                        onChange={(e) => setSplitPlot(e.target.value)}
+                        className="h-8 text-xs bg-background"
+                      />
+                    </div>
+
                     <div className="flex gap-1.5">
                       <div className="flex-1">
                         <Label className="text-[11px]">Área (ha)</Label>
@@ -1442,7 +1509,7 @@ export const SchedulePage = () => {
                         type="button"
                         size="sm"
                         onClick={handleAddSplit}
-                        className="h-8 text-xs mt-auto bg-primary"
+                        className="h-8 text-xs mt-auto bg-primary shrink-0"
                       >
                         + Adicionar
                       </Button>
@@ -1455,7 +1522,10 @@ export const SchedulePage = () => {
                       {executionSplits.map((sp) => (
                         <div key={sp.id} className="flex items-center justify-between p-2 bg-background border rounded text-xs">
                           <div>
-                            <strong>{sp.collaboratorName}</strong> operando <strong>{sp.equipmentName}</strong>:{" "}
+                            <strong>{sp.collaboratorName}</strong> ({sp.equipmentName}):{" "}
+                            {sp.quantity ? `${sp.quantity} ${sp.unit} de ` : ''}
+                            <strong>{sp.productName || 'Aplicação'}</strong>
+                            {sp.plotName ? ` • ${sp.plotName}` : ''} em{" "}
                             <span className="font-semibold text-emerald-600">{sp.areaHa.toFixed(2)} ha</span>
                           </div>
                           <button

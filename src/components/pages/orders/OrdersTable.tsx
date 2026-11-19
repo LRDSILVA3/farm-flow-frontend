@@ -386,11 +386,31 @@ export const OrdersTable = ({
                 const executedArea = order.executedArea || 0;
                 const percentExec = totalArea > 0 ? Math.min(100, (executedArea / totalArea) * 100) : 0;
 
+                // Análises Contratadas e Realizadas (Pilar 2)
+                const totalSamples = order.totalSamples || (
+                  Array.isArray(order.productsData)
+                    ? order.productsData
+                        .filter((p: any) =>
+                          ['analises_completa', 'analises_macro', 'analises_macro_prem', 'analises_20_40', 'analise_fisica', 'analise_foliar', 'pontos', 'analises_inclusas'].includes(p.id) ||
+                          p.unit === 'PTOS' ||
+                          (p.name && /análise|analise|ponto/i.test(p.name))
+                        )
+                        .reduce((sum: number, p: any) => sum + (Number(p.quantity) || 0), 0)
+                    : 0
+                );
+                const execSamples = order.executedSamples || (order.executions || []).reduce((sum, e) => sum + (Number(e.samplesExecuted) || 0), 0);
+                const plotNames = order.plots && Array.isArray(order.plots) && order.plots.length > 0
+                  ? order.plots.map((p: any) => p.name).join(', ')
+                  : null;
+
                 return (
                   <TableRow key={order.id} className="hover:bg-muted/40">
                     <TableCell className="px-2.5 py-3">
                       <div className="font-medium text-foreground leading-tight">{getClientName(order)}</div>
-                      <div className="text-xs text-muted-foreground leading-tight mt-0.5">{getFarmName(order)}</div>
+                      <div className="text-xs text-muted-foreground leading-tight mt-0.5">
+                        {getFarmName(order)}
+                        {plotNames && <span className="text-primary font-normal block text-[10px]">📍 {plotNames}</span>}
+                      </div>
                     </TableCell>
 
                     <TableCell className="px-2.5 py-3">
@@ -404,7 +424,7 @@ export const OrdersTable = ({
                     </TableCell>
 
                     <TableCell className="px-2.5 py-3">
-                      <div className="w-28 space-y-1">
+                      <div className="w-32 space-y-1">
                         <div className="flex justify-between text-[11px] gap-1">
                           <span className="font-semibold text-xs">{percentExec.toFixed(0)}%</span>
                           <span className="text-muted-foreground text-[10px] whitespace-nowrap">
@@ -420,6 +440,12 @@ export const OrdersTable = ({
                             style={{ width: percentExec + '%' }}
                           />
                         </div>
+                        {totalSamples > 0 && (
+                          <div className="text-[10px] text-emerald-800 font-medium flex justify-between items-center pt-0.5">
+                            <span>🧪 Análises:</span>
+                            <span className="font-bold">{execSamples}/{totalSamples}</span>
+                          </div>
+                        )}
                       </div>
                     </TableCell>
 
