@@ -691,7 +691,7 @@ export const OrderPrintDialog: React.FC<OrderPrintDialogProps> = ({
                       <div className="font-bold text-gray-900">{sch.cycleLabel || ('Safra ' + (sIdx + 1))}</div>
                       <div className="flex justify-between text-gray-700 mt-0.5">
                         <span>Venc: {formatDateBR(sch.dueDate)}</span>
-                        <span className="font-bold text-emerald-800">{formatCurrency(Number(sch.amount))}</span>
+                        <span className="font-bold text-emerald-800">{formatBRL(Number(sch.amount))}</span>
                       </div>
                       <div className="text-[9px] text-gray-500 italic mt-0.5">Status: {sch.status || 'Pendente'}</div>
                     </div>
