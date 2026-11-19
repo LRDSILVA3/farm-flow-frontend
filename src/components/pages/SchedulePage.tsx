@@ -1194,10 +1194,29 @@ export const SchedulePage = () => {
                               {execution.city} / {execution.state || "PR"}
                             </div>
                           )}
+                          {Array.isArray(execution.rawOrder?.plots) && execution.rawOrder.plots.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {execution.rawOrder.plots.map((plot: string, pIdx: number) => (
+                                <Badge key={pIdx} variant="outline" className="text-[10px] py-0 px-1 text-emerald-700 bg-emerald-50/60 border-emerald-200">
+                                  📍 {plot}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
                         </TableCell>
 
                         <TableCell className="px-2.5 py-3 font-medium text-xs max-w-[150px]">
-                          {execution.serviceName}
+                          <div>{execution.serviceName}</div>
+                          {Array.isArray(execution.rawOrder?.schedules) && execution.rawOrder.schedules.length > 1 && (
+                            <div className="text-[10px] text-indigo-600 font-semibold mt-0.5 flex items-center gap-1">
+                              <span>📅</span> {execution.rawOrder.schedules.length} visitas
+                            </div>
+                          )}
+                          {Array.isArray(execution.rawOrder?.payment_schedules) && execution.rawOrder.payment_schedules.length > 0 && (
+                            <div className="text-[10px] text-amber-700 font-semibold mt-0.5 flex items-center gap-1">
+                              <span>🌾</span> {execution.rawOrder.payment_schedules.filter((s: any) => s.status === 'Pago').length}/{execution.rawOrder.payment_schedules.length} safras
+                            </div>
+                          )}
                         </TableCell>
 
                         {/* Coluna de Progresso em Hectares */}

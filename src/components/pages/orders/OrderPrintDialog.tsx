@@ -578,7 +578,17 @@ export const OrderPrintDialog: React.FC<OrderPrintDialogProps> = ({
 
             {/* 4. DADOS DA ÁREA / FAZENDA */}
             <div className="border border-black p-2 space-y-1">
-              <div>Nome da area......: <span className="font-semibold">{farm?.name || 'Fazenda Principal'}</span></div>
+              <div className="flex justify-between items-center">
+                <div>Nome da area......: <span className="font-semibold">{farm?.name || 'Fazenda Principal'}</span></div>
+                {((Array.isArray(order.plots) && order.plots.length > 0) || order.plotName) && (
+                  <div className="text-right text-[11px]">
+                    <span className="font-semibold">Talhões: </span>
+                    <span className="font-normal text-emerald-800">
+                      {Array.isArray(order.plots) && order.plots.length > 0 ? order.plots.join(', ') : order.plotName}
+                    </span>
+                  </div>
+                )}
+              </div>
               <div>Data Prov. Coleta..: <span className="font-normal">{todayStr}</span></div>
               <div className="grid grid-cols-3 gap-2 items-center">
                 <div className="flex items-center gap-1">
@@ -667,6 +677,28 @@ export const OrderPrintDialog: React.FC<OrderPrintDialogProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* CRONOGRAMA DE SAFRAS E PARCELAMENTO PROGRAMADO (CONTRATOS PLURIANUAIS) */}
+            {Array.isArray(order.paymentSchedules) && order.paymentSchedules.length > 0 && (
+              <div className="border border-black p-2 bg-gray-50/70 space-y-1.5">
+                <div className="flex justify-between items-center text-[11px] font-bold text-slate-900 border-b border-gray-300 pb-1">
+                  <span>CRONOGRAMA DE SAFRAS / PARCELAS PROGRAMADAS</span>
+                  <span className="text-[10px] text-gray-600 font-normal">{order.paymentSchedules.length} Safras Contratadas</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-0.5">
+                  {order.paymentSchedules.map((sch, sIdx) => (
+                    <div key={sch.id || sIdx} className="border border-gray-400 p-1.5 rounded bg-white text-[10px]">
+                      <div className="font-bold text-gray-900">{sch.cycleLabel || ('Safra ' + (sIdx + 1))}</div>
+                      <div className="flex justify-between text-gray-700 mt-0.5">
+                        <span>Venc: {formatDateBR(sch.dueDate)}</span>
+                        <span className="font-bold text-emerald-800">{formatCurrency(Number(sch.amount))}</span>
+                      </div>
+                      <div className="text-[9px] text-gray-500 italic mt-0.5">Status: {sch.status || 'Pendente'}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* 6. TABELA DE DISCRIMINAÇÃO E VALORES */}
             <div className="border border-black">

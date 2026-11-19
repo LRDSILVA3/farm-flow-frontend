@@ -26,6 +26,7 @@ import {
   Calendar
 } from "lucide-react";
 import { useOrders, Order } from "@/hooks/useOrders";
+import { OrderPaymentDialog } from "./orders/OrderPaymentDialog";
 import { FinancialTransactionsTab } from "./financial/FinancialTransactionsTab";
 import { api } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
@@ -393,7 +394,19 @@ const FinancialPage = () => {
                               {order.client?.name || "Cliente"}
                             </TableCell>
                             <TableCell className="text-slate-700">{order.farm?.name || "Fazenda"}</TableCell>
-                            <TableCell className="text-slate-700">{order.serviceName || order.type}</TableCell>
+                            <TableCell className="text-slate-700">
+                              <div className="font-medium">{order.serviceName || order.type}</div>
+                              {Array.isArray(order.paymentSchedules) && order.paymentSchedules.length > 0 && (
+                                <div className="text-[10px] text-amber-700 font-semibold mt-0.5">
+                                  🌾 {order.paymentSchedules.filter((s: any) => s.status === 'Pago').length}/{order.paymentSchedules.length} safras quitadas
+                                </div>
+                              )}
+                              {Array.isArray(order.plots) && order.plots.length > 0 && (
+                                <div className="text-[10px] text-muted-foreground mt-0.5">
+                                  📍 {order.plots.join(', ')}
+                                </div>
+                              )}
+                            </TableCell>
                             <TableCell className="text-right font-medium text-slate-900">
                               {formatBRL(total)}
                             </TableCell>
@@ -430,7 +443,7 @@ const FinancialPage = () => {
                                 <Button
                                   size="sm"
                                   className="h-8 px-3 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
-                                  onClick={() => handleOpenBaixa(order)}
+                                  onClick={() => (order.paymentSchedules && order.paymentSchedules.length > 0) ? setSelectedOrderForFullPay(order) : handleOpenBaixa(order)}
                                 >
                                   <DollarSign className="h-3.5 w-3.5 mr-1" /> Dar Baixa
                                 </Button>
@@ -640,6 +653,29 @@ const FinancialPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Modal Completo de Gestão Financeira por Safras */}
+      <OrderPaymentDialog
+        order={selectedOrderForFullPay}
+        open={!!selectedOrderForFullPay}
+        onOpenChange={(op) => !op && setSelectedOrderForFullPay(null)}
+        onRecordPayment={async (orderId, paymentData) => {
+          if (!selectedOrderForFullPay) return;
+          const currentPayments = Array.isArray(selectedOrderForFullPay.payments) ? selectedOrderForFullPay.payments : [];
+          const updatedPayments = [...currentPayments, paymentData];
+          const totalPaid = updatedPayments.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
+          const totalAmount = selectedOrderForFullPay.totalAmount || 0;
+          const newStatus = totalPaid >= totalAmount ? 'Pago' : (totalPaid > 0 ? 'Parcial' : 'Pendente');
+          await updateOrder(orderId, {
+            ...selectedOrderForFullPay,
+            payments: updatedPayments,
+            paidAmount: totalPaid,
+            payment: newStatus
+          });
+          setSelectedOrderForFullPay(null);
+        }}
+        onSavePaymentSchedules={savePaymentSchedules}
+        onPayScheduledInstallment={payScheduledInstallment}
+      />
     </div>
   );
 };
