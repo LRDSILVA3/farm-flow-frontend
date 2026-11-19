@@ -584,7 +584,9 @@ export const OrderPrintDialog: React.FC<OrderPrintDialogProps> = ({
                   <div className="text-right text-[11px]">
                     <span className="font-semibold">Talhões: </span>
                     <span className="font-normal text-emerald-800">
-                      {Array.isArray(order.plots) && order.plots.length > 0 ? order.plots.join(', ') : order.plotName}
+                      {Array.isArray(order.plots) && order.plots.length > 0 
+      ? order.plots.map((p: any) => typeof p === 'string' ? p : (p?.name || p?.id || 'Talhão')).join(', ') 
+      : (order.plotName || '-')}
                     </span>
                   </div>
                 )}

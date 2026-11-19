@@ -403,7 +403,7 @@ const FinancialPage = () => {
                               )}
                               {Array.isArray(order.plots) && order.plots.length > 0 && (
                                 <div className="text-[10px] text-muted-foreground mt-0.5">
-                                  📍 {order.plots.join(', ')}
+                                  📍 {order.plots.map((p: any) => typeof p === 'string' ? p : (p?.name || p?.id || 'Talhão')).join(', ')}
                                 </div>
                               )}
                             </TableCell>

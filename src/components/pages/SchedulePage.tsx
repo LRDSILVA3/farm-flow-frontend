@@ -1198,7 +1198,7 @@ export const SchedulePage = () => {
                             <div className="flex flex-wrap gap-1 mt-1">
                               {execution.rawOrder.plots.map((plot: string, pIdx: number) => (
                                 <Badge key={pIdx} variant="outline" className="text-[10px] py-0 px-1 text-emerald-700 bg-emerald-50/60 border-emerald-200">
-                                  📍 {plot}
+                                  📍 {typeof plot === 'string' ? plot : ((plot as any)?.name || (plot as any)?.id || 'Talhão')}
                                 </Badge>
                               ))}
                             </div>
