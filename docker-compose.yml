@@ -7,3 +7,9 @@ services:
     ports:
       - '3000:80'
     restart: unless-stopped
+    networks:
+      - farm-flow-backend_default
+
+networks:
+  farm-flow-backend_default:
+    external: true
