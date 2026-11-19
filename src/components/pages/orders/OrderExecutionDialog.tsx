@@ -219,6 +219,19 @@ export const OrderExecutionDialog: React.FC<OrderExecutionDialogProps> = ({
     }
   }, [collaboratorsList, equipmentList, availableOrderProducts, availablePlots, splitOperator, splitEquipment, splitProduct, splitPlot]);
 
+  // Subtotais de rateio por produto (Hook declarado no topo para respeitar as regras do React)
+  const splitProductTotals = useMemo(() => {
+    const map = new Map<string, { totalQty: number; unit: string; totalArea: number }>();
+    splits.forEach(s => {
+      const prod = s.productName || 'Produto';
+      const cur = map.get(prod) || { totalQty: 0, unit: s.unit || 'Ton', totalArea: 0 };
+      cur.totalQty += s.quantity || 0;
+      cur.totalArea += s.areaHa || 0;
+      map.set(prod, cur);
+    });
+    return Array.from(map.entries());
+  }, [splits]);
+
   if (!order) return null;
 
   const totalArea = parseFloat(order.area) || 0;
@@ -289,19 +302,6 @@ export const OrderExecutionDialog: React.FC<OrderExecutionDialogProps> = ({
       setPartialArea(totalSplitsArea.toFixed(2));
     }
   };
-
-  // Subtotais de rateio por produto
-  const splitProductTotals = useMemo(() => {
-    const map = new Map<string, { totalQty: number; unit: string; totalArea: number }>();
-    splits.forEach(s => {
-      const prod = s.productName || 'Produto';
-      const cur = map.get(prod) || { totalQty: 0, unit: s.unit || 'Ton', totalArea: 0 };
-      cur.totalQty += s.quantity || 0;
-      cur.totalArea += s.areaHa || 0;
-      map.set(prod, cur);
-    });
-    return Array.from(map.entries());
-  }, [splits]);
 
   const handleConfirm = async () => {
     let areaToExecute = 0;
