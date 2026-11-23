@@ -18,7 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Order, OrderExecutionSplit, OrderPlotExecution } from '@/hooks/useOrders';
-import { Play, CheckCircle2, History, Users, Wrench, X, FlaskConical, Tractor, Plus, Trash2, MapPin } from 'lucide-react';
+import { Play, CheckCircle2, History, Users, Wrench, X, FlaskConical, Tractor, Plus, Trash2, MapPin, AlertCircle } from 'lucide-react';
 import { api } from '@/services/api';
 
 interface OrderExecutionDialogProps {
@@ -506,6 +506,7 @@ export const OrderExecutionDialog: React.FC<OrderExecutionDialogProps> = ({
   };
 
   const handleConfirm = async () => {
+    if (order.status === 'Pendente') return;
     let areaToExecute = 0;
     if (executionType === 'total') {
       areaToExecute = remainingArea;
@@ -592,6 +593,15 @@ export const OrderExecutionDialog: React.FC<OrderExecutionDialogProps> = ({
         </DialogHeader>
 
         <div className="space-y-4 py-2">
+          {order.status === 'Pendente' && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-900 text-xs flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+              <span>
+                <strong>Aprovação Pendente:</strong> Este pedido ainda não foi aprovado. Não é permitido registrar execuções em campo enquanto o pedido estiver aguardando aprovação.
+              </span>
+            </div>
+          )}
+
           {/* Summary Box */}
           <div className="p-3 border rounded-md bg-muted/30 space-y-2 text-xs">
             <div className="flex justify-between">
@@ -1213,12 +1223,13 @@ export const OrderExecutionDialog: React.FC<OrderExecutionDialogProps> = ({
               onClick={handleConfirm}
               disabled={
                 submitting ||
+                order.status === 'Pendente' ||
                 (executionType === 'partial' &&
                   (!partialArea || parseFloat(partialArea) <= 0) &&
                   (!stepSamples || parseInt(stepSamples, 10) <= 0))
               }
             >
-              Confirmar Execução
+              {order.status === 'Pendente' ? 'Bloqueado: Pedido Aguardando Aprovação' : 'Confirmar Execução'}
             </Button>
           )}
         </DialogFooter>

@@ -8,11 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Edit, Search, Plus, Trash2, Layers, CheckCircle2, Download } from "lucide-react";
+import { Edit, Search, Plus, Trash2, Layers, CheckCircle2, Download, Tag, X, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/api";
 import { getLocalDateISO } from "@/lib/utils";
 import { ImportOrderAnalysesDialog } from "./analyses/ImportOrderAnalysesDialog";
+import { SampleLabelsDialog } from "./analyses/SampleLabelsDialog";
 
 interface AnalysisExecution {
   id: string;
@@ -32,6 +33,7 @@ interface AnalysisExecution {
   sendDate: string;
   receiptDate: string;
   completionDate: string;
+  rawResults?: Record<string, any>;
 }
 
 const STANDARD_ANALYSIS_TYPES = [
@@ -60,11 +62,17 @@ const AnalisesPrincipalPage = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [collaboratorFilter, setCollaboratorFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkStatus, setBulkStatus] = useState<AnalysisExecution["status"]>("Recebido");
+  const [bulkDate, setBulkDate] = useState<string>(getLocalDateISO());
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
   const [analysesPage, setAnalysesPage] = useState(1);
   const [analysesPerPage, setAnalysesPerPage] = useState(10);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showLabelsModal, setShowLabelsModal] = useState(false);
   const [editingAnalysis, setEditingAnalysis] = useState<AnalysisExecution | null>(null);
 
   // Estado para lote de análises
@@ -105,6 +113,14 @@ const AnalisesPrincipalPage = () => {
 
   useEffect(() => {
     fetchData();
+
+    const handleAnalysesUpdate = () => {
+      fetchData();
+    };
+    window.addEventListener("farmflow-analyses-updated", handleAnalysesUpdate);
+    return () => {
+      window.removeEventListener("farmflow-analyses-updated", handleAnalysesUpdate);
+    };
   }, []);
 
   const fetchData = async () => {
@@ -133,7 +149,8 @@ const AnalisesPrincipalPage = () => {
         status: a.status || "Pendente",
         sendDate: a.date || a.send_date || "",
         receiptDate: (a.results && a.results.receiptDate) || a.receipt_date || "",
-        completionDate: (a.results && a.results.completionDate) || a.completion_date || ""
+        completionDate: (a.results && a.results.completionDate) || a.completion_date || "",
+        rawResults: a.results && typeof a.results === "object" ? a.results : {},
       }));
 
       setAnalyses(mapped);
@@ -158,7 +175,8 @@ const AnalisesPrincipalPage = () => {
       (analysis.analysisName || "").toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesCollab = !collaboratorFilter || analysis.collaborator === collaboratorFilter;
-    return matchesSearch && matchesCollab;
+    const matchesStatus = !statusFilter || analysis.status === statusFilter;
+    return matchesSearch && matchesCollab && matchesStatus;
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredAnalyses.length / analysesPerPage));
@@ -284,6 +302,78 @@ const AnalisesPrincipalPage = () => {
     }
   };
 
+  const toggleSelectId = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const allCurrentSelected =
+    currentAnalyses.length > 0 && currentAnalyses.every((a) => selectedIds.includes(a.id));
+
+  const toggleSelectAllCurrent = () => {
+    if (allCurrentSelected) {
+      const currentSet = new Set(currentAnalyses.map((a) => a.id));
+      setSelectedIds((prev) => prev.filter((id) => !currentSet.has(id)));
+    } else {
+      setSelectedIds((prev) => Array.from(new Set([...prev, ...currentAnalyses.map((a) => a.id)])));
+    }
+  };
+
+  const handleBulkStatusUpdate = async () => {
+    if (selectedIds.length === 0) return;
+    const targets = analyses.filter((a) => selectedIds.includes(a.id));
+    if (targets.length === 0) return;
+
+    try {
+      setIsBulkUpdating(true);
+      await Promise.all(
+        targets.map((item) => {
+          const nextSendDate =
+            bulkStatus === "Enviado" && bulkDate ? bulkDate : item.sendDate;
+          const nextReceiptDate =
+            bulkStatus === "Recebido" && bulkDate ? bulkDate : item.receiptDate;
+          const nextCompletionDate =
+            bulkStatus === "Finalizado" && bulkDate ? bulkDate : item.completionDate;
+
+          return api.put(`/analyses/${item.id}`, {
+            type: item.analysisName,
+            farm_id: item.farmId || null,
+            plot_id: item.plotId || null,
+            status: bulkStatus,
+            date: nextSendDate || null,
+            results: {
+              ...(item.rawResults || {}),
+              collaborator: item.collaborator,
+              quantity: item.quantity,
+              clientName: item.clientName,
+              farmName: item.farmName,
+              plotName: item.plotName,
+              receiptDate: nextReceiptDate,
+              completionDate: nextCompletionDate,
+            },
+          });
+        })
+      );
+
+      toast({
+        title: "Status atualizado em lote!",
+        description: `${targets.length} análise(s) atualizada(s) para "${bulkStatus}".`,
+      });
+      setSelectedIds([]);
+      await fetchData();
+      window.dispatchEvent(new CustomEvent("farmflow-analyses-updated"));
+    } catch (error: any) {
+      toast({
+        title: "Erro ao atualizar status em lote",
+        description: error.message || "Falha ao salvar alterações.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsBulkUpdating(false);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     try {
       await api.delete(`/analyses/${id}`);
@@ -321,6 +411,14 @@ const AnalisesPrincipalPage = () => {
         <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
+            className="border-indigo-600 text-indigo-700 hover:bg-indigo-50 shadow-sm gap-2"
+            onClick={() => setShowLabelsModal(true)}
+          >
+            <Tag className="h-4 w-4" />
+            Emitir Etiquetas (TrackMaker CSV)
+          </Button>
+          <Button
+            variant="outline"
             className="border-emerald-600 text-emerald-700 hover:bg-emerald-50 shadow-sm gap-2"
             onClick={() => setShowImportModal(true)}
           >
@@ -340,18 +438,18 @@ const AnalisesPrincipalPage = () => {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Filtros e Busca</CardTitle>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
             <div className="relative">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar por cliente, fazenda, análise ou laboratório..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => { setSearchTerm(e.target.value); setAnalysesPage(1); }}
                 className="pl-9"
               />
             </div>
             <div>
-              <Select value={collaboratorFilter} onValueChange={(val) => setCollaboratorFilter(val === "all" ? "" : val)}>
+              <Select value={collaboratorFilter || "all"} onValueChange={(val) => { setCollaboratorFilter(val === "all" ? "" : val); setAnalysesPage(1); }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filtrar por Laboratório" />
                 </SelectTrigger>
@@ -363,18 +461,116 @@ const AnalisesPrincipalPage = () => {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Select value={statusFilter || "all"} onValueChange={(val) => { setStatusFilter(val === "all" ? "" : val); setAnalysesPage(1); }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrar por Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Status</SelectItem>
+                  <SelectItem value="Pendente">Pendente</SelectItem>
+                  <SelectItem value="Enviado">Enviado</SelectItem>
+                  <SelectItem value="Recebido">Recebido</SelectItem>
+                  <SelectItem value="Executando">Executando</SelectItem>
+                  <SelectItem value="Finalizado">Finalizado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
+          {/* Barra de Edição de Status em Lote */}
+          {selectedIds.length > 0 && (
+            <div className="mb-4 p-3 rounded-lg border border-indigo-200 bg-indigo-50/70 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge className="bg-indigo-600 text-white text-xs font-semibold">
+                  {selectedIds.length} {selectedIds.length === 1 ? "análise selecionada" : "análises selecionadas"}
+                </Badge>
+                <span className="text-xs text-indigo-900 font-medium">
+                  ({analyses.filter((a) => selectedIds.includes(a.id)).reduce((acc, a) => acc + (Number(a.quantity) || 0), 0)} pts no total)
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+                <Select
+                  value={bulkStatus}
+                  onValueChange={(val) => setBulkStatus(val as AnalysisExecution["status"])}
+                >
+                  <SelectTrigger className="h-8 w-full sm:w-40 text-xs bg-white">
+                    <SelectValue placeholder="Novo Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pendente">Pendente</SelectItem>
+                    <SelectItem value="Enviado">Enviado</SelectItem>
+                    <SelectItem value="Recebido">Recebido</SelectItem>
+                    <SelectItem value="Executando">Executando</SelectItem>
+                    <SelectItem value="Finalizado">Finalizado</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {(bulkStatus === "Enviado" || bulkStatus === "Recebido" || bulkStatus === "Finalizado") && (
+                  <Input
+                    type="date"
+                    value={bulkDate}
+                    onChange={(e) => setBulkDate(e.target.value)}
+                    className="h-8 w-full sm:w-36 text-xs bg-white"
+                    title={
+                      bulkStatus === "Enviado"
+                        ? "Data de Envio"
+                        : bulkStatus === "Recebido"
+                        ? "Data de Recebimento"
+                        : "Data de Conclusão"
+                    }
+                  />
+                )}
+
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleBulkStatusUpdate}
+                  disabled={isBulkUpdating}
+                  className="h-8 bg-indigo-600 hover:bg-indigo-700 text-white text-xs gap-1.5"
+                >
+                  {isBulkUpdating ? (
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                  )}
+                  <span>{isBulkUpdating ? "Atualizando..." : "Aplicar Status em Lote"}</span>
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedIds([])}
+                  className="h-8 px-2 text-xs text-slate-600 hover:text-slate-900"
+                  title="Limpar seleção"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div className="text-center py-8 text-muted-foreground">Carregando análises...</div>
           ) : filteredAnalyses.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">Nenhuma análise encontrada.</div>
           ) : (
-            <div className="rounded-md border overflow-hidden">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10 text-center">
+                      <input
+                        type="checkbox"
+                        checked={allCurrentSelected}
+                        onChange={toggleSelectAllCurrent}
+                        aria-label="Selecionar todas as análises da página"
+                        className="h-4 w-4 rounded border-gray-300 cursor-pointer accent-indigo-600"
+                      />
+                    </TableHead>
                     <TableHead>Tipo de Análise</TableHead>
                     <TableHead>Cliente / Fazenda</TableHead>
                     <TableHead>Laboratório</TableHead>
@@ -385,8 +581,19 @@ const AnalisesPrincipalPage = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {currentAnalyses.map((a) => (
-                    <TableRow key={a.id}>
+                  {currentAnalyses.map((a) => {
+                    const isSelected = selectedIds.includes(a.id);
+                    return (
+                    <TableRow key={a.id} className={isSelected ? "bg-indigo-50/40" : undefined}>
+                      <TableCell className="text-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelectId(a.id)}
+                          aria-label={`Selecionar análise ${a.analysisName}`}
+                          className="h-4 w-4 rounded border-gray-300 cursor-pointer accent-indigo-600"
+                        />
+                      </TableCell>
                       <TableCell className="font-semibold text-emerald-950">
                         <Badge variant="outline" className="bg-emerald-50 text-emerald-800 border-emerald-300 font-medium">
                           {a.analysisName}
@@ -437,7 +644,8 @@ const AnalisesPrincipalPage = () => {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -729,6 +937,10 @@ const AnalisesPrincipalPage = () => {
         existingAnalyses={analyses}
         laboratories={collaboratorsConfig}
         onImported={fetchData}
+      />
+      <SampleLabelsDialog
+        open={showLabelsModal}
+        onOpenChange={setShowLabelsModal}
       />
     </div>
   );

@@ -71,8 +71,33 @@ const SettingsPage = () => {
 
   return (
     <div className="flex flex-col md:flex-row gap-6">
-      {/* Sidebar Menu */}
-      <div className="w-full md:w-64 shrink-0 space-y-2">
+      {/* Menu Mobile Horizontal Rolável */}
+      <div className="md:hidden space-y-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>
+          <p className="text-gray-600 text-sm">Gerencie as configurações do sistema</p>
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+          {menuSections.map((section) => (
+            <button
+              key={section.id}
+              type="button"
+              onClick={() => setActiveSection(section.id)}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-medium whitespace-nowrap shrink-0 transition-colors ${
+                activeSection === section.id
+                  ? "border-green-500 bg-green-50 text-green-800"
+                  : "bg-white text-gray-700 hover:bg-gray-50"
+              }`}
+            >
+              <section.icon className={`h-3.5 w-3.5 ${activeSection === section.id ? "text-green-600" : "text-gray-500"}`} />
+              <span>{section.title}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Sidebar Menu Desktop */}
+      <div className="hidden md:block w-64 shrink-0 space-y-2">
         <div className="mb-4">
           <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>
           <p className="text-gray-600 text-sm">Gerencie as configurações do sistema</p>

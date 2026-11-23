@@ -53,7 +53,15 @@ const parseCurrencyInput = (formatted: string): number => {
 
 const FinancialPage = () => {
   const { toast } = useToast();
-  const { orders, loading, markOrderAsPaid } = useOrders();
+  const {
+    orders,
+    loading,
+    markOrderAsPaid,
+    updateOrder,
+    recordPayment,
+    savePaymentSchedules,
+    payScheduledInstallment
+  } = useOrders();
 
   const [activeTab, setActiveTab] = useState<"pedidos" | "lancamentos">("pedidos");
 
@@ -66,6 +74,7 @@ const FinancialPage = () => {
 
   // State for Baixa Modal
   const [selectedOrderForBaixa, setSelectedOrderForBaixa] = useState<Order | null>(null);
+  const [selectedOrderForFullPay, setSelectedOrderForFullPay] = useState<Order | null>(null);
   const [baixaAmountDisplay, setBaixaAmountDisplay] = useState<string>("0,00");
   const [baixaMethod, setBaixaMethod] = useState<string>("PIX");
   const [baixaDate, setBaixaDate] = useState<string>(getLocalDateISO());
@@ -74,7 +83,10 @@ const FinancialPage = () => {
 
   // Pedidos ativos (exclui pedidos cancelados dos recebíveis)
   const activeOrders = useMemo(() => {
-    return orders.filter((o) => o.status !== "Cancelado");
+    return orders.filter((o) => {
+      const st = (o.status || '').toLowerCase();
+      return st !== 'cancelado' && st !== 'pendente' && st !== 'aguardando' && st !== 'aguardando aprovação';
+    });
   }, [orders]);
 
   // Financial statistics
@@ -503,7 +515,7 @@ const FinancialPage = () => {
 
       {/* Modal: Dar Baixa / Registrar Pagamento com Máscara e Cálculo Parcial */}
       <Dialog open={!!selectedOrderForBaixa} onOpenChange={(open) => !open && setSelectedOrderForBaixa(null)}>
-        <DialogContent className="max-w-md p-6">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg font-bold text-slate-900">
               <DollarSign className="h-5 w-5 text-emerald-600" />
@@ -659,18 +671,7 @@ const FinancialPage = () => {
         open={!!selectedOrderForFullPay}
         onOpenChange={(op) => !op && setSelectedOrderForFullPay(null)}
         onRecordPayment={async (orderId, paymentData) => {
-          if (!selectedOrderForFullPay) return;
-          const currentPayments = Array.isArray(selectedOrderForFullPay.payments) ? selectedOrderForFullPay.payments : [];
-          const updatedPayments = [...currentPayments, paymentData];
-          const totalPaid = updatedPayments.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
-          const totalAmount = selectedOrderForFullPay.totalAmount || 0;
-          const newStatus = totalPaid >= totalAmount ? 'Pago' : (totalPaid > 0 ? 'Parcial' : 'Pendente');
-          await updateOrder(orderId, {
-            ...selectedOrderForFullPay,
-            payments: updatedPayments,
-            paidAmount: totalPaid,
-            payment: newStatus
-          });
+          await recordPayment(orderId, paymentData);
           setSelectedOrderForFullPay(null);
         }}
         onSavePaymentSchedules={savePaymentSchedules}

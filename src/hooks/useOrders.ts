@@ -18,6 +18,13 @@ import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/api";
 import { generateUUID, getLocalDateISO } from "@/lib/utils";
 import { useSafeQueryClient } from "@/hooks/useSafeQueryClient";
+import {
+  enqueueOfflineOp,
+  getSnapshot,
+  getSyncQueue,
+  isNetworkError,
+  saveSnapshot,
+} from "@/offline/offlineDb";
 
 export interface OrderExecutionSplit {
   id: string;
@@ -279,10 +286,31 @@ export const useOrders = () => {
   const { data: orders = [], isLoading: loading, refetch } = useQuery({
     queryKey: ["orders"],
     queryFn: async () => {
+      const mergePendingOfflineOrders = async (baseList: Order[]): Promise<Order[]> => {
+        const queue = await getSyncQueue();
+        const offlineOrders: Order[] = queue
+          .filter((item) => item.type === "CREATE_ORDER")
+          .map((item) =>
+            mapFromDB({
+              ...item.payload,
+              id: item.tempId,
+              created_at: item.createdAt,
+            })
+          );
+        const existingIds = new Set(baseList.map((o) => o.id));
+        return [...offlineOrders.filter((o) => !existingIds.has(o.id)), ...baseList];
+      };
+
       try {
         const backendOrders = await api.get<any[]>('/orders');
-        return Array.isArray(backendOrders) ? backendOrders.map(mapFromDB) : [];
+        const safeList = Array.isArray(backendOrders) ? backendOrders : [];
+        await saveSnapshot('orders', safeList);
+        return mergePendingOfflineOrders(safeList.map(mapFromDB));
       } catch (error: any) {
+        if (isNetworkError(error)) {
+          const cached = await getSnapshot<any>('orders');
+          return mergePendingOfflineOrders(cached.map(mapFromDB));
+        }
         toast({
           title: "Erro ao carregar pedidos",
           description: error.message,
@@ -374,29 +402,71 @@ export const useOrders = () => {
       const initLog = createLogEntry("Criação", `Pedido criado no valor de ${formatCurrencyBRL(numVal || 0)} para o serviço ${sName}`);
       const initialLogs = order.logs && order.logs.length > 0 ? order.logs : [initLog];
 
-      try {
-        const created = await api.post<any>('/orders', {
-          client_id: order.clientId || null,
-          farm_id: order.farmId || null,
-          type: order.type || "Serviço",
-          service_name: sName,
-          products_data: order.productsData || [],
-          service_group: order.serviceGroup || null,
-          area: numArea,
-          value: numVal,
-          status: order.status || "Pendente",
-          payment: order.payment || "Aguardando",
-          executions: [],
-          schedules: [],
-          payments: [],
-          payment_schedules: (order as any).paymentSchedules || [],
-          plots: (order as any).plots || [],
-          total_samples: (order as any).totalSamples || 0,
-          executed_samples: (order as any).executedSamples || 0,
-          logs: initialLogs,
-          executed_area: 0,
-          paid_amount: 0
+      const payload = {
+        client_id: order.clientId || null,
+        farm_id: order.farmId || null,
+        type: order.type || "Serviço",
+        service_name: sName,
+        products_data: order.productsData || [],
+        service_group: order.serviceGroup || null,
+        area: numArea,
+        value: numVal,
+        status: order.status || "Pendente",
+        payment: order.payment || "Aguardando",
+        executions: [],
+        schedules: [],
+        payments: [],
+        payment_schedules: (order as any).paymentSchedules || [],
+        plots: (order as any).plots || [],
+        total_samples: (order as any).totalSamples || 0,
+        executed_samples: (order as any).executedSamples || 0,
+        logs: initialLogs,
+        executed_area: 0,
+        paid_amount: 0
+      };
+
+      const saveOfflineOrder = async () => {
+        const tempId = `offline-order-${generateUUID()}`;
+        const parentTempId =
+          order.farmId && order.farmId.startsWith("offline-")
+            ? order.farmId
+            : order.clientId && order.clientId.startsWith("offline-")
+            ? order.clientId
+            : undefined;
+
+        await enqueueOfflineOp({
+          type: "CREATE_ORDER",
+          tempId,
+          parentTempId,
+          label: `${sName} (${formatCurrencyBRL(numVal || 0)})`,
+          payload: { ...payload, status: "Pendente" },
         });
+
+        const localOrder = mapFromDB({
+          ...payload,
+          id: tempId,
+          status: "Pendente",
+          created_at: new Date().toISOString(),
+        });
+        setOrders((prev) => [localOrder, ...prev]);
+
+        toast({
+          title: "Pedido gerado no Modo Offline!",
+          description: `Pedido salvo localmente (${formatCurrencyBRL(numVal || 0)}). Você já pode imprimir/gerar PDF e ele será sincronizado quando houver internet.`,
+        });
+        return localOrder;
+      };
+
+      const hasOfflineRef =
+        (order.clientId && order.clientId.startsWith("offline-")) ||
+        (order.farmId && order.farmId.startsWith("offline-"));
+
+      if ((typeof navigator !== "undefined" && !navigator.onLine) || hasOfflineRef) {
+        return saveOfflineOrder();
+      }
+
+      try {
+        const created = await api.post<any>('/orders', payload);
         await fetchOrders();
         await queryClient.invalidateQueries({ queryKey: ["audit-logs"] });
         await queryClient.invalidateQueries({ queryKey: ["order-audit", created?.id] });
@@ -406,6 +476,9 @@ export const useOrders = () => {
         });
         return created;
       } catch (backendErr: any) {
+        if (isNetworkError(backendErr)) {
+          return saveOfflineOrder();
+        }
         throw backendErr;
       }
     } catch (error: any) {
@@ -534,6 +607,22 @@ export const useOrders = () => {
       const order = orders.find(o => o.id === orderId);
       if (!order) return;
 
+      const isPending =
+        order.status === 'Pendente' ||
+        order.status === 'pending' ||
+        order.status === 'Aguardando' ||
+        order.status === 'Aguardando Aprovação' ||
+        order.status === 'Cancelado';
+
+      if (isPending) {
+        toast({
+          title: "Pedido Aguardando Aprovação",
+          description: "O pedido não pode ser executado enquanto não for aprovado. Aprove o pedido primeiro.",
+          variant: "destructive",
+        });
+        throw new Error("O pedido não pode ser executado pois está aguardando aprovação.");
+      }
+
       const totalArea = parseFloat(order.area) || 0;
       const previousExecutedArea = order.executedArea || 0;
       const newExecutedArea = Math.min(totalArea, previousExecutedArea + execution.areaExecuted);
@@ -659,6 +748,22 @@ export const useOrders = () => {
     try {
       const order = orders.find(o => o.id === orderId);
       if (!order) return;
+
+      const isPending =
+        order.status === 'Pendente' ||
+        order.status === 'pending' ||
+        order.status === 'Aguardando' ||
+        order.status === 'Aguardando Aprovação' ||
+        order.status === 'Cancelado';
+
+      if (isPending) {
+        toast({
+          title: "Pedido Aguardando Aprovação",
+          description: "O pedido não pode ser agendado enquanto não for aprovado. Aprove o pedido primeiro.",
+          variant: "destructive",
+        });
+        throw new Error("O pedido não pode ser agendado pois está aguardando aprovação.");
+      }
 
       const collabs = schedule.collaborators || [];
       const equips = schedule.equipmentNames || [];

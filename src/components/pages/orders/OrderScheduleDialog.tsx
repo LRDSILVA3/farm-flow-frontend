@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Order, OrderSchedule } from '@/hooks/useOrders';
-import { Calendar, Plus, Clock, Users, Wrench, X, MapPin, Layers, Sparkles } from 'lucide-react';
+import { Calendar, Plus, Clock, Users, Wrench, X, MapPin, Layers, Sparkles, AlertCircle } from 'lucide-react';
 import { api } from '@/services/api';
 import { generateUUID } from '@/lib/utils';
 
@@ -133,6 +133,7 @@ export const OrderScheduleDialog: React.FC<OrderScheduleDialogProps> = ({
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!scheduledDate) return;
+    if (order.status === 'Pendente') return;
 
     const currentYear = new Date().getFullYear();
     const cycleYearCalculated = currentYear + (yearCycle - 1);
@@ -196,6 +197,15 @@ export const OrderScheduleDialog: React.FC<OrderScheduleDialogProps> = ({
 
         <div className="space-y-4 py-2">
           {/* Card Resumo do Pedido */}
+          {order.status === 'Pendente' && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-900 text-xs flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+              <span>
+                <strong>Aprovação Pendente:</strong> Este pedido ainda não foi aprovado. Não é permitido criar agendamentos enquanto o pedido estiver aguardando aprovação.
+              </span>
+            </div>
+          )}
+
           <div className="p-3 border rounded-md bg-muted/30 text-xs space-y-1.5">
             <div className="flex justify-between items-center">
               <span className="font-semibold text-sm">{order.client?.name || order.clientId} • {order.farm?.name || order.farmId}</span>
@@ -415,10 +425,10 @@ export const OrderScheduleDialog: React.FC<OrderScheduleDialogProps> = ({
               type="submit"
               size="sm"
               className="w-full bg-green-600 hover:bg-green-700 font-semibold mt-2"
-              disabled={submitting || !scheduledDate}
+              disabled={submitting || !scheduledDate || order.status === 'Pendente'}
             >
               <Plus className="h-4 w-4 mr-1" />
-              {submitting ? 'Salvando...' : 'Adicionar Agendamento'}
+              {order.status === 'Pendente' ? 'Bloqueado: Pedido Aguardando Aprovação' : submitting ? 'Salvando...' : 'Adicionar Agendamento'}
             </Button>
           </form>
 

@@ -86,6 +86,7 @@ export const ReportsPage: React.FC = () => {
   }, [apiExecutions]);
 
   const filteredOrders = useMemo(() => {
+    const now = new Date();
     return orders.filter(o => {
       if (o.status === "Cancelado" || o.status === "Cancelled") {
         return false;
@@ -94,9 +95,22 @@ export const ReportsPage: React.FC = () => {
       if (serviceFilter !== "all" && !serviceName.toLowerCase().includes(serviceFilter.toLowerCase())) {
         return false;
       }
+      if (periodFilter !== "all") {
+        const rawDate = o.created_at || o.createdAt;
+        if (rawDate) {
+          const dt = new Date(rawDate);
+          if (!isNaN(dt.getTime())) {
+            const diffDays = (now.getTime() - dt.getTime()) / (1000 * 60 * 60 * 24);
+            if (periodFilter === "7d" && diffDays > 7) return false;
+            if (periodFilter === "30d" && diffDays > 30) return false;
+            if (periodFilter === "90d" && diffDays > 90) return false;
+            if (periodFilter === "year" && dt.getFullYear() !== now.getFullYear()) return false;
+          }
+        }
+      }
       return true;
     });
-  }, [orders, serviceFilter]);
+  }, [orders, serviceFilter, periodFilter]);
 
   const kpiData = useMemo(() => {
     let totalArea = 0;

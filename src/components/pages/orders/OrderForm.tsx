@@ -515,41 +515,64 @@ export const OrderForm = ({
             </div>
           )}
 
-          <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 pb-1 border-t mt-2">
-            <Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-auto">
-              Cancelar
-            </Button>
-            {(() => {
-              const numArea = parseFloat(formData.area || "0");
-              const hasValidProduct =
-                !isProductOrder ||
-                (Array.isArray(formData.productsData) &&
-                  formData.productsData.some((p: any) => p.id && Number(p.quantity) > 0));
-              const isInvalid =
-                !formData.clientId ||
-                (!isProductOrder && (!formData.farmId || !formData.area || isNaN(numArea) || numArea <= 0)) ||
-                !hasValidProduct;
-              return (
-                <Button
-                  type="submit"
-                  disabled={isInvalid}
-                  className="w-full sm:w-auto bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-sm"
-                  title={
-                    !hasValidProduct
-                      ? "Adicione pelo menos um produto com quantidade maior que zero para prosseguir"
-                      : isInvalid
-                      ? isProductOrder
-                        ? "Selecione o cliente comprador para prosseguir"
-                        : "Preencha cliente, fazenda e uma área válida para prosseguir"
-                      : ""
-                  }
-                >
-                  {editingOrder
-                    ? (isProductOrder ? "Atualizar Pedido de Venda" : "Atualizar Pedido")
-                    : (isProductOrder ? "Concluir Pedido de Venda" : "Criar Pedido")}
-                </Button>
-              );
-            })()}
+          <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-3 pb-1 border-t mt-2">
+            {/* Resumo Dinâmico Sempre Visível */}
+            <div className="flex items-center gap-3 text-xs flex-wrap">
+              {!isProductOrder && calculatedAlqueires > 0 && (
+                <div className="px-2.5 py-1 rounded-md bg-muted border text-muted-foreground">
+                  Área: <strong className="text-foreground">{formData.area} ha</strong> ({calculatedAlqueires.toFixed(2)} alq)
+                </div>
+              )}
+              <div className="px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-900">
+                Total:{" "}
+                <strong className="text-sm font-bold">
+                  {formData.value
+                    ? formData.value.includes("R$")
+                      ? formData.value
+                      : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+                          parseFloat(String(formData.value).replace(",", ".")) || 0
+                        )
+                    : "R$ 0,00"}
+                </strong>
+              </div>
+            </div>
+
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 w-full sm:w-auto">
+              <Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-auto">
+                Cancelar
+              </Button>
+              {(() => {
+                const numArea = parseFloat(formData.area || "0");
+                const hasValidProduct =
+                  !isProductOrder ||
+                  (Array.isArray(formData.productsData) &&
+                    formData.productsData.some((p: any) => p.id && Number(p.quantity) > 0));
+                const isInvalid =
+                  !formData.clientId ||
+                  (!isProductOrder && (!formData.farmId || !formData.area || isNaN(numArea) || numArea <= 0)) ||
+                  !hasValidProduct;
+                return (
+                  <Button
+                    type="submit"
+                    disabled={isInvalid}
+                    className="w-full sm:w-auto bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-sm"
+                    title={
+                      !hasValidProduct
+                        ? "Adicione pelo menos um produto com quantidade maior que zero para prosseguir"
+                        : isInvalid
+                        ? isProductOrder
+                          ? "Selecione o cliente comprador para prosseguir"
+                          : "Preencha cliente, fazenda e uma área válida para prosseguir"
+                        : ""
+                    }
+                  >
+                    {editingOrder
+                      ? (isProductOrder ? "Atualizar Pedido de Venda" : "Atualizar Pedido")
+                      : (isProductOrder ? "Concluir Pedido de Venda" : "Criar Pedido")}
+                  </Button>
+                );
+              })()}
+            </div>
           </div>
         </form>
       </DialogContent>

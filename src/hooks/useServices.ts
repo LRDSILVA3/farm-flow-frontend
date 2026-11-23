@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/api";
+import { getSnapshot, isNetworkError, saveSnapshot } from "@/offline/offlineDb";
 
 export interface ServiceProductLink {
   id: string;
@@ -46,27 +47,36 @@ export const useServices = () => {
     product_ids: [],
   });
 
+  const mapServices = (data: any[]): Service[] =>
+    data.map((s) => {
+      const links = Array.isArray(s.service_products) ? s.service_products : [];
+      return {
+        id: s.id,
+        name: s.name,
+        valuePerAlqueire: s.value_per_alqueire || s.valuePerAlqueire || "",
+        status: s.status || "Ativo",
+        products: s.products || "",
+        isFixed: s.is_fixed || s.isFixed || false,
+        service_products: links,
+        product_ids: links.map((l: any) => l.product_id),
+      };
+    });
+
   const fetchServices = async () => {
     setLoading(true);
     try {
       const data = await api.get<any[]>('/services');
       if (Array.isArray(data)) {
-        setServices(data.map(s => {
-          const links = Array.isArray(s.service_products) ? s.service_products : [];
-          return {
-            id: s.id,
-            name: s.name,
-            valuePerAlqueire: s.value_per_alqueire || s.valuePerAlqueire || "",
-            status: s.status || "Ativo",
-            products: s.products || "",
-            isFixed: s.is_fixed || s.isFixed || false,
-            service_products: links,
-            product_ids: links.map((l: any) => l.product_id),
-          };
-        }));
+        await saveSnapshot('services', data);
+        setServices(mapServices(data));
       }
     } catch (err: any) {
-      toast({ title: "Erro ao carregar serviços", description: err.message, variant: "destructive" });
+      if (isNetworkError(err)) {
+        const cached = await getSnapshot<any>('services');
+        setServices(mapServices(cached));
+      } else {
+        toast({ title: "Erro ao carregar serviços", description: err.message, variant: "destructive" });
+      }
     } finally {
       setLoading(false);
     }

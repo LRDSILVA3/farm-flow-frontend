@@ -7,6 +7,8 @@ export interface Plot {
   state: string;
   registration: string;
   lot: string;
+  responsible_name?: string;
+  responsible_cpf?: string;
 }
 
 export interface Farm {
@@ -21,5 +23,7 @@ export interface Farm {
   status: string;
   registration: string;
   lot: string;
+  responsible_name?: string;
+  responsible_cpf?: string;
   plots: Plot[];
 }

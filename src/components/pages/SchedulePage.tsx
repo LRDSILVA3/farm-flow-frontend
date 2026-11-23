@@ -3,12 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { DecimalInput } from "@/components/ui/decimal-input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Calendar,
   Edit,
@@ -24,13 +26,14 @@ import {
   DollarSign,
   FlaskConical,
   AlertTriangle,
-  RotateCcw
+  RotateCcw,
+  TrendingUp
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/api";
 import { SoilSamplingService } from "@/services/SoilSamplingService";
 import { useCostVariables } from "@/hooks/useCostVariables";
-import { getLocalDateISO } from "@/lib/utils";
+import { cn, getLocalDateISO } from "@/lib/utils";
 
 interface CollaboratorOption {
   id: string;
@@ -245,11 +248,22 @@ export const SchedulePage = () => {
   // Form State: Conclusão Financeira
   const [financeCompletionForm, setFinanceCompletionForm] = useState({
     isPartial: false,
+    isSurplusArea: false,
+    surplusAreaHa: 0,
+    surplusAreaValue: 0,
+    pricePerHa: 0,
     executedPercentage: 100,
     originalValue: 0,
     suggestedValue: 0,
+    baseSuggestedValue: 0,
     finalValue: "",
     adjustmentNote: "",
+    hasSurplusSamples: false,
+    contractedSamples: 0,
+    actualSentSamples: 0,
+    surplusSamplesQty: 0,
+    surplusEstimatedValue: 0,
+    surplusDetails: "",
   });
 
   // Form State: Incluir Análises Recomendadas (suporte a importação parcial, total e análises extras)
@@ -272,6 +286,9 @@ export const SchedulePage = () => {
   const [extraAnalysisType, setExtraAnalysisType] = useState<string>("");
   const [extraAnalysisCustomName, setExtraAnalysisCustomName] = useState<string>("");
   const [extraAnalysisQty, setExtraAnalysisQty] = useState<number>(1);
+  const [analysesCountByOrderId, setAnalysesCountByOrderId] = useState<Record<string, number>>({});
+  const [orderExistingAnalysesList, setOrderExistingAnalysesList] = useState<any[]>([]);
+  const [analysesModalTab, setAnalysesModalTab] = useState<string>("new");
 
   // Form State: Agendamento Geral
   const [scheduleForm, setScheduleForm] = useState({
@@ -340,9 +357,29 @@ export const SchedulePage = () => {
   const fetchExecutions = async () => {
     try {
       setLoading(true);
-      const orders = await api.get<any[]>('/orders');
+      const [orders, allAnalyses] = await Promise.all([
+        api.get<any[]>('/orders'),
+        api.get<any[]>('/analyses').catch(() => [])
+      ]);
+
+      if (Array.isArray(allAnalyses)) {
+        const counts: Record<string, number> = {};
+        allAnalyses.forEach((a) => {
+          if (a.order_id) {
+            const q = Number(a.results?.quantity ?? a.quantity ?? 1) || 1;
+            counts[a.order_id] = (counts[a.order_id] || 0) + q;
+          }
+        });
+        setAnalysesCountByOrderId(counts);
+      }
+
       if (Array.isArray(orders)) {
-        const mapped: Execution[] = orders.map(o => {
+        // Pedidos pendentes de aprovação não entram no fluxo de agenda ou execução operacional
+        const approvedOrders = orders.filter(o => {
+          const st = (o.status || '').toLowerCase();
+          return st !== 'pendente' && st !== 'aguardando' && st !== 'aguardando aprovação' && st !== 'cancelado';
+        });
+        const mapped: Execution[] = approvedOrders.map(o => {
           const rawSchedules = Array.isArray(o.schedules) ? o.schedules : [];
           const rawExecutions = Array.isArray(o.executions) ? o.executions : [];
           const latestSchedule = rawSchedules[rawSchedules.length - 1];
@@ -557,6 +594,14 @@ export const SchedulePage = () => {
 
   // Abrir Modal de Nova Execução com preenchimento automático do saldo restante
   const openExecutionModal = (execution: Execution) => {
+    if ((execution.status || '').toLowerCase() === 'pendente') {
+      toast({
+        title: "Pedido Aguardando Aprovação",
+        description: "Este pedido não pode ser executado enquanto não for aprovado.",
+        variant: "destructive"
+      });
+      return;
+    }
     setSelectedExecution(execution);
     const totalArea = parseFloat(execution.area || "0");
     const alreadyDone = execution.partialExecutions.reduce((sum, p) => sum + (parseFloat(p.executedArea) || 0), 0);
@@ -656,6 +701,14 @@ export const SchedulePage = () => {
   const handleAddPartialExecution = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedExecution) return;
+    if ((selectedExecution.status || '').toLowerCase() === 'pendente') {
+      toast({
+        title: "Pedido Aguardando Aprovação",
+        description: "Este pedido precisa ser aprovado antes de registrar execuções.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     const areaNum = parseFloat(partialExecutionForm.executedArea);
     if (isNaN(areaNum) || areaNum <= 0) {
@@ -734,23 +787,204 @@ export const SchedulePage = () => {
     }
   };
 
-  // Modal de Conclusão Financeira (Total ou Parcial)
-  const openFinanceCompletionModal = (execution: Execution) => {
+  // Modal de Conclusão Financeira (Total ou Parcial) com verificação automática de área e amostras excedentes
+  const openFinanceCompletionModal = async (execution: Execution) => {
     setSelectedExecution(execution);
     const totalArea = parseFloat(execution.area || "0");
     const totalExec = execution.partialExecutions.reduce((sum, p) => sum + (parseFloat(p.executedArea) || 0), 0);
-    const isPartial = totalExec < totalArea;
+    const isPartial = totalArea > 0 && totalExec < totalArea - 0.001;
+    const isSurplusArea = totalArea > 0 && totalExec > totalArea + 0.001;
+    const surplusAreaHa = isSurplusArea ? Number((totalExec - totalArea).toFixed(2)) : 0;
     const ratio = totalArea > 0 ? (totalExec / totalArea) : 1;
     const origVal = execution.numericValue || 0;
-    const suggested = isPartial ? Number((origVal * ratio).toFixed(2)) : origVal;
+    const pricePerHa = totalArea > 0 && origVal > 0 ? Number((origVal / totalArea).toFixed(2)) : 0;
+    const surplusAreaValue = isSurplusArea ? Number((surplusAreaHa * (origVal / totalArea)).toFixed(2)) : 0;
+
+    // 1. Amostras contratadas / previstas no pedido
+    const rawOrder = execution.rawOrder || {};
+    const products = execution.productsData || rawOrder.products_data || [];
+    let contractedSamples = Number(rawOrder.total_samples || rawOrder.totalSamples || 0);
+
+    if (contractedSamples <= 0 && Array.isArray(products) && products.length > 0) {
+      contractedSamples = products
+        .filter((p: any) => {
+          const id = (p.id || '').toLowerCase();
+          const name = (p.name || '').toLowerCase();
+          const type = (p.type || '').toUpperCase();
+          return (
+            id.includes('analise') ||
+            id.includes('amostr') ||
+            name.includes('análise') ||
+            name.includes('analise') ||
+            name.includes('amostragem') ||
+            name.includes('ponto') ||
+            type.includes('MACRO') ||
+            type.includes('FOLIAR') ||
+            type.includes('BIOAS') ||
+            type.includes('FISICA') ||
+            p.unit === 'PTOS'
+          );
+        })
+        .reduce((acc: number, p: any) => acc + (Number(p.quantity) || 0), 0);
+    }
+
+    const serviceNameLower = (execution.serviceName || '').toLowerCase();
+    const isSoilSamplingService =
+      serviceNameLower.includes('solo') ||
+      serviceNameLower.includes('amostragem') ||
+      serviceNameLower.includes('conferência') ||
+      serviceNameLower.includes('conferencia');
+
+    if (contractedSamples <= 0 && isSoilSamplingService && totalArea > 0) {
+      contractedSamples = Math.max(1, Math.round(totalArea / 2.95) || 10);
+    }
+
+    // 2. Amostras efetivamente enviadas ao laboratório (ou coletadas no campo)
+    let orderAnalyses: any[] = [];
+    try {
+      const allAnalyses = await api.get<any[]>('/analyses').catch(() => []);
+      if (Array.isArray(allAnalyses)) {
+        orderAnalyses = allAnalyses.filter(
+          (a) => a.order_id === execution.orderId || a.order_id === execution.id
+        );
+      }
+    } catch {}
+
+    const labSentSamples = orderAnalyses.reduce((sum, a) => {
+      const q = Number(a.results?.quantity ?? a.quantity ?? 1) || 1;
+      return sum + q;
+    }, 0);
+
+    const fieldExecSamples = (rawOrder.executions || execution.partialExecutions || []).reduce(
+      (sum: number, e: any) => sum + (Number(e.samplesExecuted ?? e.samples ?? 0) || 0),
+      0
+    );
+
+    const actualSentSamples = labSentSamples > 0 ? labSentSamples : fieldExecSamples;
+    const surplusSamplesQty = contractedSamples > 0 ? Math.max(0, actualSentSamples - contractedSamples) : 0;
+    const hasExtraAnalyses = orderAnalyses.some((a) => a.results?.isExtra || a.results?.financialTag?.includes('Extra'));
+    const hasSurplusSamples = surplusSamplesQty > 0 || hasExtraAnalyses;
+
+    // 3. Detalhes de análises extras e cálculo financeiro estritamente pelo valor unitário da análise de laboratório
+    const getAnalysisUnitPrice = (type: string, analysisObj?: any): number => {
+      if (analysisObj?.results?.unitPrice && Number(analysisObj.results.unitPrice) > 0) {
+        return Number(analysisObj.results.unitPrice);
+      }
+      if (Array.isArray(products) && products.length > 0) {
+        const foundProd = products.find((p: any) => {
+          const pName = (p.name || '').toUpperCase();
+          const pType = (p.type || '').toUpperCase();
+          const tUpper = (type || '').toUpperCase();
+          return pName.includes(tUpper) || pType.includes(tUpper) || tUpper.includes(pType);
+        });
+        if (foundProd && Number(foundProd.price || foundProd.unitPrice) > 0) {
+          return Number(foundProd.price || foundProd.unitPrice);
+        }
+      }
+      const tUpper = (type || '').toUpperCase();
+      if (tUpper.includes('BIOAS')) return getCostVar('VALOR_LAB_BIOAS', 205.20);
+      if (tUpper.includes('FOLIAR') || tUpper.includes('FOLHA')) return getCostVar('VALOR_ANALISE_FOLIAR', 90.00);
+      if (tUpper.includes('20-40') || tUpper.includes('PROFUNDIDADE') || tUpper === 'MACRO+S') {
+        return getCostVar('ANALISE_20_40_CM_VALOR_ANALISE', 73.90);
+      }
+      if (tUpper.includes('FISICA') || tUpper.includes('FÍSICA')) return getCostVar('VALOR_ANALISE_FISICA_UNITARIO', 33.30);
+      if (tUpper.includes('MICRONUTRIENTE')) return getCostVar('VALOR_ANALISE_MICRONUTRIENTES', 29.55);
+      if (tUpper.includes('COMPLETA') || tUpper.includes('MACRO+S+P_REM')) return getCostVar('VALOR_ANALISE_COMPLETA_UNITARIO', 91.40);
+      if (tUpper.includes('MACRO')) return getCostVar('ANALISE_MACRO_VALOR_ANALISE', 61.40);
+      return getCostVar('VALOR_ANALISE_COMPLETA_UNITARIO', 91.40);
+    };
+
+    const extraTypesMap = new Map<string, { qty: number; unitPrice: number }>();
+    let surplusEstimatedValue = 0;
+
+    if (surplusSamplesQty > 0) {
+      let remainingSurplusToPrice = surplusSamplesQty;
+      for (const a of orderAnalyses) {
+        if (remainingSurplusToPrice <= 0) break;
+        const t = a.type || 'MACRO+S+P_REM';
+        const q = Number(a.results?.quantity ?? a.quantity ?? 1) || 1;
+        const uPrice = getAnalysisUnitPrice(t, a);
+        const alloc = Math.min(remainingSurplusToPrice, q);
+        surplusEstimatedValue += alloc * uPrice;
+        remainingSurplusToPrice -= alloc;
+
+        const existing = extraTypesMap.get(t) || { qty: 0, unitPrice: uPrice };
+        extraTypesMap.set(t, { qty: existing.qty + alloc, unitPrice: uPrice });
+      }
+
+      if (remainingSurplusToPrice > 0) {
+        const fallbackPrice = getCostVar('VALOR_ANALISE_COMPLETA_UNITARIO', 91.40);
+        surplusEstimatedValue += remainingSurplusToPrice * fallbackPrice;
+        const existing = extraTypesMap.get('Análise Completa') || { qty: 0, unitPrice: fallbackPrice };
+        extraTypesMap.set('Análise Completa', { qty: existing.qty + remainingSurplusToPrice, unitPrice: fallbackPrice });
+      }
+      surplusEstimatedValue = Number(surplusEstimatedValue.toFixed(2));
+    } else if (hasExtraAnalyses) {
+      orderAnalyses.forEach((a) => {
+        if (a.results?.isExtra || a.results?.financialTag?.includes('Extra')) {
+          const t = a.type || 'Análise Extra';
+          const q = Number(a.results?.quantity ?? a.quantity ?? 1) || 1;
+          const uPrice = getAnalysisUnitPrice(t, a);
+          const existing = extraTypesMap.get(t) || { qty: 0, unitPrice: uPrice };
+          extraTypesMap.set(t, { qty: existing.qty + q, unitPrice: uPrice });
+          surplusEstimatedValue += q * uPrice;
+        }
+      });
+      surplusEstimatedValue = Number(surplusEstimatedValue.toFixed(2));
+    }
+
+    const detailsArray: string[] = [];
+    extraTypesMap.forEach(({ qty, unitPrice }, type) => {
+      detailsArray.push(`${type}: ${qty} un × R$ ${unitPrice.toFixed(2)}`);
+    });
+
+    // 4. Montagem da nota automática de fechamento
+    const notesParts: string[] = [];
+    if (isPartial) {
+      notesParts.push(`Execução parcial aprovada com ${totalExec.toFixed(2)} de ${totalArea.toFixed(2)} ha contratados.`);
+    } else if (isSurplusArea) {
+      notesParts.push(
+        `Acréscimo de área executada: ${totalExec.toFixed(2)} ha executados no campo (${totalArea.toFixed(2)} ha previstos no contrato, +${surplusAreaHa.toFixed(2)} ha excedentes a R$ ${surplusAreaValue.toFixed(2)}).`
+      );
+    }
+
+    if (surplusSamplesQty > 0) {
+      const detailsText = detailsArray.length > 0 ? ` [${detailsArray.join(', ')}]` : '';
+      notesParts.push(
+        `Acréscimo de análises laboratoriais: ${actualSentSamples} amostras enviadas (${contractedSamples} previstas no pedido, +${surplusSamplesQty} excedentes a R$ ${surplusEstimatedValue.toFixed(2)})${detailsText}.`
+      );
+    } else if (extraTypesMap.size > 0) {
+      const extrasDesc = detailsArray.join(', ');
+      notesParts.push(`Amostras extras fora do orçamento enviadas ao laboratório: ${extrasDesc} (+R$ ${surplusEstimatedValue.toFixed(2)}).`);
+    }
+
+    const autoAdjustmentNote = notesParts.join(' ');
+    const baseSuggested = isPartial
+      ? Number((origVal * ratio).toFixed(2))
+      : isSurplusArea
+      ? Number((origVal + surplusAreaValue).toFixed(2))
+      : origVal;
+    const finalSuggested = Number((baseSuggested + surplusEstimatedValue).toFixed(2));
+    const executedPercentage = totalArea > 0 ? Math.round(ratio * 100) : 100;
 
     setFinanceCompletionForm({
       isPartial,
-      executedPercentage: totalArea > 0 ? Math.min(100, Math.round(ratio * 100)) : 100,
+      isSurplusArea,
+      surplusAreaHa,
+      surplusAreaValue,
+      pricePerHa,
+      executedPercentage,
       originalValue: origVal,
-      suggestedValue: suggested,
-      finalValue: suggested.toFixed(2),
-      adjustmentNote: isPartial ? `Execução parcial aprovada com ${totalExec.toFixed(2)} de ${totalArea.toFixed(2)} ha contratados.` : ""
+      suggestedValue: finalSuggested,
+      baseSuggestedValue: baseSuggested,
+      finalValue: finalSuggested.toFixed(2),
+      adjustmentNote: autoAdjustmentNote,
+      hasSurplusSamples,
+      contractedSamples,
+      actualSentSamples,
+      surplusSamplesQty,
+      surplusEstimatedValue,
+      surplusDetails: detailsArray.join(', '),
     });
 
     setIsFinanceCompletionModalOpen(true);
@@ -769,12 +1003,13 @@ export const SchedulePage = () => {
         status: "Concluído",
         payment: "Aguardando",
         value: finalValNum,
-        financial_notes: financeCompletionForm.adjustmentNote
+        financial_notes: financeCompletionForm.adjustmentNote,
+        ...(financeCompletionForm.actualSentSamples > 0 ? { executed_samples: financeCompletionForm.actualSentSamples } : {})
       });
 
       toast({
         title: "Serviço Concluído e Enviado ao Financeiro!",
-        description: `Valor de R$ ${finalValNum.toFixed(2)} registrado para faturamento.`
+        description: `Valor de R$ ${finalValNum.toFixed(2)} registrado para faturamento.${financeCompletionForm.hasSurplusSamples ? ' Nota de amostras excedentes incluída.' : ''}`
       });
 
       setIsFinanceCompletionModalOpen(false);
@@ -803,6 +1038,7 @@ export const SchedulePage = () => {
       (execution.partialExecutions && execution.partialExecutions.length > 0 && (execution.status || "").toLowerCase() !== "concluído");
     setIncludeAnalysesPartialMode(isOrderPartial);
     setLoadingIncludeAnalyses(true);
+    setAnalysesModalTab("new");
     setIsIncludeAnalysesModalOpen(true);
 
     // Busca análises já importadas anteriormente para este pedido (controle de saldo parcial)
@@ -812,18 +1048,18 @@ export const SchedulePage = () => {
       try {
         const allAnalyses = await api.get<any[]>('/analyses').catch(() => []);
         if (Array.isArray(allAnalyses)) {
-          allAnalyses
-            .filter((a) => a.order_id === execution.orderId)
-            .forEach((a) => {
-              const t = a.type || "";
-              const q = Number(a.results?.quantity ?? a.quantity ?? 0) || 0;
-              if (t && q > 0) {
-                importedByType.set(t, (importedByType.get(t) || 0) + q);
-              }
-              if (a.results?.executionId) {
-                importedExecIds.push(a.results.executionId);
-              }
-            });
+          const orderAnalyses = allAnalyses.filter((a) => a.order_id === execution.orderId);
+          setOrderExistingAnalysesList(orderAnalyses);
+          orderAnalyses.forEach((a) => {
+            const t = a.type || "";
+            const q = Number(a.results?.quantity ?? a.quantity ?? 0) || 0;
+            if (t && q > 0) {
+              importedByType.set(t, (importedByType.get(t) || 0) + q);
+            }
+            if (a.results?.executionId) {
+              importedExecIds.push(a.results.executionId);
+            }
+          });
         }
       } catch {}
     }
@@ -1160,6 +1396,7 @@ export const SchedulePage = () => {
       });
 
       setIsIncludeAnalysesModalOpen(false);
+      fetchExecutions();
     } catch (err: any) {
       toast({ title: "Erro ao incluir análises", description: err.message, variant: "destructive" });
     }
@@ -1394,15 +1631,26 @@ export const SchedulePage = () => {
                 )}
 
                 <div className="flex flex-wrap gap-1.5 pt-2 border-t justify-end">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
-                    onClick={() => openIncludeAnalysesModal(execution)}
-                  >
-                    <FlaskConical className="h-3.5 w-3.5 mr-1" />
-                    Análises
-                  </Button>
+                  {(() => {
+                    const sentCount = analysesCountByOrderId[execution.orderId || execution.id] || 0;
+                    return (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={cn(
+                          "h-8 px-2 text-xs",
+                          sentCount > 0
+                            ? "text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100 font-semibold border border-indigo-200"
+                            : "text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                        )}
+                        onClick={() => openIncludeAnalysesModal(execution)}
+                        title={sentCount > 0 ? `${sentCount} amostras já enviadas ao laboratório` : "Lançar / importar análises"}
+                      >
+                        <FlaskConical className="h-3.5 w-3.5 mr-1 text-indigo-600" />
+                        Análises{sentCount > 0 ? ` (${sentCount} enviadas)` : ""}
+                      </Button>
+                    );
+                  })()}
                   {!isCanceled && (
                     <Button
                       variant="outline"
@@ -1591,18 +1839,30 @@ export const SchedulePage = () => {
                         {/* Ações da Agenda */}
                         <TableCell className="px-2.5 py-3 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1">
-                            {/* Incluir Análises Recomendadas */}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 px-2 text-xs text-indigo-600 border-indigo-200 hover:text-indigo-700 hover:bg-indigo-50"
-                              onClick={() => openIncludeAnalysesModal(execution)}
-                              title="Incluir análises recomendadas da planilha"
-                              aria-label="Análises"
-                            >
-                              <FlaskConical className="h-3.5 w-3.5 2xl:mr-1" />
-                              <span className="hidden 2xl:inline">Análises</span>
-                            </Button>
+                            {/* Incluir e Consultar Análises */}
+                            {(() => {
+                              const sentCount = analysesCountByOrderId[execution.orderId || execution.id] || 0;
+                              return (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className={cn(
+                                    "h-7 px-2 text-xs border-indigo-200",
+                                    sentCount > 0
+                                      ? "text-indigo-700 bg-indigo-50/80 hover:bg-indigo-100 font-semibold border-indigo-300"
+                                      : "text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                                  )}
+                                  onClick={() => openIncludeAnalysesModal(execution)}
+                                  title={sentCount > 0 ? `${sentCount} amostras já enviadas ao laboratório (clique para ver histórico ou lançar)` : "Incluir análises recomendadas da planilha"}
+                                  aria-label="Análises"
+                                >
+                                  <FlaskConical className="h-3.5 w-3.5 2xl:mr-1" />
+                                  <span className="hidden 2xl:inline">
+                                    Análises{sentCount > 0 ? ` (${sentCount})` : ""}
+                                  </span>
+                                </Button>
+                              );
+                            })()}
 
                             {/* Registrar Execução em Campo */}
                             {!isCanceled && (
@@ -1922,7 +2182,7 @@ export const SchedulePage = () => {
 
       {/* MODAL 2: CONCLUSÃO FINANCEIRA (TOTAL OU PARCIAL COM AJUSTE DE VALOR) */}
       <Dialog open={isFinanceCompletionModalOpen} onOpenChange={setIsFinanceCompletionModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5 text-emerald-600" />
@@ -1934,34 +2194,149 @@ export const SchedulePage = () => {
           </DialogHeader>
 
           {selectedExecution && (
-            <div className="space-y-4">
-              <div className="p-3 bg-muted/40 rounded-lg border text-sm space-y-1">
-                <div>Cliente: <strong>{selectedExecution.clientName}</strong></div>
-                <div>Fazenda: <strong>{selectedExecution.farmName}</strong></div>
-                <div>Serviço: <strong>{selectedExecution.serviceName}</strong></div>
-                <div className="pt-2 border-t flex justify-between items-center text-xs">
+            <div className="space-y-3 pt-1">
+              <div className="p-2.5 bg-muted/40 rounded-lg border text-xs space-y-1">
+                <div className="flex justify-between items-center">
+                  <span>Cliente: <strong>{selectedExecution.clientName}</strong></span>
+                  <Badge variant="outline" className="text-[10px]">{selectedExecution.serviceName}</Badge>
+                </div>
+                <div className="text-muted-foreground">Fazenda: <strong>{selectedExecution.farmName}</strong></div>
+                <div className="pt-1.5 border-t flex justify-between items-center">
                   <span>Execução Física Concluída:</span>
-                  <Badge variant={financeCompletionForm.isPartial ? "secondary" : "default"}>
-                    {financeCompletionForm.executedPercentage}% ({financeCompletionForm.isPartial ? "Parcial" : "Total 100%"})
+                  <Badge
+                    variant={financeCompletionForm.isPartial ? "secondary" : "default"}
+                    className={cn(
+                      "text-[10px]",
+                      financeCompletionForm.isSurplusArea && "bg-purple-100 text-purple-900 border-purple-300 font-bold",
+                      financeCompletionForm.isPartial && "bg-amber-100 text-amber-900 border-amber-300"
+                    )}
+                  >
+                    {financeCompletionForm.executedPercentage}% ({
+                      financeCompletionForm.isSurplusArea
+                        ? `Excedente +${financeCompletionForm.surplusAreaHa.toFixed(2)} ha`
+                        : financeCompletionForm.isPartial
+                        ? "Parcial"
+                        : "Total 100%"
+                    })
                   </Badge>
                 </div>
+                {financeCompletionForm.contractedSamples > 0 && (
+                  <div className="pt-1 border-t flex justify-between items-center">
+                    <span className="text-muted-foreground">Amostras de Laboratório:</span>
+                    <Badge variant="outline" className={cn(
+                      "text-[10px] font-semibold",
+                      financeCompletionForm.hasSurplusSamples
+                        ? "bg-amber-50 text-amber-900 border-amber-300"
+                        : "bg-muted/50 text-foreground"
+                    )}>
+                      {financeCompletionForm.actualSentSamples} enviadas / {financeCompletionForm.contractedSamples} previstas
+                      {financeCompletionForm.surplusSamplesQty > 0 && ` (+${financeCompletionForm.surplusSamplesQty} excedentes)`}
+                    </Badge>
+                  </div>
+                )}
               </div>
+
+              {/* Destaque e Alerta para Área Excedente Executada */}
+              {financeCompletionForm.isSurplusArea && (
+                <div className="p-2.5 rounded-lg border border-purple-300 bg-purple-50/70 text-xs space-y-1.5">
+                  <div className="flex items-center gap-1.5 font-bold text-purple-900">
+                    <TrendingUp className="h-4 w-4 text-purple-600 shrink-0" />
+                    <span>Área Excedente Executada (+{financeCompletionForm.surplusAreaHa.toFixed(2)} ha)</span>
+                  </div>
+                  <p className="text-purple-800 text-[11px] leading-relaxed">
+                    Foram executados <strong>{selectedExecution.partialExecutions.reduce((s, p) => s + (parseFloat(p.executedArea) || 0), 0).toFixed(2)} ha</strong> no campo ({selectedExecution.area} ha contratados).
+                    Acréscimo proporcional de área calculado em <strong>+R$ {financeCompletionForm.surplusAreaValue.toFixed(2)}</strong> ({financeCompletionForm.pricePerHa > 0 ? `R$ ${financeCompletionForm.pricePerHa.toFixed(2)}/ha` : ''}).
+                  </p>
+                </div>
+              )}
+
+              {/* Destaque e Alerta para Amostras Excedentes */}
+              {financeCompletionForm.hasSurplusSamples && (
+                <div className="p-2.5 rounded-lg border border-amber-300 bg-amber-50/70 text-xs space-y-1.5">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                    <FlaskConical className="h-4 w-4 text-amber-600 shrink-0" />
+                    <span>Amostras Excedentes Detectadas (+{financeCompletionForm.surplusSamplesQty} análises)</span>
+                  </div>
+                  <p className="text-amber-800 text-[11px] leading-relaxed">
+                    Foram enviadas <strong>{financeCompletionForm.actualSentSamples}</strong> amostras ao laboratório ({financeCompletionForm.contractedSamples} previstas).
+                    O acréscimo foi calculado <strong>exclusivamente pelo valor de cada análise excedente de laboratório</strong>.
+                  </p>
+                  {financeCompletionForm.surplusDetails && (
+                    <div className="text-[10px] text-amber-950 font-medium bg-amber-100/70 p-1.5 rounded border border-amber-200">
+                      Cálculo por análise: <strong>{financeCompletionForm.surplusDetails}</strong>
+                    </div>
+                  )}
+                  {financeCompletionForm.surplusEstimatedValue > 0 && (
+                    <div className="pt-1 flex items-center justify-between border-t border-amber-200/60 flex-wrap gap-1">
+                      <span className="text-emerald-800 font-semibold text-[11px]">
+                        Acréscimo das análises: +R$ {financeCompletionForm.surplusEstimatedValue.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Botões Rápidos de Aplicação quando houver acréscimo de Área ou Análises */}
+              {(financeCompletionForm.isSurplusArea || financeCompletionForm.hasSurplusSamples) && (
+                <div className="p-2 rounded-lg bg-muted/30 border flex items-center justify-between flex-wrap gap-1.5 text-xs">
+                  <span className="text-[11px] text-muted-foreground font-medium">
+                    Ajuste sugerido: <strong className="text-emerald-700">R$ {financeCompletionForm.suggestedValue.toFixed(2)}</strong>
+                    {financeCompletionForm.isSurplusArea && financeCompletionForm.hasSurplusSamples
+                      ? ` (Área +R$ ${financeCompletionForm.surplusAreaValue.toFixed(2)} | Lab +R$ ${financeCompletionForm.surplusEstimatedValue.toFixed(2)})`
+                      : financeCompletionForm.isSurplusArea
+                      ? ` (Área +R$ ${financeCompletionForm.surplusAreaValue.toFixed(2)})`
+                      : ` (Lab +R$ ${financeCompletionForm.surplusEstimatedValue.toFixed(2)})`}
+                  </span>
+                  <div className="flex gap-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-6 text-[10px] bg-white border-emerald-300 text-emerald-800 hover:bg-emerald-50 font-semibold"
+                      onClick={() => setFinanceCompletionForm((prev) => ({
+                        ...prev,
+                        finalValue: prev.suggestedValue.toFixed(2)
+                      }))}
+                      title="Aplicar valor sugerido com acréscimo"
+                    >
+                      Aplicar R$ {financeCompletionForm.suggestedValue.toFixed(2)}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 text-[10px] text-muted-foreground hover:bg-muted font-medium"
+                      onClick={() => setFinanceCompletionForm((prev) => ({
+                        ...prev,
+                        finalValue: prev.originalValue.toFixed(2)
+                      }))}
+                      title="Manter apenas o valor original contratado"
+                    >
+                      Manter Original R$ {financeCompletionForm.originalValue.toFixed(2)}
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <Label className="text-xs font-semibold">Valor Original Contratado</Label>
                 <Input
                   value={`R$ ${financeCompletionForm.originalValue.toFixed(2)}`}
                   readOnly
-                  className="bg-muted mt-1 font-medium"
+                  className="bg-muted mt-1 h-8 text-xs font-medium"
                 />
               </div>
 
               <div>
                 <Label htmlFor="final-billing-value" className="text-xs font-semibold flex items-center justify-between">
                   <span>Valor Final a Faturar (R$)</span>
-                  {financeCompletionForm.isPartial && (
-                    <span className="text-[11px] text-amber-600">Sugerido proporcional ao executado</span>
-                  )}
+                  {financeCompletionForm.isSurplusArea || financeCompletionForm.hasSurplusSamples ? (
+                    <span className="text-[10px] text-emerald-700 font-semibold">
+                      Com acréscimo {financeCompletionForm.isSurplusArea && financeCompletionForm.hasSurplusSamples ? '(área + análises)' : financeCompletionForm.isSurplusArea ? '(área excedente)' : '(análises)'} sugerido
+                    </span>
+                  ) : financeCompletionForm.isPartial ? (
+                    <span className="text-[10px] text-amber-600">Sugerido proporcional ao executado</span>
+                  ) : null}
                 </Label>
                 <Input
                   id="final-billing-value"
@@ -1969,28 +2344,36 @@ export const SchedulePage = () => {
                   step="0.01"
                   value={financeCompletionForm.finalValue}
                   onChange={(e) => setFinanceCompletionForm({ ...financeCompletionForm, finalValue: e.target.value })}
-                  className="mt-1 text-base font-bold text-emerald-600"
+                  className="mt-1 h-9 text-base font-bold text-emerald-600"
                 />
               </div>
 
               <div>
-                <Label htmlFor="adjustment-note" className="text-xs font-semibold">
-                  Justificativa / Nota de Fechamento {financeCompletionForm.isPartial && <span className="text-red-500">*</span>}
+                <Label htmlFor="adjustment-note" className="text-xs font-semibold flex items-center justify-between">
+                  <span>
+                    Justificativa / Nota de Fechamento {(financeCompletionForm.isPartial || financeCompletionForm.hasSurplusSamples) && <span className="text-red-500">*</span>}
+                  </span>
+                  {financeCompletionForm.hasSurplusSamples && (
+                    <span className="text-[10px] text-amber-800 font-semibold bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200">
+                      Nota automática gerada
+                    </span>
+                  )}
                 </Label>
-                <Input
+                <Textarea
                   id="adjustment-note"
+                  rows={2}
                   placeholder="Ex: Conclusão parcial autorizada pelo cliente..."
                   value={financeCompletionForm.adjustmentNote}
                   onChange={(e) => setFinanceCompletionForm({ ...financeCompletionForm, adjustmentNote: e.target.value })}
-                  className="mt-1 text-xs"
+                  className="mt-1 text-xs resize-none"
                 />
               </div>
 
               <DialogFooter className="pt-2 border-t flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsFinanceCompletionModalOpen(false)}>
+                <Button variant="outline" size="sm" onClick={() => setIsFinanceCompletionModalOpen(false)}>
                   Cancelar
                 </Button>
-                <Button onClick={handleConfirmFinanceCompletion} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                <Button size="sm" onClick={handleConfirmFinanceCompletion} className="bg-emerald-600 hover:bg-emerald-700 text-white">
                   Enviar para Financeiro
                 </Button>
               </DialogFooter>
@@ -2001,7 +2384,7 @@ export const SchedulePage = () => {
 
       {/* MODAL 3: INCLUIR ANÁLISES RECOMENDADAS DA PLANILHA (COM SUPORTE A SERVIÇO PARCIAL) */}
       <Dialog open={isIncludeAnalysesModalOpen} onOpenChange={setIsIncludeAnalysesModalOpen}>
-        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FlaskConical className="h-5 w-5 text-indigo-600" />
@@ -2045,261 +2428,364 @@ export const SchedulePage = () => {
                   </div>
                 </div>
 
-                {/* Controle de Importação Parcial (Etapa + Talhão) */}
-                <div className="p-3 rounded-md border bg-indigo-50/40 border-indigo-200/80 space-y-2.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <label className="flex items-center gap-2 text-xs font-semibold text-indigo-950 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={includeAnalysesPartialMode}
-                        onChange={(e) => setIncludeAnalysesPartialMode(e.target.checked)}
-                        className="rounded border-indigo-400"
-                      />
-                      Importação Parcial (enviar parte das amostras agora e manter saldo)
-                    </label>
-                    {includeAnalysesPartialMode && (
-                      <Badge className="bg-indigo-100 text-indigo-800 border-indigo-300 text-[10px]">
-                        Modo Parcial
-                      </Badge>
-                    )}
-                  </div>
-
-                  {(rawExecs.length > 0 || rawPlots.length > 0) && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {rawExecs.length > 0 && (
-                        <div>
-                          <Label className="text-[11px] text-indigo-950">Etapa de Execução:</Label>
-                          <Select
-                            value={includeAnalysesExecId}
-                            onValueChange={handleSelectPartialStageForAnalyses}
-                          >
-                            <SelectTrigger className="h-8 text-xs bg-background mt-0.5">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">Saldo Geral do Pedido</SelectItem>
-                              {rawExecs.map((ex: any, eIdx: number) => {
-                                const alreadySent = includeAnalysesAlreadyImportedExecIds.includes(ex.id);
-                                const plotNames =
-                                  Array.isArray(ex.plotExecutions) && ex.plotExecutions.length > 0
-                                    ? ` • ${ex.plotExecutions.map((pe: any) => pe.plotName).join(", ")}`
-                                    : "";
-                                return (
-                                  <SelectItem key={ex.id || eIdx} value={ex.id || String(eIdx)}>
-                                    Etapa {eIdx + 1} ({ex.date}) • {ex.areaExecuted || ex.hectares} ha
-                                    {ex.samplesExecuted ? ` • ${ex.samplesExecuted} pts` : ""}
-                                    {plotNames}
-                                    {alreadySent ? " [Já importada]" : ""}
-                                  </SelectItem>
-                                );
-                              })}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                <Tabs value={analysesModalTab} onValueChange={setAnalysesModalTab} className="w-full">
+                  <TabsList className="grid grid-cols-2 w-full mb-3">
+                    <TabsTrigger value="new" className="text-xs">
+                      Lançar / Enviar Amostras
+                    </TabsTrigger>
+                    <TabsTrigger value="history" className="text-xs flex items-center gap-1.5">
+                      <span>Histórico de Envios</span>
+                      {totalAlreadyImported > 0 && (
+                        <Badge variant="secondary" className="text-[10px] py-0 px-1.5 bg-indigo-100 text-indigo-800">
+                          {totalAlreadyImported}
+                        </Badge>
                       )}
+                    </TabsTrigger>
+                  </TabsList>
 
-                      {rawPlots.length > 0 && (
-                        <div>
-                          <Label className="text-[11px] text-indigo-950">Talhão da Remessa:</Label>
-                          <Select
-                            value={includeAnalysesPlotId}
-                            onValueChange={setIncludeAnalysesPlotId}
-                          >
-                            <SelectTrigger className="h-8 text-xs bg-background mt-0.5">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="geral">Todos / Geral da Fazenda</SelectItem>
-                              {rawPlots.map((p: any, pIdx: number) => {
-                                const pid = p.id || p.name || String(pIdx);
-                                const pname = typeof p === "string" ? p : p.name;
-                                return (
-                                  <SelectItem key={pid} value={pid}>
-                                    {pname}
-                                  </SelectItem>
-                                );
-                              })}
-                            </SelectContent>
-                          </Select>
+                  <TabsContent value="new" className="space-y-4 mt-0">
+                    {/* Controle de Importação Parcial (Etapa + Talhão) */}
+                    <div className="p-3 rounded-md border bg-indigo-50/40 border-indigo-200/80 space-y-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <label className="flex items-center gap-2 text-xs font-semibold text-indigo-950 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={includeAnalysesPartialMode}
+                            onChange={(e) => setIncludeAnalysesPartialMode(e.target.checked)}
+                            className="rounded border-indigo-400"
+                          />
+                          Importação Parcial (enviar parte das amostras agora e manter saldo)
+                        </label>
+                        {includeAnalysesPartialMode && (
+                          <Badge className="bg-indigo-100 text-indigo-800 border-indigo-300 text-[10px]">
+                            Modo Parcial
+                          </Badge>
+                        )}
+                      </div>
+
+                      {(rawExecs.length > 0 || rawPlots.length > 0) && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {rawExecs.length > 0 && (
+                            <div>
+                              <Label className="text-[11px] text-indigo-950">Etapa de Execução:</Label>
+                              <Select
+                                value={includeAnalysesExecId}
+                                onValueChange={handleSelectPartialStageForAnalyses}
+                              >
+                                <SelectTrigger className="h-8 text-xs bg-background mt-0.5">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">Saldo Geral do Pedido</SelectItem>
+                                  {rawExecs.map((ex: any, eIdx: number) => {
+                                    const alreadySent = includeAnalysesAlreadyImportedExecIds.includes(ex.id);
+                                    const plotNames =
+                                      Array.isArray(ex.plotExecutions) && ex.plotExecutions.length > 0
+                                        ? ` • ${ex.plotExecutions.map((pe: any) => pe.plotName).join(", ")}`
+                                        : "";
+                                    return (
+                                      <SelectItem key={ex.id || eIdx} value={ex.id || String(eIdx)}>
+                                        Etapa {eIdx + 1} ({ex.date}) • {ex.areaExecuted || ex.hectares} ha
+                                        {ex.samplesExecuted ? ` • ${ex.samplesExecuted} pts` : ""}
+                                        {plotNames}
+                                        {alreadySent ? " [Já importada]" : ""}
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+
+                          {rawPlots.length > 0 && (
+                            <div>
+                              <Label className="text-[11px] text-indigo-950">Talhão da Remessa:</Label>
+                              <Select
+                                value={includeAnalysesPlotId}
+                                onValueChange={setIncludeAnalysesPlotId}
+                              >
+                                <SelectTrigger className="h-8 text-xs bg-background mt-0.5">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="geral">Todos / Geral da Fazenda</SelectItem>
+                                  {rawPlots.map((p: any, pIdx: number) => {
+                                    const pid = p.id || p.name || String(pIdx);
+                                    const pname = typeof p === "string" ? p : p.name;
+                                    return (
+                                      <SelectItem key={pid} value={pid}>
+                                        {pname}
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
 
-                {loadingIncludeAnalyses ? (
-                  <div className="p-4 text-center text-xs text-muted-foreground">
-                    Verificando remessas anteriores do pedido...
-                  </div>
-                ) : (
-                  <div className="space-y-2 border rounded-md p-2 bg-muted/20">
-                    {recommendedAnalysesList.map((item, idx) => {
-                      const exceedsContracted = item.alreadyImportedQty + item.currentQty > item.suggestedQty;
-                      const showPartialBadge =
-                        includeAnalysesPartialMode &&
-                        item.currentQty > 0 &&
-                        item.currentQty < item.remainingQty;
-                      const showWarningBadge =
-                        exceedsContracted || (!includeAnalysesPartialMode && item.currentQty !== item.remainingQty);
+                    {loadingIncludeAnalyses ? (
+                      <div className="p-4 text-center text-xs text-muted-foreground">
+                        Verificando remessas anteriores do pedido...
+                      </div>
+                    ) : (
+                      <div className="space-y-2 border rounded-md p-2 bg-muted/20">
+                        {recommendedAnalysesList.map((item, idx) => {
+                          const exceedsContracted = item.alreadyImportedQty + item.currentQty > item.suggestedQty;
+                          const showPartialBadge =
+                            includeAnalysesPartialMode &&
+                            item.currentQty > 0 &&
+                            item.currentQty < item.remainingQty;
+                          const showWarningBadge =
+                            exceedsContracted || (!includeAnalysesPartialMode && item.currentQty !== item.remainingQty);
 
-                      return (
-                        <div key={`${item.type}-${idx}`} className="flex items-center justify-between p-2.5 bg-background border rounded gap-2">
-                          <div className="min-w-0">
-                            <div className="font-semibold text-xs text-foreground flex items-center gap-1.5 flex-wrap">
-                              <span>{item.type}</span>
-                              {item.description && (
-                                <span className="text-[10px] font-normal text-muted-foreground bg-muted/70 px-1.5 py-0.5 rounded border">
-                                  {item.description}
-                                </span>
-                              )}
-                              {item.isExtra && (
-                                <Badge variant="outline" className="text-[10px] py-0 px-1 bg-purple-50 text-purple-800 border-purple-300">
-                                  Extra / Avulsa
-                                </Badge>
-                              )}
-                              {!item.isExtra && showPartialBadge && (
-                                <Badge variant="outline" className="text-[10px] py-0 px-1 bg-indigo-50 text-indigo-800 border-indigo-300">
-                                  Parcial (resta {item.remainingQty - item.currentQty})
-                                </Badge>
-                              )}
-                              {!item.isExtra && showWarningBadge && (
-                                <Badge variant="destructive" className="text-[10px] py-0 px-1">
-                                  {exceedsContracted ? "Acima do Contratado" : "Qtd Alterada"}
-                                </Badge>
-                              )}
+                          return (
+                            <div key={`${item.type}-${idx}`} className="flex items-center justify-between p-2.5 bg-background border rounded gap-2">
+                              <div className="min-w-0">
+                                <div className="font-semibold text-xs text-foreground flex items-center gap-1.5 flex-wrap">
+                                  <span>{item.type}</span>
+                                  {item.description && (
+                                    <span className="text-[10px] font-normal text-muted-foreground bg-muted/70 px-1.5 py-0.5 rounded border">
+                                      {item.description}
+                                    </span>
+                                  )}
+                                  {item.isExtra && (
+                                    <Badge variant="outline" className="text-[10px] py-0 px-1 bg-purple-50 text-purple-800 border-purple-300">
+                                      Extra / Avulsa
+                                    </Badge>
+                                  )}
+                                  {!item.isExtra && showPartialBadge && (
+                                    <Badge variant="outline" className="text-[10px] py-0 px-1 bg-indigo-50 text-indigo-800 border-indigo-300">
+                                      Parcial (resta {item.remainingQty - item.currentQty})
+                                    </Badge>
+                                  )}
+                                  {!item.isExtra && showWarningBadge && (
+                                    <Badge variant="destructive" className="text-[10px] py-0 px-1">
+                                      {exceedsContracted ? "Acima do Contratado" : "Qtd Alterada"}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="text-[11px] text-muted-foreground">
+                                  {item.isExtra ? (
+                                    <>Não estava no pedido original{item.unitPrice > 0 ? ` • Tabela: R$ ${item.unitPrice.toFixed(2)}/un` : ""}</>
+                                  ) : (
+                                    <>
+                                      Contratado: <strong>{item.suggestedQty}</strong>
+                                      {item.alreadyImportedQty > 0 && (
+                                        <> • Já importado: <strong>{item.alreadyImportedQty}</strong> • Saldo: <strong>{item.remainingQty}</strong></>
+                                      )}{" "}
+                                      (R$ {item.unitPrice.toFixed(2)}/un)
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <Label className="text-xs">Qtd:</Label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={item.currentQty}
+                                  onChange={(e) => {
+                                    const val = Math.max(0, parseInt(e.target.value, 10) || 0);
+                                    setRecommendedAnalysesList(prev => {
+                                      const updated = [...prev];
+                                      updated[idx] = {
+                                        ...updated[idx],
+                                        currentQty: val,
+                                        isModified: val !== item.remainingQty
+                                      };
+                                      return updated;
+                                    });
+                                  }}
+                                  className="w-20 text-center font-bold text-xs h-8"
+                                />
+                                {item.isExtra && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleRemoveExtraAnalysis(idx)}
+                                    className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                                    title="Remover análise extra"
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
+                              </div>
                             </div>
-                            <div className="text-[11px] text-muted-foreground">
-                              {item.isExtra ? (
-                                <>Não estava no pedido original{item.unitPrice > 0 ? ` • Tabela: R$ ${item.unitPrice.toFixed(2)}/un` : ""}</>
-                              ) : (
-                                <>
-                                  Contratado: <strong>{item.suggestedQty}</strong>
-                                  {item.alreadyImportedQty > 0 && (
-                                    <> • Já importado: <strong>{item.alreadyImportedQty}</strong> • Saldo: <strong>{item.remainingQty}</strong></>
-                                  )}{" "}
-                                  (R$ {item.unitPrice.toFixed(2)}/un)
-                                </>
-                              )}
-                            </div>
-                          </div>
+                          );
+                        })}
 
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <Label className="text-xs">Qtd:</Label>
+                        {/* Barra para incluir outro tipo de análise que não estava no pedido */}
+                        <div className="pt-2 mt-2 border-t border-dashed space-y-2">
+                          <Label className="text-[11px] font-semibold text-muted-foreground block">
+                            + Incluir outra análise (fora do orçamento original):
+                          </Label>
+                          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
+                            <Select value={extraAnalysisType} onValueChange={setExtraAnalysisType}>
+                              <SelectTrigger className="h-8 text-xs bg-background flex-1 min-w-[180px]">
+                                <SelectValue placeholder="Selecione outro tipo de análise..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {EXTRA_ANALYSIS_CATALOG.filter(
+                                  (c) => !recommendedAnalysesList.some((r) => r.type.toUpperCase() === c.type.toUpperCase())
+                                ).map((c) => (
+                                  <SelectItem key={c.type} value={c.type}>
+                                    {c.type} — {c.description}
+                                  </SelectItem>
+                                ))}
+                                <SelectItem value="__CUSTOM__">Outro tipo (digitar nome)...</SelectItem>
+                              </SelectContent>
+                            </Select>
+
+                            {extraAnalysisType === "__CUSTOM__" && (
+                              <Input
+                                placeholder="Nome da análise..."
+                                value={extraAnalysisCustomName}
+                                onChange={(e) => setExtraAnalysisCustomName(e.target.value)}
+                                className="h-8 text-xs bg-background flex-1 min-w-[140px]"
+                              />
+                            )}
+
                             <Input
                               type="number"
-                              min="0"
-                              value={item.currentQty}
-                              onChange={(e) => {
-                                const val = Math.max(0, parseInt(e.target.value, 10) || 0);
-                                setRecommendedAnalysesList(prev => {
-                                  const updated = [...prev];
-                                  updated[idx] = {
-                                    ...updated[idx],
-                                    currentQty: val,
-                                    isModified: val !== item.remainingQty
-                                  };
-                                  return updated;
-                                });
-                              }}
-                              className="w-20 text-center font-bold text-xs h-8"
+                              min="1"
+                              value={extraAnalysisQty}
+                              onChange={(e) => setExtraAnalysisQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                              className="w-16 h-8 text-center text-xs bg-background"
+                              title="Quantidade de amostras"
                             />
-                            {item.isExtra && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleRemoveExtraAnalysis(idx)}
-                                className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                                title="Remover análise extra"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
+
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={handleAddExtraAnalysis}
+                              disabled={
+                                !extraAnalysisType ||
+                                (extraAnalysisType === "__CUSTOM__" && !extraAnalysisCustomName.trim())
+                              }
+                              className="h-8 text-xs border-indigo-300 text-indigo-700 hover:bg-indigo-50 shrink-0"
+                            >
+                              <Plus className="h-3.5 w-3.5 mr-1" />
+                              Incluir
+                            </Button>
                           </div>
                         </div>
-                      );
-                    })}
-
-                    {/* Barra para incluir outro tipo de análise que não estava no pedido */}
-                    <div className="pt-2 mt-2 border-t border-dashed space-y-2">
-                      <Label className="text-[11px] font-semibold text-muted-foreground block">
-                        + Incluir outra análise (fora do orçamento original):
-                      </Label>
-                      <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
-                        <Select value={extraAnalysisType} onValueChange={setExtraAnalysisType}>
-                          <SelectTrigger className="h-8 text-xs bg-background flex-1 min-w-[180px]">
-                            <SelectValue placeholder="Selecione outro tipo de análise..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {EXTRA_ANALYSIS_CATALOG.filter(
-                              (c) => !recommendedAnalysesList.some((r) => r.type.toUpperCase() === c.type.toUpperCase())
-                            ).map((c) => (
-                              <SelectItem key={c.type} value={c.type}>
-                                {c.type} — {c.description}
-                              </SelectItem>
-                            ))}
-                            <SelectItem value="__CUSTOM__">Outro tipo (digitar nome)...</SelectItem>
-                          </SelectContent>
-                        </Select>
-
-                        {extraAnalysisType === "__CUSTOM__" && (
-                          <Input
-                            placeholder="Nome da análise..."
-                            value={extraAnalysisCustomName}
-                            onChange={(e) => setExtraAnalysisCustomName(e.target.value)}
-                            className="h-8 text-xs bg-background flex-1 min-w-[140px]"
-                          />
-                        )}
-
-                        <Input
-                          type="number"
-                          min="1"
-                          value={extraAnalysisQty}
-                          onChange={(e) => setExtraAnalysisQty(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                          className="w-16 h-8 text-center text-xs bg-background"
-                          title="Quantidade de amostras"
-                        />
-
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={handleAddExtraAnalysis}
-                          disabled={
-                            !extraAnalysisType ||
-                            (extraAnalysisType === "__CUSTOM__" && !extraAnalysisCustomName.trim())
-                          }
-                          className="h-8 text-xs border-indigo-300 text-indigo-700 hover:bg-indigo-50 shrink-0"
-                        >
-                          <Plus className="h-3.5 w-3.5 mr-1" />
-                          Incluir
-                        </Button>
                       </div>
+                    )}
+
+                    <div className="text-[11px] text-muted-foreground flex items-center gap-1">
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                      {includeAnalysesPartialMode
+                        ? "No modo parcial, o saldo restante ficará disponível para as próximas remessas sem gerar alerta comercial."
+                        : "Caso as quantidades ultrapassem o contratado ou sejam alteradas no envio total, uma etiqueta de alerta será enviada ao financeiro e laboratório."}
                     </div>
-                  </div>
-                )}
 
-                <div className="text-[11px] text-muted-foreground flex items-center gap-1">
-                  <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                  {includeAnalysesPartialMode
-                    ? "No modo parcial, o saldo restante ficará disponível para as próximas remessas sem gerar alerta comercial."
-                    : "Caso as quantidades ultrapassem o contratado ou sejam alteradas no envio total, uma etiqueta de alerta será enviada ao financeiro e laboratório."}
-                </div>
+                    <DialogFooter className="pt-2 border-t flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setIsIncludeAnalysesModalOpen(false)}>
+                        Cancelar
+                      </Button>
+                      <Button
+                        onClick={handleConfirmIncludeAnalyses}
+                        disabled={totalSendingNow <= 0 || loadingIncludeAnalyses}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                      >
+                        {includeAnalysesPartialMode
+                          ? `Importar Parcial (${totalSendingNow} amostras)`
+                          : `Confirmar e Cadastrar (${totalSendingNow} amostras)`}
+                      </Button>
+                    </DialogFooter>
+                  </TabsContent>
 
-                <DialogFooter className="pt-2 border-t flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setIsIncludeAnalysesModalOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button
-                    onClick={handleConfirmIncludeAnalyses}
-                    disabled={totalSendingNow <= 0 || loadingIncludeAnalyses}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                  >
-                    {includeAnalysesPartialMode
-                      ? `Importar Parcial (${totalSendingNow} amostras)`
-                      : `Confirmar e Cadastrar (${totalSendingNow} amostras)`}
-                  </Button>
-                </DialogFooter>
+                  <TabsContent value="history" className="space-y-3 mt-0">
+                    {orderExistingAnalysesList.length === 0 ? (
+                      <div className="p-8 text-center border rounded-md bg-muted/20 space-y-2">
+                        <FlaskConical className="h-8 w-8 mx-auto text-muted-foreground/60" />
+                        <div className="text-sm font-semibold text-foreground">Nenhuma análise enviada ainda</div>
+                        <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                          As remessas já enviadas para o laboratório aparecerão detalhadas aqui. Utilize a aba "Lançar / Enviar Amostras" para cadastrar o primeiro lote.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground px-0.5">
+                          <span>Remessas registradas: <strong>{orderExistingAnalysesList.length}</strong></span>
+                          <span>Total enviado ao lab: <strong className="text-indigo-700 font-bold">{totalAlreadyImported} amostras</strong></span>
+                        </div>
+
+                        <div className="border rounded-md overflow-x-auto max-h-[350px] overflow-y-auto w-full">
+                          <Table className="text-xs w-full min-w-[500px]">
+                            <TableHeader className="bg-muted/40 sticky top-0">
+                              <TableRow>
+                                <TableHead className="py-2">Data</TableHead>
+                                <TableHead className="py-2">Tipo / Exame</TableHead>
+                                <TableHead className="py-2 text-center">Qtd</TableHead>
+                                <TableHead className="py-2">Talhão</TableHead>
+                                <TableHead className="py-2">Status Lab</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {orderExistingAnalysesList.map((a: any, idx: number) => {
+                                const qty = Number(a.results?.quantity ?? a.quantity ?? 1) || 1;
+                                const plot = a.results?.plotName || (a.plot_id ? `Talhão ${a.plot_id}` : 'Geral');
+                                const statusColor =
+                                  a.status === 'Finalizado'
+                                    ? 'bg-green-100 text-green-800 border-green-200'
+                                    : a.status === 'Executando' || a.status === 'Recebido'
+                                    ? 'bg-blue-100 text-blue-800 border-blue-200'
+                                    : 'bg-amber-100 text-amber-800 border-amber-200';
+
+                                const dateStr = a.date ? String(a.date).split('T')[0].split('-').reverse().join('/') : '-';
+
+                                return (
+                                  <TableRow key={a.id || idx}>
+                                    <TableCell className="py-2 text-muted-foreground whitespace-nowrap">
+                                      {dateStr}
+                                    </TableCell>
+                                    <TableCell className="py-2 font-medium">
+                                      <div>{a.type}</div>
+                                      {a.results?.financialTag && (
+                                        <span className="text-[10px] text-muted-foreground">
+                                          {a.results.financialTag}
+                                        </span>
+                                      )}
+                                    </TableCell>
+                                    <TableCell className="py-2 text-center">
+                                      <Badge variant="outline" className="font-bold text-xs bg-indigo-50 text-indigo-700 border-indigo-200">
+                                        {qty}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="py-2 text-muted-foreground">
+                                      {plot}
+                                    </TableCell>
+                                    <TableCell className="py-2">
+                                      <span className={cn("inline-block px-2 py-0.5 rounded-full text-[10px] font-medium border whitespace-nowrap", statusColor)}>
+                                        {a.status || 'Pendente'}
+                                      </span>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </div>
+
+                        <DialogFooter className="pt-2 border-t flex justify-between items-center sm:justify-between">
+                          <span className="text-[11px] text-muted-foreground">
+                            Para laudos e laudos técnicos completos, acesse o menu <strong>Análises</strong>.
+                          </span>
+                          <Button variant="outline" onClick={() => setIsIncludeAnalysesModalOpen(false)}>
+                            Fechar
+                          </Button>
+                        </DialogFooter>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               </div>
             );
           })()}

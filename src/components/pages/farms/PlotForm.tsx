@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { IMaskInput } from "react-imask";
 import { DecimalInput } from "@/components/ui/decimal-input";
 import { CityStateSelect } from "./CityStateSelect";
 import { Button } from "@/components/ui/button";
@@ -178,6 +179,28 @@ export const PlotForm = ({
             value={plotForm.registration || ""}
             onChange={(e) => setPlotForm({ ...plotForm, registration: e.target.value })}
             placeholder="Ex: 56.789 (Opcional)"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="plotResponsibleName">Nome do Responsável do Talhão (Opcional)</Label>
+          <Input
+            id="plotResponsibleName"
+            value={plotForm.responsible_name || ""}
+            onChange={(e) => setPlotForm({ ...plotForm, responsible_name: e.target.value })}
+            placeholder="Ex: Carlos Mecânico / Gerente do Talhão"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="plotResponsibleCpf">CPF do Responsável (Opcional)</Label>
+          <IMaskInput
+            mask="000.000.000-00"
+            id="plotResponsibleCpf"
+            value={plotForm.responsible_cpf || ""}
+            onAccept={(value) => setPlotForm({ ...plotForm, responsible_cpf: value as string })}
+            placeholder="000.000.000-00"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
 

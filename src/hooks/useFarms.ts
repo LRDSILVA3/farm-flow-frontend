@@ -4,6 +4,14 @@ import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/api";
 import { Farm, Plot } from "@/types/farm";
 import { useSafeQueryClient } from "@/hooks/useSafeQueryClient";
+import { generateUUID } from "@/lib/utils";
+import {
+  enqueueOfflineOp,
+  getSnapshot,
+  getSyncQueue,
+  isNetworkError,
+  saveSnapshot,
+} from "@/offline/offlineDb";
 
 export type { Farm, Plot };
 
@@ -81,10 +89,69 @@ export const useFarms = () => {
   const { data: farms = [], isLoading: loading, refetch } = useQuery({
     queryKey: ["farms"],
     queryFn: async () => {
+      const mergePendingOfflineFarmsAndPlots = async (baseList: Farm[]): Promise<Farm[]> => {
+        const queue = await getSyncQueue();
+        const offlineFarms: Farm[] = queue
+          .filter((item) => item.type === "CREATE_FARM")
+          .map((item) => ({
+            id: item.tempId,
+            clientId: item.payload.client_id || "",
+            name: item.payload.name || "Fazenda Offline",
+            clientName: item.payload._clientName || "",
+            area: formatAreaTwoDecimals(item.payload.area),
+            city: item.payload.city || "",
+            state: item.payload.state || "",
+            contact: item.payload.contact || "",
+            status: item.payload.status || "Ativo",
+            registration: item.payload.registration || "",
+            lot: item.payload.lot || "",
+            responsible_name: item.payload.responsible_name || "",
+            responsible_cpf: item.payload.responsible_cpf || "",
+            plots: [],
+          }));
+
+        const existingIds = new Set(baseList.map((f) => f.id));
+        const merged = [...offlineFarms.filter((f) => !existingIds.has(f.id)), ...baseList];
+
+        // Anexa talhões criados offline às suas respectivas fazendas (reais ou offline)
+        const pendingPlots = queue.filter((item) => item.type === "CREATE_PLOT");
+        if (pendingPlots.length > 0) {
+          return merged.map((farm) => {
+            const extraPlots = pendingPlots
+              .filter((p) => p.parentTempId === farm.id || p.payload.farm_id === farm.id)
+              .map((p) => ({
+                id: p.tempId,
+                name: p.payload.name || "Talhão Offline",
+                area: formatAreaTwoDecimals(p.payload.area),
+                status: p.payload.status || "Ativo",
+                city: p.payload.city || "",
+                state: p.payload.state || "",
+                registration: p.payload.registration || "",
+                lot: p.payload.lot || "",
+                responsible_name: p.payload.responsible_name || "",
+                responsible_cpf: p.payload.responsible_cpf || "",
+              }));
+            if (extraPlots.length === 0) return farm;
+            const existingPlotIds = new Set((farm.plots || []).map((pl) => pl.id));
+            return {
+              ...farm,
+              plots: [...(farm.plots || []), ...extraPlots.filter((ep) => !existingPlotIds.has(ep.id))],
+            };
+          });
+        }
+        return merged;
+      };
+
       try {
         const backendData = await api.get<any[]>("/farms");
-        return Array.isArray(backendData) ? backendData.map(mapFarmFromDB) : [];
+        const safeList = Array.isArray(backendData) ? backendData : [];
+        await saveSnapshot("farms", safeList);
+        return mergePendingOfflineFarmsAndPlots(safeList.map(mapFarmFromDB));
       } catch (error: any) {
+        if (isNetworkError(error)) {
+          const cached = await getSnapshot<any>("farms");
+          return mergePendingOfflineFarmsAndPlots(cached.map(mapFarmFromDB));
+        }
         toast({
           title: "Erro ao carregar fazendas",
           description: error.message || "Erro de conexão com o servidor local.",
@@ -143,18 +210,49 @@ export const useFarms = () => {
   };
 
   const addFarm = async (farm: Omit<Farm, 'id' | 'plots'>) => {
-    try {
-      const created = await api.post<any>('/farms', {
-        client_id: farm.clientId || null,
-        name: farm.name,
-        area: farm.area ? parseFloat(farm.area) : null,
-        city: farm.city || null,
-        state: farm.state || null,
-        contact: farm.contact || null,
-        status: farm.status || "Ativo",
-        registration: farm.registration || null,
-        lot: farm.lot || null
+    const payload: Record<string, any> = {
+      client_id: farm.clientId || null,
+      name: farm.name,
+      area: farm.area ? parseFloat(farm.area) : null,
+      city: farm.city || null,
+      state: farm.state || null,
+      contact: farm.contact || null,
+      status: farm.status || "Ativo",
+      registration: farm.registration || null,
+      lot: farm.lot || null,
+      responsible_name: farm.responsible_name || null,
+      responsible_cpf: farm.responsible_cpf || null,
+    };
+
+    const saveOffline = async () => {
+      const tempId = `offline-farm-${generateUUID()}`;
+      await enqueueOfflineOp({
+        type: "CREATE_FARM",
+        tempId,
+        parentTempId: farm.clientId && farm.clientId.startsWith("offline-") ? farm.clientId : undefined,
+        label: farm.name || "Nova Fazenda",
+        payload,
       });
+      const localFarm: Farm = {
+        id: tempId,
+        ...farm,
+        area: formatAreaTwoDecimals(farm.area),
+        plots: [],
+      };
+      setFarms((prev) => [localFarm, ...prev]);
+      toast({
+        title: "Fazenda salva no Modo Offline",
+        description: `${farm.name} foi gravada localmente e já pode receber talhões e pedidos.`,
+      });
+      return localFarm;
+    };
+
+    if ((typeof navigator !== "undefined" && !navigator.onLine) || (farm.clientId && farm.clientId.startsWith("offline-"))) {
+      return saveOffline();
+    }
+
+    try {
+      const created = await api.post<any>('/farms', payload);
       await fetchFarms();
       toast({
         title: "Fazenda cadastrada",
@@ -162,6 +260,9 @@ export const useFarms = () => {
       });
       return created;
     } catch (error: any) {
+      if (isNetworkError(error)) {
+        return saveOffline();
+      }
       toast({
         title: "Erro ao cadastrar fazenda",
         description: error.message || "Falha ao gravar no banco de dados.",
@@ -216,16 +317,51 @@ export const useFarms = () => {
   };
 
   const addPlot = async (farmId: string, plot: Omit<Plot, 'id'>) => {
-    try {
-      const createdPlot = await api.post<any>(`/farms/${farmId}/plots`, {
-        name: plot.name,
-        area: plot.area ? parseFloat(plot.area) : null,
-        status: plot.status || "Ativo",
-        city: plot.city || null,
-        state: plot.state || null,
-        registration: plot.registration || null,
-        lot: plot.lot || null
+    const payload = {
+      name: plot.name,
+      area: plot.area ? parseFloat(plot.area) : null,
+      status: plot.status || "Ativo",
+      city: plot.city || null,
+      state: plot.state || null,
+      registration: plot.registration || null,
+      lot: plot.lot || null,
+      responsible_name: plot.responsible_name || null,
+      responsible_cpf: plot.responsible_cpf || null,
+    };
+
+    const saveOffline = async () => {
+      const tempId = `offline-plot-${generateUUID()}`;
+      await enqueueOfflineOp({
+        type: "CREATE_PLOT",
+        tempId,
+        parentTempId: farmId,
+        label: plot.name || "Novo Talhão",
+        payload: { ...payload, farm_id: farmId },
       });
+      const localPlot: Plot = {
+        id: tempId,
+        ...plot,
+        area: formatAreaTwoDecimals(plot.area),
+      };
+      setFarms((prev) =>
+        prev.map((f) => (f.id === farmId ? { ...f, plots: [...(f.plots || []), localPlot] } : f))
+      );
+      if (selectedFarm?.id === farmId) {
+        setSelectedFarm((prev) => (prev ? { ...prev, plots: [...prev.plots, localPlot] } : null));
+      }
+      toast({
+        title: "Talhão salvo no Modo Offline",
+        description: `${plot.name} foi adicionado localmente e será sincronizado ao retornar o sinal.`,
+      });
+      return localPlot;
+    };
+
+    if ((typeof navigator !== "undefined" && !navigator.onLine) || farmId.startsWith("offline-")) {
+      return saveOffline();
+    }
+
+    try {
+      const createdPlot = await api.post<any>(`/farms/${farmId}/plots`, payload);
       await fetchFarms();
 
       const mapped = mapPlotFromDB(createdPlot);
@@ -239,6 +375,9 @@ export const useFarms = () => {
       });
       return createdPlot;
     } catch (error: any) {
+      if (isNetworkError(error)) {
+        return saveOffline();
+      }
       toast({
         title: "Erro ao adicionar talhão",
         description: error.message || "Falha ao salvar talhão no banco.",

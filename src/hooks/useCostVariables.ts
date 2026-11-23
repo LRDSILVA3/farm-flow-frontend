@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/api";
+import { getSnapshot, isNetworkError, saveSnapshot } from "@/offline/offlineDb";
 
 export interface CostVariable {
   id: string;
@@ -29,22 +30,31 @@ export const useCostVariables = () => {
     linkedServices: []
   });
 
+  const mapCostVars = (data: any[]): CostVariable[] =>
+    data.map((c) => ({
+      id: c.id,
+      name: c.name,
+      code: c.code || "",
+      value: Number(c.value || 0),
+      description: c.description || "",
+      linkedServices: c.linked_services || c.linkedServices || [],
+    }));
+
   const fetchCostVariables = async () => {
     setLoading(true);
     try {
       const data = await api.get<any[]>('/cost-variables');
       if (Array.isArray(data)) {
-        setCostVariables(data.map(c => ({
-          id: c.id,
-          name: c.name,
-          code: c.code || "",
-          value: Number(c.value || 0),
-          description: c.description || "",
-          linkedServices: c.linked_services || c.linkedServices || []
-        })));
+        await saveSnapshot('cost_variables', data);
+        setCostVariables(mapCostVars(data));
       }
     } catch (err: any) {
-      toast({ title: "Erro ao carregar variáveis", description: err.message, variant: "destructive" });
+      if (isNetworkError(err)) {
+        const cached = await getSnapshot<any>('cost_variables');
+        setCostVariables(mapCostVars(cached));
+      } else {
+        toast({ title: "Erro ao carregar variáveis", description: err.message, variant: "destructive" });
+      }
     } finally {
       setLoading(false);
     }

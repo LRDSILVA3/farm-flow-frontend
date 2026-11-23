@@ -132,9 +132,17 @@ export const ImportOrderAnalysesDialog: React.FC<ImportOrderAnalysesDialogProps>
     try {
       const data = await api.get<any[]>("/orders").catch(() => []);
       if (Array.isArray(data)) {
-        // Filtra pedidos de amostragem/conferência/foliar que não estão cancelados
+        // Filtra pedidos de amostragem/conferência/foliar já aprovados e ativos (exclui pendentes de aprovação e cancelados)
         const eligible = data.filter((o) => {
-          if ((o.status || "").toLowerCase() === "cancelado") return false;
+          const statusLower = (o.status || "").toLowerCase();
+          if (
+            statusLower === "cancelado" ||
+            statusLower === "pendente" ||
+            statusLower === "aguardando" ||
+            statusLower === "aguardando aprovação"
+          ) {
+            return false;
+          }
           const combined = `${o.service_name || o.serviceName || ""} ${o.type || ""}`.toLowerCase();
           const hasAnalysisType =
             combined.includes("amostr") ||
@@ -510,7 +518,7 @@ export const ImportOrderAnalysesDialog: React.FC<ImportOrderAnalysesDialogProps>
               </div>
 
               {/* Tabela de Conferência e Quantidades a Importar */}
-              <div className="border rounded-md overflow-hidden">
+              <div className="border rounded-md overflow-x-auto w-full">
                 <div className="px-3 py-2 bg-emerald-50/70 border-b flex items-center justify-between">
                   <span className="text-xs font-semibold text-emerald-950">
                     Grade de Análises do Pedido (Ajuste as quantidades para importação parcial)
@@ -519,7 +527,7 @@ export const ImportOrderAnalysesDialog: React.FC<ImportOrderAnalysesDialogProps>
                     Importando agora: {totalToImportNow} amostras
                   </Badge>
                 </div>
-                <Table>
+                <Table className="w-full min-w-[500px] text-xs">
                   <TableHeader>
                     <TableRow className="text-xs">
                       <TableHead>Tipo de Análise</TableHead>

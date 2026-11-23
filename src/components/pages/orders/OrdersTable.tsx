@@ -12,12 +12,13 @@ const formatServiceName = (name: string | null | undefined): string => {
   return s;
 };
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { api } from "@/services/api";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Edit, CheckCircle2, Play, Calendar, DollarSign, Ban, Printer, History } from "lucide-react";
+import { Edit, CheckCircle2, Play, Calendar, DollarSign, Ban, Printer, History, FlaskConical, MoreHorizontal } from "lucide-react";
 import { Order } from "@/hooks/useOrders";
 import { useClients } from "@/hooks/useClients";
 import { useFarms } from "@/hooks/useFarms";
@@ -26,6 +27,25 @@ import { OrderScheduleDialog } from "./OrderScheduleDialog";
 import { OrderPaymentDialog } from "./OrderPaymentDialog";
 import { OrderPrintDialog } from "./OrderPrintDialog";
 import { OrderHistoryDialog } from "./OrderHistoryDialog";
+import { OrderAnalysesDialog } from "./OrderAnalysesDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -73,6 +93,47 @@ export const OrdersTable = ({
   const [selectedOrderForPay, setSelectedOrderForPay] = useState<Order | null>(null);
   const [selectedOrderForPrint, setSelectedOrderForPrint] = useState<Order | null>(null);
   const [selectedOrderForHistory, setSelectedOrderForHistory] = useState<Order | null>(null);
+  const [selectedOrderForAnalyses, setSelectedOrderForAnalyses] = useState<Order | null>(null);
+  const [orderToApprove, setOrderToApprove] = useState<Order | null>(null);
+  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
+  const [analysesList, setAnalysesList] = useState<any[]>([]);
+
+  // Carrega remessas de análises para exibir contadores por pedido
+  useEffect(() => {
+    let isMounted = true;
+    const loadAnalyses = async () => {
+      try {
+        const data = await api.get<any[]>('/analyses');
+        if (isMounted && Array.isArray(data)) {
+          setAnalysesList(data);
+        }
+      } catch {
+        // Silencioso em caso de falha de conexão inicial
+      }
+    };
+    loadAnalyses();
+
+    const handleAnalysesUpdated = () => {
+      loadAnalyses();
+    };
+    window.addEventListener('farmflow-analyses-updated', handleAnalysesUpdated);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('farmflow-analyses-updated', handleAnalysesUpdated);
+    };
+  }, [orders]);
+
+  const analysesCountByOrder = useMemo(() => {
+    const counts: Record<string, number> = {};
+    analysesList.forEach((a) => {
+      if (a.order_id) {
+        const qty = Number(a.results?.quantity ?? a.quantity ?? 1) || 1;
+        counts[a.order_id] = (counts[a.order_id] || 0) + qty;
+      }
+    });
+    return counts;
+  }, [analysesList]);
 
   const totalItems = orders.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -106,7 +167,7 @@ export const OrdersTable = ({
       case "Aprovado":
         return "bg-emerald-50 text-emerald-700 border-emerald-300";
       case "Pendente":
-        return "bg-amber-100 text-amber-800 border-amber-200";
+        return "bg-amber-100 text-amber-900 border-amber-300 font-medium";
       case "Cancelado":
         return "bg-red-100 text-red-800 border-red-200";
       default:
@@ -153,153 +214,190 @@ export const OrdersTable = ({
 
   const renderOrderActions = (order: Order) => {
     const isCanceled = order.status === "Cancelado";
+    const isPending = order.status === "Pendente";
+    const sentAnalysesCount = analysesCountByOrder[order.id] || 0;
+    const scheduleCount = order.schedules?.length || 0;
+
     return (
-      <div className="flex items-center justify-end gap-0.5 flex-wrap">
-        {/* Botão Aprovar (se Pendente) */}
-        {order.status === "Pendente" && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label="Aprovar Pedido"
-                className="h-7 w-7 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                onClick={() => {
-                  if (confirm("Deseja aprovar este pedido?")) {
-                    onApprove(order.id);
-                  }
-                }}
-              >
-                <CheckCircle2 className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Aprovar Pedido</TooltipContent>
-          </Tooltip>
+      <div className="flex items-center justify-end gap-1">
+        {/* Botão de Destaque: Aprovar (quando Pendente de Aprovação) */}
+        {isPending && !String(order.id).startsWith("offline-") && (
+          <Button
+            size="sm"
+            className="h-7 px-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium flex items-center gap-1 shadow-xs"
+            onClick={() => setOrderToApprove(order)}
+            title="Aprovar Pedido (Liberar Agendamento e Execução)"
+          >
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            <span className="text-[11px]">Aprovar</span>
+          </Button>
         )}
 
-        {/* Botão Executar (oculto se Cancelado) */}
-        {!isCanceled && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label="Registrar Execução"
-                className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                onClick={() => setSelectedOrderForExec(order)}
-              >
-                <Play className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Registrar Execução (100% ou Parcial)</TooltipContent>
-          </Tooltip>
-        )}
-
-        {/* Botão Agendamento (oculto se Cancelado) */}
-        {!isCanceled && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label="Agendamentos e Etapas"
-                className="h-7 w-7 p-0 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                onClick={() => setSelectedOrderForSched(order)}
-              >
-                <Calendar className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Agendamentos / Etapas ({order.schedules?.length || 0})</TooltipContent>
-          </Tooltip>
-        )}
-
-        {/* Botão Cobrar / Pagamento (oculto se Cancelado) */}
-        {!isCanceled && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label="Cobrança e Pagamentos"
-                className="h-7 w-7 p-0 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                onClick={() => setSelectedOrderForPay(order)}
-              >
-                <DollarSign className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Cobrança / Pagamentos ({order.payment})</TooltipContent>
-          </Tooltip>
-        )}
-
-        {/* Botão Imprimir Folha de Pedido */}
+        {/* Botão de Ação Rápida: Imprimir Proposta / Pedido */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
               aria-label="Imprimir Folha de Pedido"
-              className="h-7 w-7 p-0 text-slate-700 hover:text-slate-900 hover:bg-slate-100"
+              className="h-7 w-7 p-0 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               onClick={() => setSelectedOrderForPrint(order)}
             >
-              <Printer className="h-4 w-4" />
+              <Printer className="h-3.5 w-3.5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Imprimir Folha de Pedido / Orçamento</TooltipContent>
+          <TooltipContent>Imprimir Pedido / Proposta</TooltipContent>
         </Tooltip>
 
-        {/* Botão Histórico de Ações */}
-        <Tooltip>
-          <TooltipTrigger asChild>
+        {/* Menu Inteligente Consolidado de Ações */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              aria-label="Histórico de Ações"
-              className="h-7 w-7 p-0 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+              aria-label="Mais Ações do Pedido"
+              className="h-7 px-1.5 text-xs text-muted-foreground hover:text-foreground gap-1 border-muted-foreground/20 hover:border-muted-foreground/40"
+              title="Mais Ações"
+            >
+              <MoreHorizontal className="h-3.5 w-3.5" />
+              <span className="hidden lg:inline text-[11px] font-medium">Ações</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56 text-xs">
+            {/* Seção Operacional */}
+            <DropdownMenuLabel className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider py-1">
+              Operacional de Campo
+            </DropdownMenuLabel>
+
+            <DropdownMenuItem
+              disabled={isPending || isCanceled}
+              onClick={() => setSelectedOrderForSched(order)}
+              className="flex items-center justify-between cursor-pointer py-1.5 text-xs"
+            >
+              <div className="flex items-center gap-2">
+                <Calendar className="h-3.5 w-3.5 text-purple-600" />
+                <span>Agendamentos & Visitas</span>
+              </div>
+              {scheduleCount > 0 && (
+                <span className="text-[10px] bg-purple-100 text-purple-800 font-semibold px-1.5 py-0.2 rounded-full">
+                  {scheduleCount}
+                </span>
+              )}
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              disabled={isPending || isCanceled}
+              onClick={() => setSelectedOrderForExec(order)}
+              className="flex items-center gap-2 cursor-pointer py-1.5 text-xs"
+            >
+              <Play className="h-3.5 w-3.5 text-blue-600" />
+              <span>Registrar Execução</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={() => setSelectedOrderForAnalyses(order)}
+              className="flex items-center justify-between cursor-pointer py-1.5 text-xs"
+            >
+              <div className="flex items-center gap-2">
+                <FlaskConical className="h-3.5 w-3.5 text-indigo-600" />
+                <span>Análises Laboratoriais</span>
+              </div>
+              {sentAnalysesCount > 0 && (
+                <span className="text-[10px] bg-indigo-100 text-indigo-800 font-semibold px-1.5 py-0.2 rounded-full">
+                  {sentAnalysesCount}
+                </span>
+              )}
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            {/* Seção Financeira */}
+            <DropdownMenuLabel className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider py-1">
+              Financeiro
+            </DropdownMenuLabel>
+
+            <DropdownMenuItem
+              disabled={isCanceled}
+              onClick={() => setSelectedOrderForPay(order)}
+              className="flex items-center justify-between cursor-pointer py-1.5 text-xs"
+            >
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-3.5 w-3.5 text-amber-600" />
+                <span>Cobrança & Pagamentos</span>
+              </div>
+              <span className={cn("text-[10px] px-1.5 py-0.2 rounded-full font-medium border", getPaymentBadge(order.payment))}>
+                {order.payment}
+              </span>
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            {/* Seção Gestão */}
+            <DropdownMenuLabel className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider py-1">
+              Gestão do Pedido
+            </DropdownMenuLabel>
+
+            <DropdownMenuItem
+              onClick={() => setSelectedOrderForPrint(order)}
+              className="flex items-center gap-2 cursor-pointer py-1.5 text-xs"
+            >
+              <Printer className="h-3.5 w-3.5 text-slate-700" />
+              <span>Imprimir Pedido / Proposta</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              disabled={!isPending}
+              onClick={() => {
+                if (isPending) onEdit(order);
+              }}
+              className={cn(
+                "flex items-center gap-2 py-1.5 text-xs",
+                !isPending ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+              )}
+              title={!isPending ? "Depois de aprovado, o pedido não pode ser editado" : "Editar Pedido"}
+            >
+              <Edit className="h-3.5 w-3.5 text-slate-600" />
+              <span>Editar Pedido</span>
+              {!isPending && (
+                <span className="text-[10px] text-muted-foreground ml-auto font-medium">(Bloqueado)</span>
+              )}
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
               onClick={() => setSelectedOrderForHistory(order)}
+              className="flex items-center gap-2 cursor-pointer py-1.5 text-xs"
             >
-              <History className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Histórico de Ações / Auditoria</TooltipContent>
-        </Tooltip>
+              <History className="h-3.5 w-3.5 text-slate-600" />
+              <span>Histórico & Auditoria</span>
+            </DropdownMenuItem>
 
-        {/* Botão Editar */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-label="Editar Pedido"
-              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-              onClick={() => onEdit(order)}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Editar Pedido</TooltipContent>
-        </Tooltip>
+            {isPending && !String(order.id).startsWith("offline-") && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => setOrderToApprove(order)}
+                  className="flex items-center gap-2 cursor-pointer py-1.5 text-xs text-emerald-700 focus:text-emerald-800 focus:bg-emerald-50"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                  <span className="font-semibold">Aprovar Pedido</span>
+                </DropdownMenuItem>
+              </>
+            )}
 
-        {/* Botão Cancelar */}
-        {!isCanceled && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label="Cancelar Pedido"
-                className="h-7 w-7 p-0 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
-                onClick={() => {
-                  if (confirm("Tem certeza que deseja cancelar este pedido?")) {
-                    onCancel(order.id);
-                  }
-                }}
-              >
-                <Ban className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Cancelar Pedido</TooltipContent>
-          </Tooltip>
-        )}
+            {!isCanceled && !String(order.id).startsWith("offline-") && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => setOrderToCancel(order)}
+                  className="flex items-center gap-2 cursor-pointer py-1.5 text-xs text-destructive focus:text-destructive focus:bg-destructive/10"
+                >
+                  <Ban className="h-3.5 w-3.5" />
+                  <span>Cancelar Pedido</span>
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     );
   };
@@ -327,7 +425,7 @@ export const OrdersTable = ({
                       <p className="text-xs text-muted-foreground truncate">{getFarmName(order)}</p>
                     </div>
                     <span className={cn("px-2.5 py-0.5 rounded-full text-xs font-medium border whitespace-nowrap shrink-0", getStatusBadge(order.status))}>
-                      {order.status}
+                      {order.status === "Pendente" ? "Aguardando Aprovação" : order.status}
                     </span>
                   </div>
 
@@ -386,7 +484,7 @@ export const OrdersTable = ({
               <TableHead className="px-2.5">Valor</TableHead>
               <TableHead className="px-2.5">Status</TableHead>
               <TableHead className="px-2.5">Pagamento</TableHead>
-              <TableHead className="px-2.5 text-right">Ações</TableHead>
+              <TableHead className="px-2.5 text-right w-[115px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -415,6 +513,9 @@ export const OrdersTable = ({
                     : 0
                 );
                 const execSamples = order.executedSamples || (order.executions || []).reduce((sum, e) => sum + (Number(e.samplesExecuted) || 0), 0);
+                const sentSamples = analysesCountByOrder[order.id] || 0;
+                // Coerência operacional: se amostras já foram despachadas ao laboratório, elas necessariamente já foram coletadas no campo
+                const effectiveCollected = Math.max(execSamples, sentSamples);
                 const plotNames = order.plots && Array.isArray(order.plots) && order.plots.length > 0
                   ? order.plots.map((p: any) => p.name).join(', ')
                   : null;
@@ -480,12 +581,33 @@ export const OrdersTable = ({
                               style={{ width: percentExec + '%' }}
                             />
                           </div>
-                          {totalSamples > 0 && (
-                            <div className="text-[10px] text-emerald-800 font-medium flex justify-between items-center pt-0.5">
-                              <span>🧪 Análises:</span>
-                              <span className="font-bold">{execSamples}/{totalSamples}</span>
+                          {totalSamples > 0 ? (
+                            <div className="space-y-0.5 pt-0.5 border-t border-muted/80">
+                              <div className="text-[10px] text-emerald-800 font-medium flex justify-between items-center" title="Amostras físicas coletadas no campo (sincronizadas com remessas de laboratório)">
+                                <span>🌱 Coletadas:</span>
+                                <span className="font-bold">{effectiveCollected}/{totalSamples}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedOrderForAnalyses(order)}
+                                className="text-[10px] text-indigo-700 hover:text-indigo-900 hover:underline font-medium flex justify-between items-center w-full cursor-pointer text-left"
+                                title="Clique para ver detalhes das análises laboratoriais"
+                              >
+                                <span>🔬 Enviadas Lab:</span>
+                                <span className="font-bold">{sentSamples}/{totalSamples}</span>
+                              </button>
                             </div>
-                          )}
+                          ) : sentSamples > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedOrderForAnalyses(order)}
+                              className="text-[10px] text-indigo-700 hover:text-indigo-900 hover:underline font-medium flex justify-between items-center w-full cursor-pointer text-left pt-0.5 border-t border-muted/80"
+                              title="Clique para ver detalhes das análises laboratoriais"
+                            >
+                              <span>🔬 Enviadas Lab:</span>
+                              <span className="font-bold">{sentSamples}</span>
+                            </button>
+                          ) : null}
                         </div>
                       )}
                     </TableCell>
@@ -495,9 +617,16 @@ export const OrdersTable = ({
                     </TableCell>
 
                     <TableCell className="px-2.5 py-3">
-                      <span className={cn("inline-block px-2.5 py-1 rounded-full text-xs font-medium border whitespace-nowrap", getStatusBadge(order.status))}>
-                        {order.status}
-                      </span>
+                      <div className="flex flex-col items-start gap-1">
+                        <span className={cn("inline-block px-2.5 py-1 rounded-full text-xs font-medium border whitespace-nowrap", getStatusBadge(order.status))}>
+                          {order.status === "Pendente" ? "Aguardando Aprovação" : order.status}
+                        </span>
+                        {String(order.id).startsWith("offline-") && (
+                          <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-300 whitespace-nowrap">
+                            Salvo offline (aguardando envio)
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
 
                     <TableCell className="px-2.5 py-3">
@@ -615,6 +744,66 @@ export const OrdersTable = ({
         open={!!selectedOrderForHistory}
         onOpenChange={(open) => !open && setSelectedOrderForHistory(null)}
       />
+
+      {/* Modal de Detalhamento de Análises Laboratoriais */}
+      <OrderAnalysesDialog
+        order={selectedOrderForAnalyses}
+        open={!!selectedOrderForAnalyses}
+        onOpenChange={(open) => !open && setSelectedOrderForAnalyses(null)}
+        analysesList={analysesList}
+      />
+
+      {/* AlertDialog: Confirmar Aprovação do Pedido */}
+      <AlertDialog open={!!orderToApprove} onOpenChange={(open) => !open && setOrderToApprove(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Aprovar Pedido?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Ao aprovar o pedido de <strong>{orderToApprove ? getClientName(orderToApprove) : ""}</strong> ({orderToApprove?.value || "R$ 0,00"}), o agendamento e a execução em campo serão liberados e o contrato comercial ficará bloqueado para edição.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (orderToApprove) {
+                  onApprove(orderToApprove.id);
+                  setOrderToApprove(null);
+                }
+              }}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              Confirmar Aprovação
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* AlertDialog: Confirmar Cancelamento do Pedido */}
+      <AlertDialog open={!!orderToCancel} onOpenChange={(open) => !open && setOrderToCancel(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar Pedido?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja cancelar o pedido de <strong>{orderToCancel ? getClientName(orderToCancel) : ""}</strong>? Esta ação será registrada no histórico de auditoria.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (orderToCancel) {
+                  onCancel(orderToCancel.id);
+                  setOrderToCancel(null);
+                }
+              }}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            >
+              Confirmar Cancelamento
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </TooltipProvider>
   );
 };

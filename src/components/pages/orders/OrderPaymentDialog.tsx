@@ -96,6 +96,28 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
   const formatBRL = (val: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
+  const formatDisplayDate = (raw: any): string => {
+    if (!raw) return '—';
+    if (typeof raw === 'string') {
+      const clean = raw.includes('T') ? raw.split('T')[0] : raw;
+      const parts = clean.split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      return clean;
+    }
+    try {
+      const d = new Date(raw);
+      if (!isNaN(d.getTime())) {
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+      }
+    } catch {}
+    return String(raw);
+  };
+
   // Inicializa estados ao abrir o modal
   useEffect(() => {
     if (order && open) {
@@ -233,6 +255,7 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
     if (!order) return;
     const target = schedulesList.find(s => s.id === scheduleId);
     if (!target) return;
+    if (order.status === 'Pendente') return;
 
     setSubmitting(true);
     try {
@@ -260,7 +283,7 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
 
   // Confirmar Recebimento Avulso
   const handleConfirmSinglePayment = async () => {
-    if (!order || parsedAmount <= 0) return;
+    if (!order || parsedAmount <= 0 || order.status === 'Pendente') return;
 
     setSubmitting(true);
     try {
@@ -471,7 +494,7 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
                               )}
                             </TableCell>
                             <TableCell className="py-2 text-muted-foreground">
-                              {sched.dueDate.split('-').reverse().join('/')}
+                              {formatDisplayDate(sched.dueDate)}
                             </TableCell>
                             <TableCell className="py-2 font-semibold text-foreground">
                               {formatBRL(sched.amount)}
@@ -655,6 +678,15 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
           {/* ABA 2: RECEBIMENTO AVULSO & HISTÓRICO DE BAIXAS REALIZADAS                */}
           {/* ========================================================================= */}
           <TabsContent value="recebimento" className="space-y-3 pt-2">
+            {order.status === 'Pendente' && (
+              <div className="p-3 bg-amber-50 text-amber-900 border border-amber-200 rounded-md text-xs flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-amber-600 shrink-0" />
+                <span>
+                  <strong>Aprovação Pendente:</strong> Este pedido ainda não foi aprovado. É obrigatório aprovar o pedido antes de registrar recebimentos ou baixas financeiras.
+                </span>
+              </div>
+            )}
+
             {remainingAmount <= 0 ? (
               <div className="p-3 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-md text-xs flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5" />
@@ -751,11 +783,11 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
                   <Button
                     type="button"
                     onClick={handleConfirmSinglePayment}
-                    disabled={submitting || parsedAmount <= 0}
+                    disabled={submitting || parsedAmount <= 0 || order.status === 'Pendente'}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5"
                   >
                     <Check className="h-4 w-4" />
-                    Confirmar Recebimento ({formatBRL(parsedAmount)})
+                    {order.status === 'Pendente' ? 'Bloqueado: Pedido Aguardando Aprovação' : `Confirmar Recebimento (${formatBRL(parsedAmount)})`}
                   </Button>
                 </div>
               </div>
@@ -772,7 +804,7 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
                   {order.payments.map((p, idx) => (
                     <div key={p.id || idx} className="p-2 bg-muted/40 rounded flex justify-between items-center text-[11px]">
                       <div>
-                        <span className="font-semibold">{p.date.split('-').reverse().join('/')}</span>: {formatBRL(p.amount)} ({p.method})
+                        <span className="font-semibold">{formatDisplayDate(p.date)}</span>: {formatBRL(p.amount)} ({p.method})
                         {p.notes && <div className="text-muted-foreground italic text-[10px]">{p.notes}</div>}
                       </div>
                       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0 ml-2" />

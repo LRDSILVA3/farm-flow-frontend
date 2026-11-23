@@ -3,6 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/api";
 import { useSafeQueryClient } from "@/hooks/useSafeQueryClient";
+import { generateUUID } from "@/lib/utils";
+import {
+  enqueueOfflineOp,
+  getSnapshot,
+  getSyncQueue,
+  isNetworkError,
+  saveSnapshot,
+} from "@/offline/offlineDb";
 
 export interface Client {
   id: string;
@@ -54,10 +62,36 @@ export const useClients = () => {
   const { data: clients = [], isLoading: loading, refetch } = useQuery({
     queryKey: ["clients"],
     queryFn: async () => {
+      const mergePendingOfflineClients = async (baseList: Client[]): Promise<Client[]> => {
+        const queue = await getSyncQueue();
+        const offlineClients: Client[] = queue
+          .filter((item) => item.type === "CREATE_CLIENT")
+          .map((item) => ({
+            id: item.tempId,
+            cpf: item.payload.cpf || "",
+            name: item.payload.name || "Cliente Offline",
+            birthDate: item.payload.birth_date || "",
+            email: item.payload.email || "",
+            phone: item.payload.phone || "",
+            zipCode: item.payload.zip_code || "",
+            city: item.payload.city || "",
+            state: item.payload.state || "",
+            cadPro: item.payload.cad_pro || "",
+          }));
+        const existingIds = new Set(baseList.map((c) => c.id));
+        return [...offlineClients.filter((c) => !existingIds.has(c.id)), ...baseList];
+      };
+
       try {
         const backendData = await api.get<any[]>("/clients");
-        return Array.isArray(backendData) ? backendData.map(mapFromDB) : [];
+        const safeList = Array.isArray(backendData) ? backendData : [];
+        await saveSnapshot("clients", safeList);
+        return mergePendingOfflineClients(safeList.map(mapFromDB));
       } catch (error: any) {
+        if (isNetworkError(error)) {
+          const cached = await getSnapshot<any>("clients");
+          return mergePendingOfflineClients(cached.map(mapFromDB));
+        }
         toast({
           title: "Erro ao carregar clientes",
           description: error.message || "Erro na conexão com o servidor local.",
@@ -74,18 +108,41 @@ export const useClients = () => {
   };
 
   const addClient = async (client: Omit<Client, 'id'>) => {
-    try {
-      const created = await api.post<any>('/clients', {
-        cpf: client.cpf,
-        name: client.name,
-        birth_date: client.birthDate || null,
-        email: client.email || null,
-        phone: client.phone || null,
-        zip_code: client.zipCode || null,
-        city: client.city || null,
-        state: client.state || null,
-        cad_pro: client.cadPro || null
+    const payload = {
+      cpf: client.cpf,
+      name: client.name,
+      birth_date: client.birthDate || null,
+      email: client.email || null,
+      phone: client.phone || null,
+      zip_code: client.zipCode || null,
+      city: client.city || null,
+      state: client.state || null,
+      cad_pro: client.cadPro || null,
+    };
+
+    const saveOffline = async () => {
+      const tempId = `offline-client-${generateUUID()}`;
+      await enqueueOfflineOp({
+        type: "CREATE_CLIENT",
+        tempId,
+        label: client.name || client.cpf || "Novo Cliente",
+        payload,
       });
+      const localClient: Client = { id: tempId, ...client };
+      queryClient.setQueryData<Client[]>(["clients"], (prev = []) => [localClient, ...prev]);
+      toast({
+        title: "Cliente salvo no Modo Offline",
+        description: `${client.name} foi gravado localmente e já pode receber fazendas e pedidos.`,
+      });
+      return localClient;
+    };
+
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      return saveOffline();
+    }
+
+    try {
+      const created = await api.post<any>('/clients', payload);
       await fetchClients();
       toast({
         title: "Cliente cadastrado",
@@ -93,6 +150,9 @@ export const useClients = () => {
       });
       return created;
     } catch (error: any) {
+      if (isNetworkError(error)) {
+        return saveOffline();
+      }
       toast({
         title: "Erro ao cadastrar cliente",
         description: error.message || "Erro ao salvar cliente no banco.",

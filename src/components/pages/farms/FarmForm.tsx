@@ -273,6 +273,30 @@ export const FarmForm = ({
             </div>
           </div>
 
+          {/* Dados do Responsável pela Fazenda */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="responsible_name">Nome do Responsável (Opcional)</Label>
+              <Input
+                id="responsible_name"
+                value={formData.responsible_name || ""}
+                onChange={(e) => onInputChange("responsible_name", e.target.value)}
+                placeholder="Ex: João da Silva (Gerente / Responsável)"
+              />
+            </div>
+            <div>
+              <Label htmlFor="responsible_cpf">CPF do Responsável (Opcional)</Label>
+              <IMaskInput
+                mask="000.000.000-00"
+                id="responsible_cpf"
+                value={formData.responsible_cpf || ""}
+                onAccept={(value) => onInputChange("responsible_cpf", value as string)}
+                placeholder="000.000.000-00"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+          </div>
+
           {editingFarm && (
             <div className="mt-6 border-t pt-4">
               <div className="flex justify-between items-center mb-4">

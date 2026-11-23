@@ -266,17 +266,32 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
                             </div>
                           ) : service.products ? (
                             <div className="flex flex-wrap gap-1">
-                              {service.products.split(",").slice(0, 3).map((p, idx) => (
+                              {(typeof service.products === "string"
+                                ? service.products.split(",")
+                                : Array.isArray(service.products)
+                                ? service.products
+                                : []
+                              ).slice(0, 3).map((p: any, idx: number) => (
                                 <span
                                   key={idx}
                                   className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300"
                                 >
-                                  {p.trim()}
+                                  {String(p).trim()}
                                 </span>
                               ))}
-                              {service.products.split(",").length > 3 && (
+                              {(typeof service.products === "string"
+                                ? service.products.split(",")
+                                : Array.isArray(service.products)
+                                ? service.products
+                                : []
+                              ).length > 3 && (
                                 <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground">
-                                  +{service.products.split(",").length - 3} mais
+                                  +{(typeof service.products === "string"
+                                    ? service.products.split(",")
+                                    : Array.isArray(service.products)
+                                    ? service.products
+                                    : []
+                                  ).length - 3} mais
                                 </span>
                               )}
                             </div>
