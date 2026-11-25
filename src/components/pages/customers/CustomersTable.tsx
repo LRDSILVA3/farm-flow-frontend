@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { formatCPF, formatPhoneNumber } from "@/lib/utils";
-import { Edit, MapPin, FileText } from "lucide-react";
+import { Edit, MapPin, FileText, Users } from "lucide-react";
 import { Client } from "../../../hooks/useClients";
 
 interface CustomersTableProps {
@@ -50,7 +50,18 @@ export const CustomersTable = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {currentClients.map((client) => (
+          {currentClients.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
+                <div className="flex flex-col items-center justify-center space-y-2">
+                  <Users className="h-8 w-8 text-muted-foreground/40" />
+                  <p className="text-sm font-medium text-slate-700">Nenhum cliente encontrado</p>
+                  <p className="text-xs text-muted-foreground">Tente ajustar os termos de busca ou cadastre um novo cliente.</p>
+                </div>
+              </TableCell>
+            </TableRow>
+          ) : (
+            currentClients.map((client) => (
             <TableRow key={client.id}>
               <TableCell className="font-medium">
                 {onViewDossier ? (
@@ -108,14 +119,15 @@ export const CustomersTable = ({
                 </div>
               </TableCell>
             </TableRow>
-          ))}
+            ))
+          )}
         </TableBody>
       </Table>
 
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <span className="text-sm text-gray-600">
-            Mostrando {startIndex + 1} a {Math.min(endIndex, totalItems)} de {totalItems} clientes
+            Mostrando {totalItems > 0 ? startIndex + 1 : 0} a {Math.min(endIndex, totalItems)} de {totalItems} clientes
           </span>
           <Select value={itemsPerPage.toString()} onValueChange={onItemsPerPageChange}>
             <SelectTrigger className="w-20">

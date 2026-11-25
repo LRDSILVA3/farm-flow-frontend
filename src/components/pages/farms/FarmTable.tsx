@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { formatPhoneNumber } from "@/lib/utils";
-import { Edit, Eye } from "lucide-react";
+import { Edit, Eye, MapPin } from "lucide-react";
 import { Farm } from "@/types/farm";
 
 
@@ -65,7 +65,18 @@ export const FarmsTable = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {currentFarms.map((farm) => (
+          {currentFarms.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
+                <div className="flex flex-col items-center justify-center space-y-2">
+                  <MapPin className="h-8 w-8 text-muted-foreground/40" />
+                  <p className="text-sm font-medium text-slate-700">Nenhuma fazenda encontrada</p>
+                  <p className="text-xs text-muted-foreground">Tente ajustar os filtros ou cadastre uma nova fazenda.</p>
+                </div>
+              </TableCell>
+            </TableRow>
+          ) : (
+            currentFarms.map((farm) => (
             <TableRow key={farm.id}>
               <TableCell className="font-medium">{farm.name}</TableCell>
               <TableCell>{farm.clientName}</TableCell>
@@ -108,7 +119,8 @@ export const FarmsTable = ({
                 </div>
               </TableCell>
             </TableRow>
-          ))}
+            ))
+          )}
         </TableBody>
       </Table>
 
@@ -116,7 +128,7 @@ export const FarmsTable = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <span className="text-sm text-gray-600">
-            Mostrando {startIndex + 1} a {Math.min(endIndex, totalItems)} de {totalItems} fazendas
+            Mostrando {totalItems > 0 ? startIndex + 1 : 0} a {Math.min(endIndex, totalItems)} de {totalItems} fazendas
           </span>
           <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
             <SelectTrigger className="w-20">

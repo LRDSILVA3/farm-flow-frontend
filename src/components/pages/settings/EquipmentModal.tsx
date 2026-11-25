@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,6 +38,9 @@ export const EquipmentModal: React.FC<EquipmentModalProps> = ({
             {currentType === "Outro" && <Package className="h-5 w-5 text-amber-600" />}
             {editingEquipment ? "Editar Equipamento" : "Novo Equipamento"}
           </DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
+            Cadastro e manutenção de maquinários, ferramentas e frotas operacionais
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleEquipmentSubmit} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -655,7 +655,7 @@ export const OrdersTable = ({
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
           <div className="flex items-center space-x-2">
             <span className="text-sm text-muted-foreground">
-              Mostrando {startIndex + 1} a {Math.min(endIndex, totalItems)} de {totalItems} pedidos
+              Mostrando {totalItems > 0 ? startIndex + 1 : 0} a {Math.min(endIndex, totalItems)} de {totalItems} pedidos
             </span>
             <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
               <SelectTrigger className="w-20">
@@ -753,25 +753,32 @@ export const OrdersTable = ({
         analysesList={analysesList}
       />
 
-      {/* AlertDialog: Confirmar Aprovação do Pedido */}
+      {/* Confirmação de Aprovação de Pedido */}
       <AlertDialog open={!!orderToApprove} onOpenChange={(open) => !open && setOrderToApprove(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Aprovar Pedido?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Ao aprovar o pedido de <strong>{orderToApprove ? getClientName(orderToApprove) : ""}</strong> ({orderToApprove?.value || "R$ 0,00"}), o agendamento e a execução em campo serão liberados e o contrato comercial ficará bloqueado para edição.
+            <AlertDialogTitle className="flex items-center gap-2 text-emerald-800">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              Aprovar Pedido
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-600">
+              Deseja aprovar o pedido de <strong>{orderToApprove ? getClientName(orderToApprove) : ''}</strong> referente a{" "}
+              <strong>{orderToApprove ? (orderToApprove.serviceName || orderToApprove.type) : ''}</strong> no valor de{" "}
+              <strong className="text-slate-900">{orderToApprove?.value || 'R$ 0,00'}</strong>?
+              <br className="my-1.5" />
+              O status mudará para <span className="font-semibold text-emerald-700">Aprovado</span> e liberará o agendamento de etapas no campo.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Voltar</AlertDialogCancel>
             <AlertDialogAction
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
               onClick={() => {
                 if (orderToApprove) {
                   onApprove(orderToApprove.id);
                   setOrderToApprove(null);
                 }
               }}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               Confirmar Aprovação
             </AlertDialogAction>
@@ -779,27 +786,32 @@ export const OrdersTable = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* AlertDialog: Confirmar Cancelamento do Pedido */}
+      {/* Confirmação de Cancelamento de Pedido */}
       <AlertDialog open={!!orderToCancel} onOpenChange={(open) => !open && setOrderToCancel(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Cancelar Pedido?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja cancelar o pedido de <strong>{orderToCancel ? getClientName(orderToCancel) : ""}</strong>? Esta ação será registrada no histórico de auditoria.
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Ban className="h-5 w-5" />
+              Cancelar Pedido
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-600">
+              Tem certeza que deseja cancelar o pedido de <strong>{orderToCancel ? getClientName(orderToCancel) : ''}</strong>?
+              <br className="my-1.5" />
+              Esta ação marcará o pedido como <span className="font-semibold text-rose-700">Cancelado</span>. O pedido não poderá mais receber novos agendamentos nem execuções operacionais.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Voltar</AlertDialogCancel>
             <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
               onClick={() => {
                 if (orderToCancel) {
                   onCancel(orderToCancel.id);
                   setOrderToCancel(null);
                 }
               }}
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
-              Confirmar Cancelamento
+              Sim, Cancelar Pedido
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -424,7 +424,7 @@ export const AuditLogsPanel: React.FC = () => {
 
               <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground pt-1">
                 <span>
-                  Mostrando {(page - 1) * 20 + 1} a {Math.min(page * 20, total)} de {total} registro(s)
+                  Mostrando {total > 0 ? (page - 1) * 20 + 1 : 0} a {Math.min(page * 20, total)} de {total} registro(s)
                 </span>
                 {totalPages > 1 && (
                   <Pagination>

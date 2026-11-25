@@ -280,13 +280,7 @@ export const OrderExecutionDialog: React.FC<OrderExecutionDialogProps> = ({
     }
 
     if (list.length === 0) {
-      list.push(
-        { id: 'default-1', name: 'Talhão 01' },
-        { id: 'default-2', name: 'Talhão 02' },
-        { id: 'default-3', name: 'Talhão 03' },
-        { id: 'default-4', name: 'Talhão 04' },
-        { id: 'default-sede', name: 'Área da Sede' }
-      );
+      list.push({ id: 'area-geral', name: 'Área Geral da Fazenda' });
     }
 
     return list;

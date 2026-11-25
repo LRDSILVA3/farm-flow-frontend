@@ -1,8 +1,10 @@
 
+import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2 } from "lucide-react";
 import { Plot } from "@/types/farm";
+import { DeleteConfirmDialog } from "../settings/DeleteConfirmDialog";
 
 interface PlotsTableProps {
   plots: Plot[];
@@ -11,6 +13,8 @@ interface PlotsTableProps {
 }
 
 export const PlotsTable = ({ plots, onEditPlot, onDeletePlot }: PlotsTableProps) => {
+  const [plotToDelete, setPlotToDelete] = useState<Plot | null>(null);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Ativo":
@@ -31,6 +35,7 @@ export const PlotsTable = ({ plots, onEditPlot, onDeletePlot }: PlotsTableProps)
   }
 
   return (
+    <>
     <Table>
       <TableHeader>
         <TableRow>
@@ -79,9 +84,9 @@ export const PlotsTable = ({ plots, onEditPlot, onDeletePlot }: PlotsTableProps)
                   size="sm"
                   aria-label="Excluir talhão"
                   title="Excluir talhão"
-                  onClick={() => onDeletePlot(plot.id)}
+                  onClick={() => setPlotToDelete(plot)}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4 text-red-500" />
                 </Button>
               </div>
             </TableCell>
@@ -89,5 +94,18 @@ export const PlotsTable = ({ plots, onEditPlot, onDeletePlot }: PlotsTableProps)
         ))}
       </TableBody>
     </Table>
+    <DeleteConfirmDialog
+      open={!!plotToDelete}
+      onOpenChange={(op) => !op && setPlotToDelete(null)}
+      onConfirm={() => {
+        if (plotToDelete) {
+          onDeletePlot(plotToDelete.id);
+          setPlotToDelete(null);
+        }
+      }}
+      title="Excluir Talhão"
+      description={`Tem certeza que deseja excluir o talhão "${plotToDelete?.name}" (${plotToDelete?.area || 0} ha)? As áreas vinculadas a este talhão serão afetadas.`}
+    />
+    </>
   );
 };

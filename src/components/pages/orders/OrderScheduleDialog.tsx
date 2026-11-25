@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -193,6 +194,9 @@ export const OrderScheduleDialog: React.FC<OrderScheduleDialogProps> = ({
             <Calendar className="h-5 w-5 text-primary" />
             Agendamento por Talhão e Cronograma
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Gerenciamento de cronograma e agendamento de visitas
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">

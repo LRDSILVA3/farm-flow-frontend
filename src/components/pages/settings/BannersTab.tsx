@@ -118,7 +118,7 @@ export const BannersTab = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-600">
-                Mostrando {bannersStartIndex + 1} a {Math.min(bannersEndIndex, totalBanners)} de {totalBanners} banners
+                Mostrando {totalBanners > 0 ? bannersStartIndex + 1 : 0} a {Math.min(bannersEndIndex, totalBanners)} de {totalBanners} banners
               </span>
               <Select value={bannersPerPage.toString()} onValueChange={(value) => {
                 setBannersPerPage(Number(value));

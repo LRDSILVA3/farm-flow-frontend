@@ -389,8 +389,19 @@ export const ReportsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-6 print:space-y-4 print:text-black">
+      {/* Cabeçalho Oficial exclusivo para Impressão */}
+      <div className="hidden print:flex items-center justify-between pb-4 border-b-2 border-black mb-4">
+        <div className="flex items-center gap-3">
+          <div className="font-black text-2xl tracking-wider text-black">PRECIZA</div>
+          <div className="text-xs text-gray-700">Agricultura de Precisão • Relatório Operacional e de Produtividade</div>
+        </div>
+        <div className="text-right text-xs text-gray-700">
+          Emitido em: {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
         <div>
           <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <BarChart3 className="h-6 w-6 text-emerald-600" />
@@ -413,7 +424,7 @@ export const ReportsPage: React.FC = () => {
         </div>
       </div>
 
-      <Card>
+      <Card className="print:hidden">
         <CardContent className="pt-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
@@ -527,7 +538,7 @@ export const ReportsPage: React.FC = () => {
       </div>
 
       <Tabs defaultValue="collaborators" className="space-y-4">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 h-auto w-full gap-1">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 h-auto w-full gap-1 print:hidden">
           <TabsTrigger value="collaborators" className="gap-1.5 text-xs py-2">
             <Users className="h-4 w-4" />
             Produtividade da Equipe
@@ -574,8 +585,14 @@ export const ReportsPage: React.FC = () => {
                 <TableBody>
                   {collaboratorProductivity.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
-                        Nenhum colaborador registrado com execuções no período.
+                      <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <Users className="h-8 w-8 text-muted-foreground/40" />
+                          <p className="text-sm font-medium">Nenhum operador com execuções registradas</p>
+                          <p className="text-xs text-muted-foreground">
+                            As métricas de produtividade são geradas a partir das execuções concluídas na Agenda.
+                          </p>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -639,8 +656,14 @@ export const ReportsPage: React.FC = () => {
                 <TableBody>
                   {equipmentUsage.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
-                        Nenhum equipamento registrado com execuções no período.
+                      <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <Truck className="h-8 w-8 text-muted-foreground/40" />
+                          <p className="text-sm font-medium">Nenhum equipamento com uso registrado</p>
+                          <p className="text-xs text-muted-foreground">
+                            Vincule máquinas e veículos aos agendamentos ou execuções para rastrear horas e área operada.
+                          </p>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -698,8 +721,14 @@ export const ReportsPage: React.FC = () => {
                 <TableBody>
                   {serviceBreakdown.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
-                        Nenhum serviço registrado no período.
+                      <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <TrendingUp className="h-8 w-8 text-muted-foreground/40" />
+                          <p className="text-sm font-medium">Nenhum serviço encontrado</p>
+                          <p className="text-xs text-muted-foreground">
+                            Nenhum pedido ativo atende aos filtros de serviço e período selecionados.
+                          </p>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -749,8 +778,14 @@ export const ReportsPage: React.FC = () => {
                 <TableBody>
                   {regionalBreakdown.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground py-6">
-                        Nenhuma fazenda cadastrada com dados de localização.
+                      <TableCell colSpan={4} className="text-center py-10 text-muted-foreground">
+                        <div className="flex flex-col items-center justify-center gap-2">
+                          <MapPin className="h-8 w-8 text-muted-foreground/40" />
+                          <p className="text-sm font-medium">Nenhuma propriedade com dados regionais</p>
+                          <p className="text-xs text-muted-foreground">
+                            Cadastre municípios e estados nas fazendas para visualizar o raio de cobertura da Preciza.
+                          </p>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : (

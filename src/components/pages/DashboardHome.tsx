@@ -308,7 +308,11 @@ const DashboardHome = ({ onNavigate, canNavigate = () => true }: DashboardHomePr
           </CardHeader>
           <CardContent>
             {recentActivities.length === 0 ? (
-              <p className="text-center text-slate-400 py-6 text-sm">Nenhuma atividade recente</p>
+              <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground gap-1.5">
+                <Users className="h-6 w-6 text-muted-foreground/40" />
+                <p className="text-sm font-medium text-slate-600">Nenhuma atividade recente</p>
+                <p className="text-xs text-muted-foreground">Novos clientes cadastrados aparecerão aqui.</p>
+              </div>
             ) : (
               <div className="space-y-2.5">
                 {recentActivities.map((activity, index) => (
@@ -347,7 +351,11 @@ const DashboardHome = ({ onNavigate, canNavigate = () => true }: DashboardHomePr
           </CardHeader>
           <CardContent>
             {upcomingExecutions.length === 0 ? (
-              <p className="text-center text-slate-400 py-6 text-sm">Nenhuma execução agendada</p>
+              <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground gap-1.5">
+                <Calendar className="h-6 w-6 text-muted-foreground/40" />
+                <p className="text-sm font-medium text-slate-600">Nenhuma execução agendada</p>
+                <p className="text-xs text-muted-foreground">Serviços com datas definidas na Agenda aparecerão aqui.</p>
+              </div>
             ) : (
               <div className="space-y-2.5">
                 {upcomingExecutions.map((execution, index) => (
@@ -449,7 +457,13 @@ const DashboardHome = ({ onNavigate, canNavigate = () => true }: DashboardHomePr
         </CardHeader>
         <CardContent>
           {recentOrders.length === 0 ? (
-            <p className="text-center text-slate-400 py-6 text-sm">Nenhum pedido encontrado</p>
+            <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground gap-2">
+              <FileText className="h-8 w-8 text-muted-foreground/40" />
+              <p className="text-sm font-medium text-slate-700">Nenhum pedido recente</p>
+              <p className="text-xs text-muted-foreground">
+                Crie um novo pedido para começar a acompanhar o fluxo operacional.
+              </p>
+            </div>
           ) : (
             <>
               {/* Visão Mobile em Cards */}

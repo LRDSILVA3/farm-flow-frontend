@@ -1,5 +1,5 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,6 +39,9 @@ export const PlanModal = ({
           <DialogTitle>
             {editingPlan ? "Editar Plano" : "Novo Plano"}
           </DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
+            Configuração de planos de assinatura e pacotes de serviços para produtores
+          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handlePlanSubmit} className="space-y-4">

@@ -1,5 +1,5 @@
 import { FormEvent } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +28,9 @@ export const CostVariableModal: React.FC<CostVariableModalProps> = ({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{editingCostVariable ? "Editar Variável de Custo" : "Nova Variável de Custo"}</DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
+            Defina parâmetros e bases financeiras para composição de custos operacionais
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleCostVariableSubmit}>
           <div className="grid gap-4 py-4">

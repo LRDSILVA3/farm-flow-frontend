@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Product, StockMovement } from "../../../hooks/useProducts";
@@ -73,13 +73,13 @@ export const StockHistoryDialog: React.FC<StockHistoryDialogProps> = ({
             <History className="h-5 w-5 text-emerald-600" />
             Histórico de Movimentações de Estoque
           </DialogTitle>
-          <p className="text-xs text-muted-foreground">
+          <DialogDescription className="text-xs text-muted-foreground">
             {product ? (
               <>Produto: <strong className="text-foreground">{product.name}</strong> ({product.unit || 'un'})</>
             ) : (
               "Todas as movimentações recentes do estoque"
             )}
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto mt-2 rounded-md border">

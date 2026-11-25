@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,6 +63,9 @@ export const ServiceGroupModal: React.FC<ServiceGroupModalProps> = ({
           <DialogTitle>
             {editingServiceGroup ? "Editar Grupo de Serviço" : "Novo Grupo de Serviço"}
           </DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
+            Agrupamento de serviços para ofertas e orçamentos combinados
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleServiceGroupSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">

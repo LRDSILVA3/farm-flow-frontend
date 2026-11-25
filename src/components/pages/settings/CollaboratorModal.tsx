@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,6 +31,9 @@ export const CollaboratorModal = ({
           <DialogTitle>
             {editingCollaborator ? "Editar Colaborador" : "Novo Colaborador"}
           </DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
+            Cadastro de operadores, técnicos de amostragem e agrônomos de campo
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleCollaboratorSubmit} className="space-y-4">
           <div className="space-y-2">

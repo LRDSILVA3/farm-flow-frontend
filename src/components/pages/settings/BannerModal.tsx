@@ -1,5 +1,5 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,6 +46,9 @@ export const BannerModal = ({
           <DialogTitle>
             {editingBanner ? "Editar Banner" : "Novo Banner"}
           </DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
+            Personalize os banners informativos e promocionais exibidos no aplicativo
+          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleBannerSubmit} className="space-y-4">

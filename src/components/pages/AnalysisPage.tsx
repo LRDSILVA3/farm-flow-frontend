@@ -8,12 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Edit, Search, Plus, Trash2, Layers, CheckCircle2, Download, Tag, X, RefreshCw } from "lucide-react";
+import { Edit, Search, Plus, Trash2, Layers, CheckCircle2, Download, Tag, X, RefreshCw, FlaskConical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/api";
 import { getLocalDateISO } from "@/lib/utils";
 import { ImportOrderAnalysesDialog } from "./analyses/ImportOrderAnalysesDialog";
 import { SampleLabelsDialog } from "./analyses/SampleLabelsDialog";
+import { DeleteConfirmDialog } from "./settings/DeleteConfirmDialog";
 
 interface AnalysisExecution {
   id: string;
@@ -74,6 +75,7 @@ const AnalisesPrincipalPage = () => {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showLabelsModal, setShowLabelsModal] = useState(false);
   const [editingAnalysis, setEditingAnalysis] = useState<AnalysisExecution | null>(null);
+  const [analysisToDelete, setAnalysisToDelete] = useState<AnalysisExecution | null>(null);
 
   // Estado para lote de análises
   const [batchClientId, setBatchClientId] = useState("");
@@ -554,9 +556,15 @@ const AnalisesPrincipalPage = () => {
           )}
 
           {loading ? (
-            <div className="text-center py-8 text-muted-foreground">Carregando análises...</div>
+            <div className="text-center py-12 text-muted-foreground">Carregando análises...</div>
           ) : filteredAnalyses.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">Nenhuma análise encontrada.</div>
+            <div className="text-center py-12 text-muted-foreground">
+              <div className="flex flex-col items-center justify-center space-y-2">
+                <FlaskConical className="h-10 w-10 text-muted-foreground/40" />
+                <p className="text-sm font-medium text-slate-700">Nenhuma análise encontrada</p>
+                <p className="text-xs text-muted-foreground">Tente ajustar os filtros por laboratório/busca ou importe do pedido.</p>
+              </div>
+            </div>
           ) : (
             <div className="rounded-md border overflow-x-auto">
               <Table>
@@ -637,7 +645,9 @@ const AnalisesPrincipalPage = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDelete(a.id)}
+                            aria-label="Excluir análise"
+                            title="Excluir análise"
+                            onClick={() => setAnalysisToDelete(a)}
                           >
                             <Trash2 className="h-4 w-4 text-red-500" />
                           </Button>
@@ -941,6 +951,18 @@ const AnalisesPrincipalPage = () => {
       <SampleLabelsDialog
         open={showLabelsModal}
         onOpenChange={setShowLabelsModal}
+      />
+      <DeleteConfirmDialog
+        open={!!analysisToDelete}
+        onOpenChange={(op) => !op && setAnalysisToDelete(null)}
+        onConfirm={() => {
+          if (analysisToDelete) {
+            handleDelete(analysisToDelete.id);
+            setAnalysisToDelete(null);
+          }
+        }}
+        title="Excluir Lançamento de Análise"
+        description={`Tem certeza que deseja excluir o lançamento de "${analysisToDelete?.analysisName}" do cliente ${analysisToDelete?.clientName || 'selecionado'}? Esta ação removerá o registro do sistema.`}
       />
     </div>
   );

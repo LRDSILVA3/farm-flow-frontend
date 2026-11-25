@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -73,9 +73,9 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({
             <Settings className="h-5 w-5 text-emerald-600" />
             {editingService ? "Editar Serviço" : "Novo Serviço"}
           </DialogTitle>
-          <p className="text-xs text-muted-foreground">
+          <DialogDescription className="text-xs text-muted-foreground">
             Configure dados operacionais, precificação e produtos vinculados à operação
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleServiceSubmit} className="space-y-4 pt-2">

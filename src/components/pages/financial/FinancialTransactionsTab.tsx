@@ -30,6 +30,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useOrders } from "@/hooks/useOrders";
 import { getLocalDateISO } from "@/lib/utils";
+import { DeleteConfirmDialog } from "../settings/DeleteConfirmDialog";
 
 export interface FinancialTransaction {
   id: string;
@@ -77,6 +78,7 @@ export const FinancialTransactionsTab: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "paid">("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [isSyncing, setIsSyncing] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<FinancialTransaction | null>(null);
 
   // Modal Novo Lançamento
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -504,8 +506,12 @@ export const FinancialTransactionsTab: React.FC = () => {
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground text-xs">
-                      Nenhum lançamento financeiro encontrado.
+                    <TableCell colSpan={9} className="text-center py-10 text-muted-foreground text-xs">
+                      <div className="flex flex-col items-center justify-center space-y-2">
+                        <DollarSign className="h-8 w-8 text-muted-foreground/40" />
+                        <p className="text-sm font-medium text-slate-700">Nenhum lançamento financeiro encontrado</p>
+                        <p className="text-xs text-muted-foreground">Tente ajustar os filtros ou adicione uma nova receita/despesa.</p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -583,7 +589,8 @@ export const FinancialTransactionsTab: React.FC = () => {
                           variant="ghost"
                           size="sm"
                           aria-label="Excluir lançamento"
-                          onClick={() => handleDelete(t.id)}
+                          title="Excluir lançamento"
+                          onClick={() => setTransactionToDelete(t)}
                           className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -783,6 +790,19 @@ export const FinancialTransactionsTab: React.FC = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      <DeleteConfirmDialog
+        open={!!transactionToDelete}
+        onOpenChange={(op) => !op && setTransactionToDelete(null)}
+        onConfirm={() => {
+          if (transactionToDelete) {
+            handleDelete(transactionToDelete.id);
+            setTransactionToDelete(null);
+          }
+        }}
+        title="Excluir Lançamento Financeiro"
+        description={`Tem certeza que deseja excluir o lançamento "${transactionToDelete?.description}" no valor de R$ ${(transactionToDelete?.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}? Esta ação removerá o registro do fluxo de caixa.`}
+      />
     </div>
   );
 };

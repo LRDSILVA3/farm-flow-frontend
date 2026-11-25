@@ -1,5 +1,5 @@
 import React from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,6 +53,9 @@ export const ProductModal: React.FC<ProductModalProps> = ({
             <Package className="h-5 w-5 text-emerald-600" />
             {editingProduct ? "Editar Produto" : "Novo Produto / Insumo"}
           </DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
+            Gerenciamento de insumos agrícolas, defensivos, fertilizantes e sementes
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleProductSubmit} className="space-y-4 pt-2">

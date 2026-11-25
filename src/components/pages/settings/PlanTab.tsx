@@ -124,7 +124,7 @@ export const PlanTab = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-600">
-                Mostrando {plansStartIndex + 1} a {Math.min(plansEndIndex, totalPlans)} de {totalPlans} planos
+                Mostrando {totalPlans > 0 ? plansStartIndex + 1 : 0} a {Math.min(plansEndIndex, totalPlans)} de {totalPlans} planos
               </span>
               <Select value={plansPerPage.toString()} onValueChange={(value) => {
                 setPlansPerPage(Number(value));

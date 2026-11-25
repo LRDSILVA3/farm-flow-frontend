@@ -1547,8 +1547,12 @@ export const SchedulePage = () => {
       {/* Visão Mobile em Cards */}
       <div className="space-y-3 md:hidden">
         {filteredExecutions.length === 0 ? (
-          <Card className="p-8 text-center text-muted-foreground text-sm">
-            Nenhum agendamento encontrado com os filtros selecionados.
+          <Card className="p-10 text-center text-muted-foreground text-sm">
+            <div className="flex flex-col items-center justify-center space-y-2">
+              <Calendar className="h-8 w-8 text-muted-foreground/40" />
+              <p className="text-sm font-medium text-slate-700">Nenhum agendamento encontrado</p>
+              <p className="text-xs text-muted-foreground">Tente limpar os filtros ou selecionar outro status.</p>
+            </div>
           </Card>
         ) : (
           filteredExecutions.map((execution) => {
@@ -1698,8 +1702,12 @@ export const SchedulePage = () => {
               <TableBody>
                 {filteredExecutions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      Nenhum agendamento encontrado com os filtros selecionados.
+                    <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                      <div className="flex flex-col items-center justify-center space-y-2">
+                        <Calendar className="h-8 w-8 text-muted-foreground/40" />
+                        <p className="text-sm font-medium text-slate-700">Nenhum agendamento encontrado</p>
+                        <p className="text-xs text-muted-foreground">Tente limpar os filtros ou selecionar outro status.</p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -78,9 +78,9 @@ export const StockMovementDialog: React.FC<StockMovementDialogProps> = ({
             <PackagePlus className="h-5 w-5 text-emerald-600" />
             Movimentação de Estoque
           </DialogTitle>
-          <p className="text-xs text-muted-foreground">
+          <DialogDescription className="text-xs text-muted-foreground">
             Produto: <strong className="text-foreground">{product.name}</strong> ({product.unit || 'un'})
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">

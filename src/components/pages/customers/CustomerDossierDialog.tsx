@@ -420,8 +420,12 @@ export const CustomerDossierDialog: React.FC<CustomerDossierDialogProps> = ({
               <TabsContent value="orders" className="space-y-4">
                 {clientOrders.length === 0 ? (
                   <Card>
-                    <CardContent className="p-8 text-center text-muted-foreground">
-                      Nenhum pedido encontrado para este produtor.
+                    <CardContent className="p-10 text-center text-muted-foreground">
+                      <div className="flex flex-col items-center justify-center space-y-2">
+                        <FileText className="h-8 w-8 text-muted-foreground/40" />
+                        <p className="text-sm font-medium text-slate-700">Nenhum pedido encontrado</p>
+                        <p className="text-xs text-muted-foreground">Este produtor ainda não possui pedidos cadastrados no sistema.</p>
+                      </div>
                     </CardContent>
                   </Card>
                 ) : (
@@ -537,8 +541,12 @@ export const CustomerDossierDialog: React.FC<CustomerDossierDialogProps> = ({
               <TabsContent value="schedule" className="space-y-4">
                 {allSchedules.length === 0 ? (
                   <Card>
-                    <CardContent className="p-8 text-center text-muted-foreground">
-                      Nenhum agendamento de campo registrado para este produtor.
+                    <CardContent className="p-10 text-center text-muted-foreground">
+                      <div className="flex flex-col items-center justify-center space-y-2">
+                        <Calendar className="h-8 w-8 text-muted-foreground/40" />
+                        <p className="text-sm font-medium text-slate-700">Nenhum agendamento registrado</p>
+                        <p className="text-xs text-muted-foreground">Não há visitas ou etapas agendadas para este produtor.</p>
+                      </div>
                     </CardContent>
                   </Card>
                 ) : (
@@ -601,8 +609,12 @@ export const CustomerDossierDialog: React.FC<CustomerDossierDialogProps> = ({
               <TabsContent value="farms" className="space-y-4">
                 {clientFarms.length === 0 ? (
                   <Card>
-                    <CardContent className="p-8 text-center text-muted-foreground">
-                      Nenhuma propriedade rural cadastrada para este produtor.
+                    <CardContent className="p-10 text-center text-muted-foreground">
+                      <div className="flex flex-col items-center justify-center space-y-2">
+                        <Tractor className="h-8 w-8 text-muted-foreground/40" />
+                        <p className="text-sm font-medium text-slate-700">Nenhuma propriedade cadastrada</p>
+                        <p className="text-xs text-muted-foreground">Cadastre fazendas e talhões vinculados a este produtor.</p>
+                      </div>
                     </CardContent>
                   </Card>
                 ) : (
@@ -741,8 +753,12 @@ export const CustomerDossierDialog: React.FC<CustomerDossierDialogProps> = ({
               <TabsContent value="executions" className="space-y-4">
                 {allExecutions.length === 0 ? (
                   <Card>
-                    <CardContent className="p-8 text-center text-muted-foreground">
-                      Nenhuma execução de campo registrada até o momento.
+                    <CardContent className="p-10 text-center text-muted-foreground">
+                      <div className="flex flex-col items-center justify-center space-y-2">
+                        <FlaskConical className="h-8 w-8 text-muted-foreground/40" />
+                        <p className="text-sm font-medium text-slate-700">Nenhuma execução registrada</p>
+                        <p className="text-xs text-muted-foreground">Nenhum apontamento de campo realizado até o momento.</p>
+                      </div>
                     </CardContent>
                   </Card>
                 ) : (
