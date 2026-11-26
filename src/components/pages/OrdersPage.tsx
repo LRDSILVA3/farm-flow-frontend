@@ -180,7 +180,7 @@ const OrdersPage = () => {
   const hasActiveFilters = searchTerm.trim() !== "" || serviceFilter !== "all" || statusFilter !== "all";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-1">
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Pedidos</h1>
@@ -252,14 +252,14 @@ const OrdersPage = () => {
                 Mostrando <strong>{filteredOrders.length}</strong> de <strong>{orders.length}</strong> pedidos
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row flex-wrap gap-2">
-              <div className="relative">
+            <div className="flex flex-col sm:flex-row flex-wrap items-center gap-2">
+              <div className="relative w-full sm:w-72 lg:w-80">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar por cliente, fazenda ou serviço..."
                   value={searchTerm}
                   onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                  className="pl-8 w-full sm:w-60"
+                  className="pl-8 w-full"
                 />
               </div>
 

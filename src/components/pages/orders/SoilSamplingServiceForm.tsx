@@ -36,6 +36,7 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
 
   const [alqueires, setAlqueires] = useState<number | null>(initialAlqueires === 0 ? null : initialAlqueires);
   const [numPontos, setNumPontos] = useState<number | null>(initialNumPontos === 0 ? null : initialNumPontos);
+  const [isPontosManualmenteEditado, setIsPontosManualmenteEditado] = useState<boolean>(isEditing && initialNumPontos > 0);
   const [vencimentoServico, setVencimentoServico] = useState<Date | undefined>(undefined);
   const [isReanalise, setIsReanalise] = useState<boolean>(false);
   const [comNotaFiscal, setComNotaFiscal] = useState<boolean>(true);
@@ -138,8 +139,8 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
     setAlqueires(initialAlqueires === 0 ? null : initialAlqueires);
     if (initialAlqueires > 0) {
       lastAreaHaRef.current = Number((initialAlqueires * 2.42).toFixed(2));
-      // Auto-preencher o número de pontos sugerido quando for novo pedido
-      if (!isEditing && (numPontos === null || numPontos === 0)) {
+      // Auto-preencher ou sincronizar o número de pontos sugerido quando não for edição manual
+      if (!isEditing && !isPontosManualmenteEditado) {
         const alq = initialAlqueires;
         const pts = alq < 5 ? Math.floor(alq) + 1 : alq < 10 ? Math.floor((alq * 2.42) / 2.5) + 1 : Math.floor((alq * 2.42) / 3) + 1;
         setNumPontos(pts);
@@ -466,7 +467,7 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
                 lastEmittedAlqRef.current = newAlq;
                 setAlqueires(newAlq);
                 // Atualiza automaticamente o número de pontos sugerido se o usuário não tiver travado valor customizado
-                if (newAlq && newAlq > 0 && !isEditing) {
+                if (newAlq && newAlq > 0 && !isEditing && !isPontosManualmenteEditado) {
                   const pts = newAlq < 5 ? Math.floor(newAlq) + 1 : newAlq < 10 ? Math.floor((newAlq * 2.42) / 2.5) + 1 : Math.floor((newAlq * 2.42) / 3) + 1;
                   setNumPontos(pts);
                 }
@@ -489,16 +490,31 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
           <div>
             <div className="flex justify-between items-center mb-1">
               <Label htmlFor="ap-pontos">Número de Pontos de Amostragem:</Label>
-              {(() => {
-                const currentHa = Number(((alqueires || 0) * 2.42).toFixed(2));
-                const pts = numPontos || details?.numMinimoAnalises || 0;
-                const density = currentHa > 0 && pts > 0 ? (currentHa / pts) : 0;
-                return density > 0 ? (
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    {density.toFixed(2)} ha/ponto
-                  </span>
-                ) : null;
-              })()}
+              <div className="flex items-center gap-1.5">
+                {isPontosManualmenteEditado && details?.numMinimoAnalises && numPontos !== details.numMinimoAnalises && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsPontosManualmenteEditado(false);
+                      setNumPontos(details.numMinimoAnalises);
+                    }}
+                    className="text-xs text-emerald-700 hover:text-emerald-900 hover:underline font-medium cursor-pointer"
+                    title="Restaurar sugestão padrão da planilha"
+                  >
+                    Usar sugerido ({details.numMinimoAnalises} pts)
+                  </button>
+                )}
+                {(() => {
+                  const currentHa = Number(((alqueires || 0) * 2.42).toFixed(2));
+                  const pts = numPontos || details?.numMinimoAnalises || 0;
+                  const density = currentHa > 0 && pts > 0 ? (currentHa / pts) : 0;
+                  return density > 0 ? (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      {density.toFixed(2)} ha/ponto
+                    </span>
+                  ) : null;
+                })()}
+              </div>
             </div>
             <Input
               id="ap-pontos"
@@ -506,6 +522,7 @@ export const SoilSamplingServiceForm: React.FC<SoilSamplingServiceFormProps> = (
               value={numPontos === null ? '' : numPontos}
               onChange={(e) => {
                 const value = e.target.value;
+                setIsPontosManualmenteEditado(true);
                 setNumPontos(value === '' ? null : parseInt(value));
               }}
               min="0"

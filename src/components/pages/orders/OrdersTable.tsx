@@ -256,11 +256,10 @@ export const OrdersTable = ({
               variant="outline"
               size="sm"
               aria-label="Mais Ações do Pedido"
-              className="h-7 px-1.5 text-xs text-muted-foreground hover:text-foreground gap-1 border-muted-foreground/20 hover:border-muted-foreground/40"
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground border-muted-foreground/20 hover:border-muted-foreground/40 shrink-0"
               title="Mais Ações"
             >
-              <MoreHorizontal className="h-3.5 w-3.5" />
-              <span className="hidden lg:inline text-[11px] font-medium">Ações</span>
+              <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 text-xs">
@@ -473,24 +472,22 @@ export const OrdersTable = ({
         </div>
 
         {/* Visão Desktop em Tabela */}
-        <div className="hidden md:block overflow-x-auto w-full">
+        <div className="hidden md:block overflow-x-auto w-full rounded-md border border-slate-200/70">
           <Table className="w-full text-xs sm:text-sm">
           <TableHeader>
-            <TableRow>
-              <TableHead className="px-2.5">Cliente / Fazenda</TableHead>
-              <TableHead className="px-2.5">Serviço</TableHead>
-              <TableHead className="px-2.5">Área</TableHead>
-              <TableHead className="px-2.5">Execução</TableHead>
-              <TableHead className="px-2.5">Valor</TableHead>
-              <TableHead className="px-2.5">Status</TableHead>
-              <TableHead className="px-2.5">Pagamento</TableHead>
-              <TableHead className="px-2.5 text-right w-[115px]">Ações</TableHead>
+            <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 border-b">
+              <TableHead className="px-3.5 py-3 font-semibold text-slate-700 min-w-[200px]">Cliente / Fazenda</TableHead>
+              <TableHead className="px-3 py-3 font-semibold text-slate-700 min-w-[170px]">Serviço & Área</TableHead>
+              <TableHead className="px-3 py-3 font-semibold text-slate-700 min-w-[145px]">Execução</TableHead>
+              <TableHead className="px-3 py-3 font-semibold text-slate-700 min-w-[135px]">Valor / Pagamento</TableHead>
+              <TableHead className="px-3 py-3 font-semibold text-slate-700 min-w-[125px]">Status</TableHead>
+              <TableHead className="px-3 py-3 font-semibold text-slate-700 text-right w-[110px] shrink-0">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {currentOrders.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Nenhum pedido encontrado.
                 </TableCell>
               </TableRow>
@@ -521,69 +518,84 @@ export const OrdersTable = ({
                   : null;
 
                 return (
-                  <TableRow key={order.id} className="hover:bg-muted/40">
-                    <TableCell className="px-2.5 py-3">
-                      <div className="font-medium text-foreground leading-tight">{getClientName(order)}</div>
-                      <div className="text-xs text-muted-foreground leading-tight mt-0.5">
-                        {getFarmName(order)}
-                        {plotNames && <span className="text-primary font-normal block text-[10px]">📍 {plotNames}</span>}
+                  <TableRow key={order.id} className="hover:bg-muted/40 transition-colors">
+                    {/* 1. Cliente & Fazenda */}
+                    <TableCell className="px-3.5 py-3 align-middle">
+                      <div className="font-semibold text-foreground text-sm leading-snug whitespace-normal">
+                        {getClientName(order)}
+                      </div>
+                      <div className="text-xs text-muted-foreground leading-snug mt-1 flex items-center gap-1.5 flex-wrap">
+                        <span className="font-medium text-slate-600">🏡 {getFarmName(order)}</span>
+                        {plotNames && (
+                          <span className="text-primary font-normal text-[11px] inline-flex items-center gap-0.5">
+                            • 📍 {plotNames}
+                          </span>
+                        )}
                       </div>
                     </TableCell>
 
-                    <TableCell className="px-2.5 py-3">
+                    {/* 2. Serviço & Área */}
+                    <TableCell className="px-3 py-3 align-middle">
                       {order.type === "Produto" ? (
-                        <span className="inline-flex items-center gap-1 font-semibold text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 leading-snug whitespace-nowrap">
-                          🛒 Venda de Produtos
-                        </span>
+                        <div className="space-y-1">
+                          <span className="inline-flex items-center gap-1 font-semibold text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 leading-snug whitespace-nowrap">
+                            🛒 Venda de Produtos
+                          </span>
+                          {Array.isArray(order.productsData) && order.productsData.length > 0 && (
+                            <div className="text-[11px] text-muted-foreground">
+                              {order.productsData.length} {order.productsData.length === 1 ? 'produto' : 'produtos'}
+                            </div>
+                          )}
+                        </div>
                       ) : (
-                        <span className="inline-block font-medium text-xs px-2 py-0.5 rounded bg-muted leading-snug whitespace-nowrap">
-                          {formatServiceName(order.serviceName || order.type)}
-                        </span>
+                        <div className="space-y-1">
+                          <div className="font-medium text-foreground text-xs leading-snug">
+                            {formatServiceName(order.serviceName || order.type)}
+                          </div>
+                          {totalArea > 0 && (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 bg-slate-100 border border-slate-200/80 px-2 py-0.5 rounded whitespace-nowrap">
+                              📐 {totalArea.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ha
+                            </span>
+                          )}
+                        </div>
                       )}
                     </TableCell>
 
-                    <TableCell className="px-2.5 py-3 whitespace-nowrap">
-                      {order.type === "Produto" ? (
-                        <span className="text-muted-foreground text-xs font-normal">N/A (Produtos)</span>
-                      ) : (
-                        totalArea > 0 ? `${totalArea.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ha` : "-"
-                      )}
-                    </TableCell>
-
-                    <TableCell className="px-2.5 py-3">
+                    {/* 3. Execução */}
+                    <TableCell className="px-3 py-3 align-middle">
                       {order.type === "Produto" ? (
                         <div className="text-xs space-y-0.5">
-                          <span className="font-semibold text-foreground block">
+                          <span className="font-medium text-slate-700 block">
                             {Array.isArray(order.productsData) && order.productsData.length > 0
-                              ? `${order.productsData.length} ${order.productsData.length === 1 ? 'produto' : 'produtos'}`
-                              : 'Venda de Produtos'}
+                              ? `${order.productsData.length} ${order.productsData.length === 1 ? 'item' : 'itens'}`
+                              : 'Venda Direta'}
                           </span>
                           <span className="text-[10px] text-muted-foreground block truncate max-w-[140px]" title={Array.isArray(order.productsData) ? order.productsData.map((p: any) => `${p.quantity || 1} ${p.unit || ''} ${p.name || ''}`).join(', ') : ''}>
                             {Array.isArray(order.productsData) && order.productsData.length > 0
                               ? order.productsData.map((p: any) => `${p.quantity || 1} ${p.unit || ''} ${p.name || ''}`).join(', ')
-                              : 'Itens de venda'}
+                              : 'Produtos'}
                           </span>
                         </div>
                       ) : (
                         <div className="w-32 space-y-1">
                           <div className="flex justify-between text-[11px] gap-1">
-                            <span className="font-semibold text-xs">{percentExec.toFixed(0)}%</span>
+                            <span className="font-bold text-xs text-slate-900">{percentExec.toFixed(0)}%</span>
                             <span className="text-muted-foreground text-[10px] whitespace-nowrap">
                               {formatHa(executedArea)}/{formatHa(totalArea)} ha
                             </span>
                           </div>
-                          <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                          <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-200/60">
                             <div
                               className={cn(
                                 "h-1.5 rounded-full transition-all",
-                                percentExec >= 100 ? "bg-green-600" : percentExec > 0 ? "bg-blue-600" : "bg-muted-foreground/30"
+                                percentExec >= 100 ? "bg-emerald-600" : percentExec > 0 ? "bg-blue-600" : "bg-muted-foreground/30"
                               )}
                               style={{ width: percentExec + '%' }}
                             />
                           </div>
                           {totalSamples > 0 ? (
                             <div className="space-y-0.5 pt-0.5 border-t border-muted/80">
-                              <div className="text-[10px] text-emerald-800 font-medium flex justify-between items-center" title="Amostras físicas coletadas no campo (sincronizadas com remessas de laboratório)">
+                              <div className="text-[10px] text-emerald-800 font-medium flex justify-between items-center" title="Amostras físicas coletadas no campo">
                                 <span>🌱 Coletadas:</span>
                                 <span className="font-bold">{effectiveCollected}/{totalSamples}</span>
                               </div>
@@ -593,7 +605,7 @@ export const OrdersTable = ({
                                 className="text-[10px] text-indigo-700 hover:text-indigo-900 hover:underline font-medium flex justify-between items-center w-full cursor-pointer text-left"
                                 title="Clique para ver detalhes das análises laboratoriais"
                               >
-                                <span>🔬 Enviadas Lab:</span>
+                                <span>🔬 Lab:</span>
                                 <span className="font-bold">{sentSamples}/{totalSamples}</span>
                               </button>
                             </div>
@@ -604,7 +616,7 @@ export const OrdersTable = ({
                               className="text-[10px] text-indigo-700 hover:text-indigo-900 hover:underline font-medium flex justify-between items-center w-full cursor-pointer text-left pt-0.5 border-t border-muted/80"
                               title="Clique para ver detalhes das análises laboratoriais"
                             >
-                              <span>🔬 Enviadas Lab:</span>
+                              <span>🔬 Lab:</span>
                               <span className="font-bold">{sentSamples}</span>
                             </button>
                           ) : null}
@@ -612,35 +624,39 @@ export const OrdersTable = ({
                       )}
                     </TableCell>
 
-                    <TableCell className="px-2.5 py-3 font-semibold text-foreground whitespace-nowrap">
-                      {order.value || 'R$ 0,00'}
+                    {/* 4. Valor & Pagamento */}
+                    <TableCell className="px-3 py-3 align-middle whitespace-nowrap">
+                      <div className="font-bold text-slate-900 text-sm">
+                        {order.value || 'R$ 0,00'}
+                      </div>
+                      <div className="mt-1 flex flex-col items-start gap-0.5">
+                        <span className={cn("inline-block px-2 py-0.5 rounded-full text-[11px] font-medium border", getPaymentBadge(order.payment))}>
+                          {order.payment}
+                        </span>
+                        {order.paymentSchedules && order.paymentSchedules.length > 0 && (
+                          <div className="text-[10px] text-purple-700 font-medium">
+                            🌾 {order.paymentSchedules.filter(s => s.status === 'Pago').length}/{order.paymentSchedules.length} safras
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
 
-                    <TableCell className="px-2.5 py-3">
+                    {/* 5. Status do Pedido */}
+                    <TableCell className="px-3 py-3 align-middle">
                       <div className="flex flex-col items-start gap-1">
-                        <span className={cn("inline-block px-2.5 py-1 rounded-full text-xs font-medium border whitespace-nowrap", getStatusBadge(order.status))}>
+                        <span className={cn("inline-block px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap", getStatusBadge(order.status))}>
                           {order.status === "Pendente" ? "Aguardando Aprovação" : order.status}
                         </span>
                         {String(order.id).startsWith("offline-") && (
                           <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-300 whitespace-nowrap">
-                            Salvo offline (aguardando envio)
+                            Salvo offline
                           </span>
                         )}
                       </div>
                     </TableCell>
 
-                    <TableCell className="px-2.5 py-3">
-                      <span className={cn("inline-block px-2.5 py-1 rounded-full text-xs font-medium border whitespace-nowrap", getPaymentBadge(order.payment))}>
-                        {order.payment}
-                      </span>
-                      {order.paymentSchedules && order.paymentSchedules.length > 0 && (
-                        <div className="text-[10px] text-purple-700 font-medium mt-0.5 whitespace-nowrap">
-                          🌾 {order.paymentSchedules.filter(s => s.status === 'Pago').length}/{order.paymentSchedules.length} safras
-                        </div>
-                      )}
-                    </TableCell>
-
-                    <TableCell className="px-2.5 py-3 text-right whitespace-nowrap">
+                    {/* 6. Ações */}
+                    <TableCell className="px-3 py-3 align-middle text-right whitespace-nowrap">
                       {renderOrderActions(order)}
                     </TableCell>
                   </TableRow>
