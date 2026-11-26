@@ -73,7 +73,17 @@ export const OrderScheduleDialog: React.FC<OrderScheduleDialogProps> = ({
   const availablePlots = useMemo(() => {
     if (!order) return [];
     if (Array.isArray(order.plots) && order.plots.length > 0) {
-      return order.plots;
+      // Deduplicar talhões por nome para evitar duplicatas em pedidos com múltiplos produtos aplicados no mesmo talhão
+      const seen = new Set<string>();
+      const deduped: any[] = [];
+      order.plots.forEach((p: any) => {
+        const name = typeof p === 'string' ? p.trim() : (p?.name || p?.id || '').trim();
+        if (name && !seen.has(name.toLowerCase())) {
+          seen.add(name.toLowerCase());
+          deduped.push(p);
+        }
+      });
+      return deduped;
     }
     return [];
   }, [order]);
@@ -221,9 +231,9 @@ export const OrderScheduleDialog: React.FC<OrderScheduleDialogProps> = ({
             </div>
             <div className="text-muted-foreground flex justify-between">
               <span>{order.serviceName || order.type} • {order.area} ha</span>
-              {order.plots && order.plots.length > 0 && (
+              {availablePlots && availablePlots.length > 0 && (
                 <span className="text-primary font-medium">
-                  {order.plots.length} talhões contratados
+                  {availablePlots.length} {availablePlots.length === 1 ? 'talhão contratado' : 'talhões contratados'}
                 </span>
               )}
             </div>

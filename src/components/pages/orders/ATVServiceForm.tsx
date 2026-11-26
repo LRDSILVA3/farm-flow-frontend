@@ -174,6 +174,49 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
     return null;
   }, [costVariables]);
 
+  const syncParentPlotsAndArea = (currentItens: ATVItemParam[]) => {
+    // 1. Consolidar talhões físicos únicos (se aplicar Calcítico e Dolomítico no mesmo talhão, o talhão não duplica)
+    const plotMap = new Map<string, { id: string; name: string; area: number; produtos: string[]; toneladas: number }>();
+
+    currentItens.forEach((it, i) => {
+      const rawName = (it.idTalhao || '').trim();
+      const name = rawName || `Talhão ${i + 1}`;
+      const area = parseFloat(it.areaHa as any) || 0;
+      const ton = parseFloat(it.toneladas as any) || 0;
+
+      if (!plotMap.has(name.toLowerCase())) {
+        plotMap.set(name.toLowerCase(), {
+          id: `plot_${name.toLowerCase().replace(/[^a-z0-9]/gi, '_')}`,
+          name: name,
+          area: area,
+          produtos: [it.produto],
+          toneladas: ton,
+        });
+      } else {
+        const existing = plotMap.get(name.toLowerCase())!;
+        // Mesma área física de terra (não duplica os hectares contratados)
+        existing.area = Math.max(existing.area, area);
+        if (!existing.produtos.includes(it.produto)) {
+          existing.produtos.push(it.produto);
+        }
+        existing.toneladas += ton;
+      }
+    });
+
+    const uniquePlots = Array.from(plotMap.values());
+
+    // 2. A área física do pedido é a soma das áreas dos talhões DISTINTOS
+    const totalPhysicalHa = uniquePlots.reduce((sum, p) => sum + (p.area || 0), 0);
+
+    if (onAreaChangeRef.current && totalPhysicalHa > 0) {
+      onAreaChangeRef.current(totalPhysicalHa);
+    }
+
+    if (onPlotsChangeRef.current) {
+      onPlotsChangeRef.current(uniquePlots);
+    }
+  };
+
   const handleAddItem = () => {
     const nextPlot = availablePlots && availablePlots.length > itens.length ? availablePlots[itens.length] : null;
     const nextArea = nextPlot?.area ? parseFloat(nextPlot.area) : 0;
@@ -189,22 +232,14 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
       },
     ];
     setItens(updated);
-    if (nextArea > 0) {
-      const totalHa = updated.reduce((sum, it) => sum + (parseFloat(it.areaHa as any) || 0), 0);
-      if (onAreaChangeRef.current) {
-        onAreaChangeRef.current(totalHa);
-      }
-    }
+    syncParentPlotsAndArea(updated);
   };
 
   const handleRemoveItem = (index: number) => {
     if (itens.length > 1) {
       const updated = itens.filter((_, i) => i !== index);
       setItens(updated);
-      const totalHa = updated.reduce((sum, it) => sum + (parseFloat(it.areaHa as any) || 0), 0);
-      if (onAreaChangeRef.current) {
-        onAreaChangeRef.current(totalHa);
-      }
+      syncParentPlotsAndArea(updated);
     }
   };
 
@@ -227,25 +262,7 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
     }
 
     setItens(newItens);
-
-    // Notificar formulário pai se a área foi alterada
-    if (field === 'areaHa' || (field === 'idTalhao' && newItens[index].areaHa > 0)) {
-      const totalHa = newItens.reduce((sum, it) => sum + (parseFloat(it.areaHa as any) || 0), 0);
-      if (onAreaChangeRef.current) {
-        onAreaChangeRef.current(totalHa);
-      }
-    }
-
-    if (onPlotsChangeRef.current) {
-      const mappedPlots = newItens.map((it, i) => ({
-        id: `plot_${i + 1}`,
-        name: it.idTalhao || `Talhão ${i + 1}`,
-        area: it.areaHa,
-        produto: it.produto,
-        toneladas: it.toneladas,
-      }));
-      onPlotsChangeRef.current(mappedPlots);
-    }
+    syncParentPlotsAndArea(newItens);
   };
 
   useEffect(() => {

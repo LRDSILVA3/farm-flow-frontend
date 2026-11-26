@@ -256,10 +256,13 @@ export const OrderExecutionDialog: React.FC<OrderExecutionDialogProps> = ({
     // 1. Plots cadastrados diretamente na ordem
     if (Array.isArray(order.plots) && order.plots.length > 0) {
       order.plots.forEach((p: any, idx: number) => {
-        if (typeof p === 'string' && p.trim()) {
-          list.push({ id: `order-plot-${idx}`, name: p.trim() });
-        } else if (p && p.name) {
-          list.push({ id: p.id || `order-plot-${idx}`, name: p.name, area: p.area ? Number(p.area) : undefined });
+        const pName = typeof p === 'string' ? p.trim() : (p?.name ? String(p.name).trim() : '');
+        if (pName && !list.some(existing => existing.name.toLowerCase() === pName.toLowerCase())) {
+          list.push({
+            id: typeof p === 'string' ? `order-plot-${idx}` : (p.id || `order-plot-${idx}`),
+            name: pName,
+            area: typeof p === 'object' && p.area ? Number(p.area) : undefined,
+          });
         }
       });
     }
