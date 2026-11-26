@@ -155,6 +155,10 @@ export interface Order {
   paidAmount: number;
   contractYears?: number;
   serviceDetails?: any;
+  creatorId?: string;
+  creatorName?: string;
+  responsibleId?: string;
+  responsibleName?: string;
   createdAt?: string;
 }
 
@@ -277,6 +281,10 @@ const mapFromDB = (db: OrderDB): Order => {
     logs: Array.isArray(db.logs) ? db.logs : [],
     executedArea: numExecuted,
     paidAmount: numPaid,
+    creatorId: db.user_id || (db as any).creator_id || "",
+    creatorName: (db as any).creator_name || "",
+    responsibleId: (db as any).responsible_id || db.user_id || "",
+    responsibleName: (db as any).responsible_name || (db as any).creator_name || "",
     contractYears:
       (db as any).contract_years ||
       (db as any).contractYears ||
@@ -345,6 +353,22 @@ export const useOrders = () => {
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
+  const getLoggedInUser = () => {
+    try {
+      const raw = localStorage.getItem("@FarmFlow:user");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return {
+          id: parsed.id || "",
+          name: parsed.name || "",
+        };
+      }
+    } catch {}
+    return { id: "", name: "" };
+  };
+
+  const currentLoggedUser = getLoggedInUser();
+
   const initialOrderFormData: Order = {
     id: "",
     clientId: "",
@@ -363,14 +387,25 @@ export const useOrders = () => {
     payments: [],
     logs: [],
     executedArea: 0,
-    paidAmount: 0
+    paidAmount: 0,
+    creatorId: currentLoggedUser.id,
+    creatorName: currentLoggedUser.name,
+    responsibleId: currentLoggedUser.id,
+    responsibleName: currentLoggedUser.name,
   };
 
   const [formData, setFormData] = useState<Order>({ ...initialOrderFormData });
 
   const resetOrderForm = () => {
+    const user = getLoggedInUser();
     setEditingOrder(null);
-    setFormData({ ...initialOrderFormData });
+    setFormData({
+      ...initialOrderFormData,
+      creatorId: user.id,
+      creatorName: user.name,
+      responsibleId: user.id,
+      responsibleName: user.name,
+    });
   };
 
   const fetchOrders = async () => {
@@ -438,7 +473,11 @@ export const useOrders = () => {
         executed_samples: (order as any).executedSamples || 0,
         logs: initialLogs,
         executed_area: 0,
-        paid_amount: 0
+        paid_amount: 0,
+        user_id: (order as any).creatorId || null,
+        creator_name: (order as any).creatorName || null,
+        responsible_id: (order as any).responsibleId || (order as any).creatorId || null,
+        responsible_name: (order as any).responsibleName || (order as any).creatorName || null,
       };
 
       const saveOfflineOrder = async () => {
@@ -541,7 +580,9 @@ export const useOrders = () => {
           executed_samples: (order as any).executedSamples || 0,
           logs: order.logs || [],
           executed_area: order.executedArea || 0,
-          paid_amount: order.paidAmount || 0
+          paid_amount: order.paidAmount || 0,
+          responsible_id: (order as any).responsibleId || null,
+          responsible_name: (order as any).responsibleName || null,
         });
         await fetchOrders();
         await queryClient.invalidateQueries({ queryKey: ["audit-logs"] });

@@ -150,26 +150,7 @@ const OrdersPage = () => {
   };
 
   const resetForm = () => {
-    setFormData({
-      id: "",
-      clientId: "",
-      farmId: "",
-      type: "Serviço",
-      serviceName: "",
-      productsData: [],
-      serviceGroup: "",
-      area: "",
-      value: "",
-      numericValue: 0,
-      status: "Pendente",
-      payment: "Aguardando",
-      executions: [],
-      schedules: [],
-      payments: [],
-      executedArea: 0,
-      paidAmount: 0
-    });
-    setEditingOrder(null);
+    resetOrderForm();
     setShowOrderForm(false);
   };
 

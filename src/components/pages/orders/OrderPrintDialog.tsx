@@ -87,7 +87,10 @@ export const OrderPrintDialog: React.FC<OrderPrintDialogProps> = ({
       setLote(farm.lot || '');
       setMatricula(farm.registration || '');
     }
-  }, [farm, open]);
+    if (order) {
+      setConsultor(order.responsibleName || order.creatorName || 'VICTOR / PRECIZA');
+    }
+  }, [farm, order, open]);
 
   // Montagem discriminada dos itens e valores conforme regras de negócio do Excel
   useEffect(() => {
@@ -738,6 +741,11 @@ export const OrderPrintDialog: React.FC<OrderPrintDialogProps> = ({
                     />
                   ) : (
                     <span className="font-semibold">{consultor}</span>
+                  )}
+                  {order?.creatorName && order?.responsibleName && order.creatorName !== order.responsibleName && (
+                    <span className="text-[10px] text-gray-600 font-normal ml-1">
+                      (Criado por: {order.creatorName})
+                    </span>
                   )}
                 </div>
               </div>

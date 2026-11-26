@@ -462,6 +462,21 @@ export const OrdersTable = ({
                     </div>
                   </div>
 
+                  {/* Responsável Mobile */}
+                  <div className="flex items-center justify-between text-xs pt-1 border-t">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-slate-500">👤</span>
+                      <span className="font-medium text-foreground truncate">
+                        {order.responsibleName || order.creatorName || "Sistema"}
+                      </span>
+                    </div>
+                    {order.creatorName && order.responsibleName && order.creatorName.toLowerCase().trim() !== order.responsibleName.toLowerCase().trim() && (
+                      <span className="text-[10px] bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded border border-amber-200 shrink-0">
+                        Criado por {order.creatorName}
+                      </span>
+                    )}
+                  </div>
+
                   <div className="pt-2 border-t flex justify-end">
                     {renderOrderActions(order)}
                   </div>
@@ -476,10 +491,11 @@ export const OrdersTable = ({
           <Table className="w-full text-xs sm:text-sm">
           <TableHeader>
             <TableRow className="bg-slate-50/80 hover:bg-slate-50/80 border-b">
-              <TableHead className="px-3.5 py-3 font-semibold text-slate-700 min-w-[200px]">Cliente / Fazenda</TableHead>
-              <TableHead className="px-3 py-3 font-semibold text-slate-700 min-w-[170px]">Serviço & Área</TableHead>
-              <TableHead className="px-3 py-3 font-semibold text-slate-700 min-w-[145px]">Execução</TableHead>
-              <TableHead className="px-3 py-3 font-semibold text-slate-700 min-w-[135px]">Valor / Pagamento</TableHead>
+              <TableHead className="px-3.5 py-3 font-semibold text-slate-700 min-w-[190px]">Cliente / Fazenda</TableHead>
+              <TableHead className="px-3 py-3 font-semibold text-slate-700 min-w-[160px]">Serviço & Área</TableHead>
+              <TableHead className="px-3 py-3 font-semibold text-slate-700 min-w-[135px]">Execução</TableHead>
+              <TableHead className="px-3 py-3 font-semibold text-slate-700 min-w-[130px]">Valor / Pagamento</TableHead>
+              <TableHead className="px-3 py-3 font-semibold text-slate-700 min-w-[140px]">Responsável</TableHead>
               <TableHead className="px-3 py-3 font-semibold text-slate-700 min-w-[125px]">Status</TableHead>
               <TableHead className="px-3 py-3 font-semibold text-slate-700 text-right w-[110px] shrink-0">Ações</TableHead>
             </TableRow>
@@ -487,7 +503,7 @@ export const OrdersTable = ({
           <TableBody>
             {currentOrders.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   Nenhum pedido encontrado.
                 </TableCell>
               </TableRow>
@@ -641,7 +657,43 @@ export const OrdersTable = ({
                       </div>
                     </TableCell>
 
-                    {/* 5. Status do Pedido */}
+                    {/* 5. Responsável & Atribuição */}
+                    <TableCell className="px-3 py-3 align-middle text-xs">
+                      {(() => {
+                        const resp = order.responsibleName || order.creatorName || (order as any).userName || "Sistema";
+                        const creator = order.creatorName || (order as any).userName;
+                        const isTransferred = Boolean(
+                          creator &&
+                          resp &&
+                          creator.toLowerCase().trim() !== resp.toLowerCase().trim()
+                        );
+
+                        return (
+                          <div className="space-y-1">
+                            <div className="font-medium text-foreground flex items-center gap-1.5">
+                              <span className="text-slate-500">👤</span>
+                              <span className="truncate max-w-[130px]" title={resp}>
+                                {resp}
+                              </span>
+                            </div>
+                            {isTransferred ? (
+                              <span
+                                className="inline-flex items-center gap-1 text-[10px] font-medium bg-amber-50 text-amber-800 border border-amber-200/80 px-1.5 py-0.5 rounded"
+                                title={`Atribuído para ${resp}. Criado originalmente por: ${creator}`}
+                              >
+                                ↳ De: {creator}
+                              </span>
+                            ) : creator ? (
+                              <span className="text-[10px] text-muted-foreground block">
+                                Criador
+                              </span>
+                            ) : null}
+                          </div>
+                        );
+                      })()}
+                    </TableCell>
+
+                    {/* 6. Status do Pedido */}
                     <TableCell className="px-3 py-3 align-middle">
                       <div className="flex flex-col items-start gap-1">
                         <span className={cn("inline-block px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap", getStatusBadge(order.status))}>

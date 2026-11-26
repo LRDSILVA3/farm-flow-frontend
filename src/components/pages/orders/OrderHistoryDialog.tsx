@@ -81,6 +81,11 @@ export const OrderHistoryDialog: React.FC<OrderHistoryDialogProps> = ({
       case 'edição':
       case 'editado':
         return <Badge className="bg-indigo-100 text-indigo-800 border-indigo-200 hover:bg-indigo-100"><Edit className="w-3 h-3 mr-1" /> Edição</Badge>;
+      case 'atribuição':
+      case 'atribuído':
+      case 'transferência':
+      case 'transfer_responsibility':
+        return <Badge className="bg-sky-100 text-sky-800 border-sky-200 hover:bg-sky-100"><User className="w-3 h-3 mr-1" /> Atribuição</Badge>;
       case 'cancelamento':
       case 'cancelado':
         return <Badge className="bg-red-100 text-red-800 border-red-200 hover:bg-red-100"><Ban className="w-3 h-3 mr-1" /> Cancelamento</Badge>;
@@ -123,7 +128,7 @@ export const OrderHistoryDialog: React.FC<OrderHistoryDialogProps> = ({
         </DialogHeader>
 
         {/* Order Summary Header */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 bg-slate-50 border rounded-lg text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 p-3 bg-slate-50 border rounded-lg text-xs">
           <div>
             <span className="text-muted-foreground block">Cliente:</span>
             <span className="font-semibold text-slate-800">{order.client?.name || 'Cliente'}</span>
@@ -135,6 +140,17 @@ export const OrderHistoryDialog: React.FC<OrderHistoryDialogProps> = ({
           <div>
             <span className="text-muted-foreground block">Serviço:</span>
             <span className="font-semibold text-slate-800">{order.serviceName || order.type}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground block">Responsável / Criador:</span>
+            <span className="font-semibold text-slate-800 block truncate" title={`Responsável: ${order.responsibleName || order.creatorName || 'Sistema'} | Criador: ${order.creatorName || 'Sistema'}`}>
+              {order.responsibleName || order.creatorName || 'Sistema'}
+              {order.creatorName && order.responsibleName && order.creatorName !== order.responsibleName && (
+                <span className="text-[10px] text-muted-foreground block font-normal">
+                  (Criado por: {order.creatorName})
+                </span>
+              )}
+            </span>
           </div>
           <div>
             <span className="text-muted-foreground block">Valor Atual:</span>

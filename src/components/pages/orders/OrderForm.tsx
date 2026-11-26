@@ -18,6 +18,8 @@ import { DroneSprayingServiceForm } from "./DroneSprayingServiceForm";
 import { EqualizaServiceForm } from "./EqualizaServiceForm";
 import { ProductOrderForm } from "./ProductOrderForm";
 import React, { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/services/api";
 import { useClients } from "@/hooks/useClients";
 import { useFarms } from "@/hooks/useFarms";
 import { useServices } from "@/hooks/useServices";
@@ -27,7 +29,7 @@ interface OrderFormProps {
   onOpenChange: (open: boolean) => void;
   editingOrder: Order | null;
   formData: Order;
-  onInputChange: (field: keyof Order, value: string | { id: string; name: string; quantity: number }[]) => void;
+  onInputChange: (field: keyof Order, value: any) => void;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
 }
@@ -51,6 +53,37 @@ export const OrderForm = ({
   const { clients } = useClients();
   const { farms } = useFarms();
   const { services: catalogServices } = useServices();
+
+  const { data: systemUsers = [] } = useQuery<any[]>({
+    queryKey: ["system-users"],
+    queryFn: async () => {
+      try {
+        const res = await api.get<any[]>("/users");
+        return Array.isArray(res) ? res : [];
+      } catch {
+        return [];
+      }
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const handleResponsibleChange = (selectedUserId: string) => {
+    const selected = systemUsers.find((u) => u.id === selectedUserId);
+    onInputChange("responsibleId", selectedUserId);
+    if (selected?.name) {
+      onInputChange("responsibleName", selected.name);
+    }
+  };
+
+  React.useEffect(() => {
+    if (open && systemUsers.length > 0 && !formData.responsibleId) {
+      const defaultUser = systemUsers.find((u) => u.id === formData.creatorId) || systemUsers[0];
+      if (defaultUser) {
+        onInputChange("responsibleId", defaultUser.id);
+        onInputChange("responsibleName", defaultUser.name);
+      }
+    }
+  }, [open, systemUsers, formData.responsibleId, formData.creatorId]);
 
   const availableFarms = useMemo(() => {
     if (!formData.clientId) return [];
@@ -283,7 +316,7 @@ export const OrderForm = ({
 
           {/* Vínculo de Cliente / Fazenda adaptado ao Tipo de Pedido */}
           {isProductOrder ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3 border rounded-xl bg-muted/15">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-3 border rounded-xl bg-muted/15">
               <div>
                 <Label htmlFor="customer" className="font-medium text-xs">
                   Cliente Comprador <span className="text-red-500 font-bold">*</span>
@@ -304,6 +337,31 @@ export const OrderForm = ({
                   farms={availableFarms}
                   disabled={!formData.clientId}
                 />
+              </div>
+              <div>
+                <Label htmlFor="responsible" className="font-medium text-xs flex items-center justify-between">
+                  <span>Responsável pelo Pedido</span>
+                  {editingOrder && (editingOrder.creatorName || (editingOrder as any).userName) && (
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      Criador: {editingOrder.creatorName || (editingOrder as any).userName}
+                    </span>
+                  )}
+                </Label>
+                <Select
+                  value={formData.responsibleId || ""}
+                  onValueChange={handleResponsibleChange}
+                >
+                  <SelectTrigger id="responsible" className="mt-1 bg-background">
+                    <SelectValue placeholder="Selecione o responsável" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {systemUsers.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.name} {u.role ? `(${u.role})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           ) : (
@@ -339,6 +397,53 @@ export const OrderForm = ({
                     disabled={!formData.farmId}
                   />
                 </div>
+              </div>
+
+              {/* Responsável pelo Pedido & Criador */}
+              <div className="p-3 border rounded-xl bg-muted/15 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="w-full sm:w-1/2">
+                  <Label htmlFor="responsible" className="font-medium text-xs flex items-center justify-between mb-1.5">
+                    <span className="flex items-center gap-1.5 font-semibold">
+                      👤 Responsável Atual pelo Pedido
+                    </span>
+                  </Label>
+                  <Select
+                    value={formData.responsibleId || ""}
+                    onValueChange={handleResponsibleChange}
+                  >
+                    <SelectTrigger id="responsible" className="bg-background">
+                      <SelectValue placeholder="Selecione o colaborador responsável" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {systemUsers.map((u) => (
+                        <SelectItem key={u.id} value={u.id}>
+                          {u.name} {u.role ? `(${u.role})` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {editingOrder ? (
+                  <div className="text-xs text-muted-foreground bg-background/80 px-3 py-2 rounded-lg border flex-1 w-full sm:w-auto">
+                    <div>
+                      Criado originalmente por:{" "}
+                      <strong className="text-foreground">
+                        {editingOrder.creatorName || (editingOrder as any).userName || "Administrador FarmFlow"}
+                      </strong>
+                    </div>
+                    {editingOrder.responsibleName && editingOrder.creatorName && editingOrder.responsibleName !== editingOrder.creatorName && (
+                      <div className="text-amber-700 mt-0.5">
+                        ↳ Transferido para: <strong>{editingOrder.responsibleName}</strong>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-xs text-muted-foreground bg-background/60 px-3 py-2 rounded-lg border flex-1 w-full sm:w-auto">
+                    <span>
+                      O criador do pedido será registrado automaticamente e permanecerá no histórico mesmo se transferido no futuro.
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Resumo da Área Selecionada */}
