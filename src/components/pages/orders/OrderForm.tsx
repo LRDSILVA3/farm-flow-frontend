@@ -390,6 +390,12 @@ export const OrderForm = ({
               totalFarmAlqueires={currentFarmTotalAlqueires}
               plots={formData.plots || []}
               onPlotsChange={(updatedPlots) => onInputChange("plots", updatedPlots)}
+              onAreaChange={(areaHa) => {
+                const cur = parseFloat(formData.area || "0") || 0;
+                if (Math.abs(cur - areaHa) > 0.05) {
+                  onInputChange("area", areaHa.toFixed(2));
+                }
+              }}
               onValuesChange={handleValuesChange}
               onAllPlotsSelectedChange={setIsConferenciaAllPlotsSelected}
               onProductsChange={(products) => onInputChange("productsData", products)}

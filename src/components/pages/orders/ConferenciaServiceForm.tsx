@@ -28,6 +28,7 @@ interface ConferenciaServiceFormProps {
   totalFarmAlqueires: number;
   plots?: any[];
   onPlotsChange?: (plots: any[]) => void;
+  onAreaChange?: (areaHa: number) => void;
   onValuesChange: (calculatedValue: number) => void;
   onAllPlotsSelectedChange: (selected: boolean) => void;
   onProductsChange?: (products: any[]) => void;
@@ -39,6 +40,7 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
   totalFarmAlqueires,
   plots,
   onPlotsChange,
+  onAreaChange,
   onValuesChange,
   onAllPlotsSelectedChange,
   onProductsChange,
@@ -118,6 +120,7 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
     if (vencimentoServico && conferenciaService) {
       const formattedVencimento = format(vencimentoServico, 'dd/MM/yyyy');
       const alqueiresToCalculate = isAllPlotsSelected ? totalFarmAlqueires : (alqueires === null ? 0 : alqueires);
+      const totalAlqueiresToUse = Math.max(totalFarmAlqueires || 0, alqueiresToCalculate);
 
       const result = conferenciaService.calculate({
         clienteDesejaNotaFiscal: clienteDesejaNotaFiscal ? 'S' : 'N',
@@ -128,7 +131,7 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
         percentualAnalisesBIOAS: percentualAnalisesBIOAS === null ? 0 : percentualAnalisesBIOAS,
         alqueires: alqueiresToCalculate,
         numAnalises: numAnalises === null ? 0 : numAnalises,
-        totalAlqueires: totalFarmAlqueires,
+        totalAlqueires: totalAlqueiresToUse,
         descontoManual: descontoManual === null ? undefined : descontoManual,
         descontoPercentualManual: descontoPercentualManual === null ? undefined : descontoPercentualManual,
         valorFechadoManual: valorFechadoManual === null ? undefined : valorFechadoManual,
@@ -365,7 +368,17 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
             <DecimalInput
               id="alqueires"
               value={isAllPlotsSelected ? totalFarmAlqueires : alqueires}
-              onValueChange={(newAlq) => setAlqueires(newAlq)}
+              onValueChange={(newAlq) => {
+                setAlqueires(newAlq);
+                if (newAlq !== null && onAreaChange) {
+                  onAreaChange(newAlq * 2.42);
+                }
+                if (localPlots.length === 1 && newAlq !== null) {
+                  const updated = [{ ...localPlots[0], area: (newAlq * 2.42).toFixed(2) }];
+                  setLocalPlots(updated);
+                  if (onPlotsChange) onPlotsChange(updated);
+                }
+              }}
               disabled={isAllPlotsSelected}
               placeholder="0,00"
             />
@@ -646,7 +659,7 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
               </div>
             )}
             <div className="flex justify-between text-muted-foreground pt-1 border-t">
-              <span>Deslocamento ({distanciaFazendaKm || 0} km):</span>
+              <span>Deslocamento ({distanciaFazendaKm || 0} km ida / {((distanciaFazendaKm || 0) * 2)} km total):</span>
               <span>{conferenciaService.formatCurrency(details.travelCost)} (R$ {details.valorKmCalculated.toFixed(2)}/km)</span>
             </div>
             {details.jurosFactor > 1 && (
