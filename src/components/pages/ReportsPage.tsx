@@ -169,7 +169,7 @@ export const ReportsPage: React.FC = () => {
     setResponsibleFilter("all");
   };
 
-  // Execuções salvas com prioridade na API do banco de dados
+  // Execuções reais registradas via banco de dados
   const savedSplits = useMemo(() => {
     const list: any[] = [];
     if (apiExecutions && apiExecutions.length > 0) {
@@ -183,13 +183,6 @@ export const ReportsPage: React.FC = () => {
         });
       });
     }
-    try {
-      const raw = localStorage.getItem("farm_flow_execution_splits");
-      if (raw && list.length === 0) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) list.push(...parsed);
-      }
-    } catch {}
     return list;
   }, [apiExecutions]);
 
@@ -309,14 +302,24 @@ export const ReportsPage: React.FC = () => {
     );
   }, [apiExecutions]);
 
+  const registeredCollabNames = useMemo(() => {
+    return new Set((collaborators || []).map(c => (c.name || '').toLowerCase().trim()));
+  }, [collaborators]);
+
   const collaboratorProductivity = useMemo(() => {
-    const map = new Map<string, { name: string; totalHa: number; ordersCount: number; services: Set<string> }>();
+    const map = new Map<string, { name: string; totalHa: number; ordersCount: number; services: Set<string>; isRegistered: boolean }>();
 
     const creditOperator = (name: string, ha: number, serviceName?: string) => {
       const cleanName = (name || "").trim();
       if (!cleanName) return;
       if (!map.has(cleanName)) {
-        map.set(cleanName, { name: cleanName, totalHa: 0, ordersCount: 0, services: new Set() });
+        map.set(cleanName, {
+          name: cleanName,
+          totalHa: 0,
+          ordersCount: 0,
+          services: new Set(),
+          isRegistered: registeredCollabNames.has(cleanName.toLowerCase())
+        });
       }
       const item = map.get(cleanName)!;
       item.totalHa += ha;
@@ -325,7 +328,13 @@ export const ReportsPage: React.FC = () => {
     };
 
     collaborators.forEach(c => {
-      map.set(c.name, { name: c.name, totalHa: 0, ordersCount: 0, services: new Set() });
+      map.set(c.name, {
+        name: c.name,
+        totalHa: 0,
+        ordersCount: 0,
+        services: new Set(),
+        isRegistered: true
+      });
     });
 
     savedSplits.forEach((split: any) => {
@@ -969,7 +978,12 @@ export const ReportsPage: React.FC = () => {
                             <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 text-xs flex items-center justify-center font-bold">
                               {idx + 1}
                             </span>
-                            {collab.name}
+                            <span>{collab.name}</span>
+                            {!collab.isRegistered && (
+                              <Badge variant="outline" className="text-[10px] text-amber-800 border-amber-300 bg-amber-50">
+                                Não Cadastrado
+                              </Badge>
+                            )}
                           </TableCell>
                           <TableCell>
                             <span className="font-bold text-sm">{collab.totalHa.toFixed(2)} ha</span>
