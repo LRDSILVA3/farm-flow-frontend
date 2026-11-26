@@ -1,21 +1,29 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { EqualizaService, EqualizaCalculationResult } from '../../../services/EqualizaService';
 import { useCostVariables } from '../../../hooks/useCostVariables';
 import { Input } from '@/components/ui/input';
 import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Info } from 'lucide-react';
+import { Loader2, Sparkles, Calendar, MapPin, DollarSign, Layers } from 'lucide-react';
 
 interface EqualizaServiceFormProps {
   initialAlqueires: number;
+  availablePlots?: Array<{ id: string; name: string; area?: string | number }>;
   onValuesChange: (calculatedValue: number) => void;
+  onProductsChange?: (products: any[]) => void;
+  onServiceDetailsChange?: (details: any) => void;
 }
 
 export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
   initialAlqueires,
+  availablePlots = [],
   onValuesChange,
+  onProductsChange,
+  onServiceDetailsChange,
 }) => {
   const { costVariables, loading: loadingCostVariables } = useCostVariables();
 
@@ -27,6 +35,9 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
   const [incluirFungoNema, setIncluirFungoNema] = useState<boolean>(false);
   const [incluirCompactacao, setIncluirCompactacao] = useState<boolean>(false);
   const [descontoManual, setDescontoManual] = useState<number | null>(null);
+
+  // Alocação dos talhões por ano do contrato: { [ano: number]: string[] }
+  const [yearAllocations, setYearAllocations] = useState<Record<number, string[]>>({});
 
   const [calculationResult, setCalculationResult] = useState<EqualizaCalculationResult | null>(null);
 
@@ -41,9 +52,99 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
     setTotalAlqueires(initialAlqueires === 0 ? null : initialAlqueires);
   }, [initialAlqueires]);
 
+  const numAnos = parseInt(anosCiclo, 10) || 3;
+
+  // Normalizar lista de talhões deduplicada
+  const normalizedPlots = useMemo(() => {
+    const seen = new Set<string>();
+    const list: Array<{ id: string; name: string; areaAlq: number; areaHa: number }> = [];
+
+    availablePlots.forEach((p, idx) => {
+      const name = typeof p === 'string' ? p.trim() : (p?.name || p?.id || `Talhão ${idx + 1}`).trim();
+      if (name && !seen.has(name.toLowerCase())) {
+        seen.add(name.toLowerCase());
+        const areaHa = typeof p === 'object' && p?.area ? parseFloat(String(p.area)) || 0 : 0;
+        const areaAlq = areaHa > 0 ? areaHa / 2.42 : 0;
+        list.push({
+          id: typeof p === 'object' && p?.id ? p.id : `plot-${idx}`,
+          name,
+          areaHa,
+          areaAlq,
+        });
+      }
+    });
+
+    return list;
+  }, [availablePlots]);
+
+  // Função para auto-distribuir os talhões equilibradamente pelos anos do contrato
+  const handleAutoDistributePlots = useCallback(() => {
+    if (normalizedPlots.length === 0) return;
+
+    const newAlloc: Record<number, string[]> = {};
+    for (let yr = 1; yr <= numAnos; yr++) {
+      newAlloc[yr] = [];
+    }
+
+    // Se temos áreas conhecidas, ordenamos decrescente e usamos algoritmo greedy
+    const hasAreas = normalizedPlots.some((p) => p.areaAlq > 0);
+
+    if (hasAreas) {
+      const sorted = [...normalizedPlots].sort((a, b) => b.areaAlq - a.areaAlq);
+      const yearSums: Record<number, number> = {};
+      for (let yr = 1; yr <= numAnos; yr++) yearSums[yr] = 0;
+
+      sorted.forEach((plot) => {
+        // Encontra o ano com menor área acumulada
+        let minYear = 1;
+        let minVal = yearSums[1];
+        for (let yr = 2; yr <= numAnos; yr++) {
+          if (yearSums[yr] < minVal) {
+            minVal = yearSums[yr];
+            minYear = yr;
+          }
+        }
+        newAlloc[minYear].push(plot.name);
+        yearSums[minYear] += plot.areaAlq || 1;
+      });
+    } else {
+      // Distribuição round-robin
+      normalizedPlots.forEach((plot, idx) => {
+        const targetYear = (idx % numAnos) + 1;
+        newAlloc[targetYear].push(plot.name);
+      });
+    }
+
+    setYearAllocations(newAlloc);
+  }, [normalizedPlots, numAnos]);
+
+  // Auto-distribuir se a lista de talhões mudar ou o ciclo de anos mudar
+  useEffect(() => {
+    if (normalizedPlots.length > 0) {
+      handleAutoDistributePlots();
+    }
+  }, [anosCiclo, normalizedPlots.length]);
+
+  const togglePlotForYear = (plotName: string, targetYear: number) => {
+    setYearAllocations((prev) => {
+      const next = { ...prev };
+      for (let yr = 1; yr <= numAnos; yr++) {
+        if (!next[yr]) next[yr] = [];
+        next[yr] = next[yr].filter((name) => name !== plotName);
+      }
+
+      // Se já estava no targetYear, já foi removido (toggle off). Senão, adiciona no targetYear.
+      const wasInTarget = (prev[targetYear] || []).includes(plotName);
+      if (!wasInTarget) {
+        next[targetYear] = [...(next[targetYear] || []), plotName];
+      }
+      return next;
+    });
+  };
+
   useEffect(() => {
     if (equalizaService) {
-      const anos = parseInt(anosCiclo) || 3;
+      const anos = parseInt(anosCiclo, 10) || 3;
       const percentualAnualAP = 1 / anos;
 
       const result = equalizaService.calculate({
@@ -56,8 +157,60 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
       });
 
       setCalculationResult(result);
-      // We pass the annual contract value as the order value (or total period)
       onValuesChange(result.totalAnualContrato);
+
+      // Previsão das datas e parcelas de pagamento
+      const autoPlannedDates = equalizaService.getAutoPlannedDates(anos);
+
+      // Previsão do cronograma de visitas/etapas
+      const autoPlannedSchedules = equalizaService.generateSuggestedSchedules(
+        anos,
+        Object.entries(yearAllocations).map(([yr, plots]) => ({
+          ano: parseInt(yr, 10),
+          plotNames: plots,
+        })),
+        { incluirFolha, incluirCompactacao }
+      );
+
+      const serviceDetails = {
+        contractYears: anos,
+        anosCiclo: anos,
+        percentualAnualAP,
+        percentualAnualConf: Math.max(0, 1 - percentualAnualAP),
+        incluirFolha,
+        incluirFungoNema,
+        incluirCompactacao,
+        descontoManual: descontoManual || 0,
+        totalAlqueires: totalAlqueires || 0,
+        totalAnualContrato: result.totalAnualContrato,
+        totalPeriodoContrato: result.totalPeriodoContrato,
+        precoPorAlqueireAnual: result.precoPorAlqueireAnual,
+        parcelaAgosto: result.parcelaAgosto,
+        parcelaMarco: result.parcelaMarco,
+        yearAllocations,
+        autoPlannedPayments: autoPlannedDates.payments,
+        autoPlannedSchedules,
+      };
+
+      if (onServiceDetailsChange) {
+        onServiceDetailsChange(serviceDetails);
+      }
+
+      if (onProductsChange) {
+        onProductsChange([
+          {
+            id: 'equaliza_contract',
+            name: `Contrato Equaliza - ${anos} Anos`,
+            contractYears: anos,
+            anosCiclo: anos,
+            totalAlqueires: totalAlqueires || 0,
+            quantity: totalAlqueires || 0,
+            unitPrice: result.precoPorAlqueireAnual,
+            totalPrice: result.totalAnualContrato,
+            serviceDetails,
+          },
+        ]);
+      }
     }
   }, [
     totalAlqueires,
@@ -66,15 +219,18 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
     incluirFungoNema,
     incluirCompactacao,
     descontoManual,
+    yearAllocations,
     onValuesChange,
+    onProductsChange,
+    onServiceDetailsChange,
     equalizaService,
   ]);
 
   if (loadingCostVariables) {
     return (
       <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <p className="ml-2">Carregando variáveis de custo...</p>
+        <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+        <p className="ml-2 text-sm text-muted-foreground">Carregando variáveis de custo do Equaliza...</p>
       </div>
     );
   }
@@ -88,15 +244,27 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
   }
 
   const details = calculationResult?.details;
+  const autoPlannedDates = equalizaService.getAutoPlannedDates(numAnos);
 
   return (
     <div className="space-y-4 p-4 border rounded-md bg-card">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Sistema EQUALIZA (Contrato Multi-anual)</h3>
-        
+      <div className="flex items-center justify-between border-b pb-2">
+        <div>
+          <h3 className="text-base font-bold flex items-center gap-2 text-slate-900">
+            <Sparkles className="h-4 w-4 text-purple-600" />
+            Sistema EQUALIZA (Contrato Multi-anual Inteligente)
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Diluição de custo anual garantindo 100% da área com amostragem contínua (AP + Conferência).
+          </p>
+        </div>
+        <Badge variant="outline" className="bg-purple-50 text-purple-800 border-purple-300 font-medium">
+          {numAnos} Safras Contratadas
+        </Badge>
       </div>
 
       <div className="space-y-4">
+        {/* Parâmetros Gerais */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="equaliza-area">Área Total da Propriedade (Alqueires):</Label>
@@ -106,11 +274,11 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
               onValueChange={(newAlq) => setTotalAlqueires(newAlq)}
               placeholder="Ex: 120"
             />
-            {totalAlqueires && totalAlqueires >= 100 && (
-              <span className="text-xs text-green-600 font-medium">
-                Desconto de 5% aplicado por área &gt;= 100 alqueires!
+            {totalAlqueires && totalAlqueires >= 100 ? (
+              <span className="text-xs text-emerald-700 font-medium flex items-center gap-1 mt-1">
+                ✓ Desconto de 5% aplicado por área &gt;= 100 alqueires (Planilha Oficial)
               </span>
-            )}
+            ) : null}
           </div>
 
           <div>
@@ -129,8 +297,11 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
           </div>
         </div>
 
+        {/* Serviços Adicionais */}
         <div className="p-3 bg-muted/30 border rounded-md space-y-2">
-          <span className="text-sm font-medium">Serviços Adicionais Inclusos no Contrato:</span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Serviços Adicionais Inclusos no Contrato:
+          </span>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -138,7 +309,7 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
                 checked={incluirFolha}
                 onCheckedChange={(checked) => setIncluirFolha(checked as boolean)}
               />
-              <Label htmlFor="eq-folha" className="cursor-pointer text-xs">
+              <Label htmlFor="eq-folha" className="cursor-pointer text-xs font-medium">
                 Análise Foliar Anual
               </Label>
             </div>
@@ -148,7 +319,7 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
                 checked={incluirFungoNema}
                 onCheckedChange={(checked) => setIncluirFungoNema(checked as boolean)}
               />
-              <Label htmlFor="eq-fungo" className="cursor-pointer text-xs">
+              <Label htmlFor="eq-fungo" className="cursor-pointer text-xs font-medium">
                 Fungo / Nematóide
               </Label>
             </div>
@@ -158,7 +329,7 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
                 checked={incluirCompactacao}
                 onCheckedChange={(checked) => setIncluirCompactacao(checked as boolean)}
               />
-              <Label htmlFor="eq-compacta" className="cursor-pointer text-xs">
+              <Label htmlFor="eq-compacta" className="cursor-pointer text-xs font-medium">
                 Compactação de Solo
               </Label>
             </div>
@@ -169,34 +340,153 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
           <Label htmlFor="equaliza-desconto">Desconto Manual Negociado (R$):</Label>
           <Input
             id="equaliza-desconto"
-            type="number" step="any"
+            type="number"
+            step="any"
             value={descontoManual === null ? '' : descontoManual}
             onChange={(e) => {
               const val = e.target.value;
               setDescontoManual(val === '' ? null : parseFloat(val));
             }}
             min="0"
-            placeholder="Ex: R$ 100,00"
+            placeholder="Ex: R$ 98,00"
           />
+        </div>
+
+        {/* SELETOR DE ÁREA E TALHÕES POR ANO DE AP (ORDEM DOS TALHÕES ONDE SERÁ FEITO A.P.) */}
+        <div className="border rounded-md p-3.5 bg-slate-50/80 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b pb-2">
+            <div>
+              <Label className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5 text-green-600" />
+                Alocação de Talhões por Ano de AP (Ordem dos Talhões na Planilha):
+              </Label>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Em cada ano, os talhões selecionados recebem <strong>Amostragem em Grid (AP)</strong> e os demais recebem <strong>Conferência</strong>.
+              </p>
+            </div>
+
+            {normalizedPlots.length > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 px-2.5 text-xs text-purple-700 border-purple-300 hover:bg-purple-50 shrink-0"
+                onClick={handleAutoDistributePlots}
+              >
+                <Sparkles className="h-3 w-3 mr-1" />
+                Auto-Distribuir Talhões
+              </Button>
+            )}
+          </div>
+
+          {normalizedPlots.length === 0 ? (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded text-xs text-amber-900">
+              Selecione uma fazenda com talhões cadastrados no topo do pedido para distribuir os talhões entre os anos de contrato.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {Array.from({ length: numAnos }, (_, i) => i + 1).map((yr) => {
+                const assignedPlotNames = yearAllocations[yr] || [];
+                const assignedAreaHa = normalizedPlots
+                  .filter((p) => assignedPlotNames.includes(p.name))
+                  .reduce((sum, p) => sum + p.areaHa, 0);
+                const assignedAreaAlq = assignedAreaHa > 0 ? assignedAreaHa / 2.42 : 0;
+                const targetAreaAlq = (totalAlqueires || 0) / numAnos;
+
+                return (
+                  <div key={yr} className="p-2.5 border rounded-lg bg-card space-y-2">
+                    <div className="flex items-center justify-between border-b pb-1">
+                      <span className="font-bold text-xs text-purple-900">
+                        {yr}° Ano (Safra {new Date().getFullYear() + (yr - 1)}/{new Date().getFullYear() + yr})
+                      </span>
+                      <span className="text-[11px] font-semibold text-slate-600">
+                        {assignedAreaAlq > 0
+                          ? `${assignedAreaAlq.toFixed(1)} alq`
+                          : `Meta: ~${targetAreaAlq.toFixed(1)} alq`}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1 min-h-[40px]">
+                      {normalizedPlots.map((plot) => {
+                        const isSelectedHere = assignedPlotNames.includes(plot.name);
+                        return (
+                          <button
+                            key={plot.id}
+                            type="button"
+                            onClick={() => togglePlotForYear(plot.name, yr)}
+                            className={`px-2 py-0.5 rounded text-[11px] font-medium border transition-colors ${
+                              isSelectedHere
+                                ? 'bg-purple-600 text-white border-purple-700 shadow-xs'
+                                : 'bg-muted/30 text-slate-700 hover:bg-muted border-slate-200'
+                            }`}
+                          >
+                            {plot.name}
+                            {plot.areaAlq > 0 && ` (${plot.areaAlq.toFixed(1)} alq)`}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* AGENDA DE PAGAMENTO E AUTO-PLANEJAMENTO (CONFORME PLANILHA) */}
+        <div className="border rounded-md p-3.5 bg-blue-50/50 space-y-2">
+          <div className="flex items-center justify-between border-b pb-1.5">
+            <span className="text-xs font-bold uppercase tracking-wider text-blue-950 flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5 text-blue-600" />
+              Agenda de Pagamento Auto-Planejada (Agosto e Março):
+            </span>
+            <span className="text-xs text-blue-800 font-medium">
+              Primeiro Vencimento Sugerido: {autoPlannedDates.firstDueDate.split('-').reverse().join('/')}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 pt-1">
+            {autoPlannedDates.payments.map((p) => {
+              const parcelValue = (calculationResult?.totalAnualContrato || 0) * 0.5;
+              return (
+                <div key={p.numeroParcela} className="p-2 border rounded bg-white/90 text-xs flex justify-between items-center">
+                  <div>
+                    <span className="font-semibold block text-slate-800">
+                      {p.numeroParcela}ª Parcela ({p.descricao})
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      Vencimento: {p.dueDate.split('-').reverse().join('/')}
+                    </span>
+                  </div>
+                  <strong className="text-blue-700 font-bold">
+                    {equalizaService.formatCurrency(parcelValue)}
+                  </strong>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      <div className="mt-6 pt-4 border-t space-y-3">
-        <h4 className="text-md font-semibold">Resumo do Contrato Equalizado:</h4>
+      {/* Resumo do Contrato */}
+      <div className="mt-4 pt-3 border-t space-y-3">
+        <h4 className="text-sm font-bold uppercase tracking-wider text-slate-800">
+          Resumo do Contrato Equalizado:
+        </h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="p-3 bg-muted/50 rounded-md">
+          <div className="p-3 bg-muted/50 rounded-md border">
             <span className="text-xs text-muted-foreground block">Valor Anual do Contrato</span>
             <strong className="text-lg text-primary">
               {equalizaService.formatCurrency(calculationResult?.totalAnualContrato ?? 0)}
             </strong>
           </div>
-          <div className="p-3 bg-muted/50 rounded-md">
+          <div className="p-3 bg-muted/50 rounded-md border">
             <span className="text-xs text-muted-foreground block">Total Período ({calculationResult?.anosContrato} anos)</span>
             <strong className="text-lg text-foreground">
               {equalizaService.formatCurrency(calculationResult?.totalPeriodoContrato ?? 0)}
             </strong>
           </div>
-          <div className="p-3 bg-muted/50 rounded-md">
+          <div className="p-3 bg-muted/50 rounded-md border">
             <span className="text-xs text-muted-foreground block">Valor por Alqueire/Ano</span>
             <strong className="text-lg text-foreground">
               {equalizaService.formatCurrency(calculationResult?.precoPorAlqueireAnual ?? 0)}/ALQ
@@ -206,13 +496,13 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs bg-muted/20 p-3 rounded-md border">
           <div>
-            <span className="text-muted-foreground block">Parcela Agosto (50%):</span>
+            <span className="text-muted-foreground block">Parcela Anual Agosto (50%):</span>
             <span className="font-semibold text-sm">
               {equalizaService.formatCurrency(calculationResult?.parcelaAgosto ?? 0)}
             </span>
           </div>
           <div>
-            <span className="text-muted-foreground block">Parcela Março (50%):</span>
+            <span className="text-muted-foreground block">Parcela Anual Março (50%):</span>
             <span className="font-semibold text-sm">
               {equalizaService.formatCurrency(calculationResult?.parcelaMarco ?? 0)}
             </span>
@@ -226,8 +516,8 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
         </div>
 
         {details && (
-          <div className="mt-3 p-3 border rounded-md text-xs space-y-1 bg-muted/10">
-            <div className="font-semibold text-sm mb-1 text-muted-foreground">Composição Unitária Anual:</div>
+          <div className="mt-2 p-2.5 border rounded-md text-xs space-y-1 bg-muted/10">
+            <div className="font-semibold text-xs mb-1 text-muted-foreground">Composição Unitária Anual:</div>
             <div className="flex justify-between">
               <span>Parcela Anual AP:</span>
               <span>{equalizaService.formatCurrency(details.custoUnitarioAP)}/alq</span>

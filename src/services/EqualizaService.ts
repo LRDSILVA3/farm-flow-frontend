@@ -109,9 +109,12 @@ export class EqualizaService {
       custoUnitarioFungoNema +
       custoUnitarioCompactacao;
 
-    // In LucasRafael.xlsm (2026), EQUALIZA!I41 = IF(B41="","",SUM(I33:I37)) (no automatic 5% discount for >= 100 alq)
-    const temDescontoAreaMaior100 = false;
-    const precoPorAlqueireAnual = somaUnitarios;
+    // Conforme planilha Equaliza (budget.xlsm / LucasRafael.xlsm):
+    // EQUALIZA!I41 = IF(B41>=100, SUM(I33:I37)*0.95, SUM(I33:I37))
+    const temDescontoAreaMaior100 = totalAlqueires >= 100;
+    const precoPorAlqueireAnual = temDescontoAreaMaior100
+      ? Math.round(somaUnitarios * 0.95 * 100) / 100
+      : somaUnitarios;
 
     const subtotalAnual = precoPorAlqueireAnual * totalAlqueires;
     const totalAnualContrato = Math.max(0, subtotalAnual - descontoManual);
@@ -147,5 +150,137 @@ export class EqualizaService {
       style: 'currency',
       currency: 'BRL',
     }).format(value);
+  }
+
+  public getAutoPlannedDates(anosContrato: number, baseDate: Date = new Date()) {
+    const currentMonth = baseDate.getMonth() + 1;
+    const currentYear = baseDate.getFullYear();
+
+    let firstDueDateYear = currentYear;
+    let firstDueDateMonth = 8;
+
+    if (currentMonth > 8) {
+      firstDueDateYear = currentYear + 1;
+      firstDueDateMonth = 3;
+    } else if (currentMonth <= 2) {
+      firstDueDateYear = currentYear;
+      firstDueDateMonth = 3;
+    } else {
+      firstDueDateYear = currentYear;
+      firstDueDateMonth = 8;
+    }
+
+    const payments: Array<{
+      ano: number;
+      numeroParcela: number;
+      descricao: string;
+      dueDate: string;
+      percentual: number;
+    }> = [];
+
+    let pNum = 1;
+    for (let yr = 1; yr <= anosContrato; yr++) {
+      const yearOffset = yr - 1;
+      const refYear = currentYear + yearOffset;
+      payments.push({
+        ano: yr,
+        numeroParcela: pNum++,
+        descricao: `Ano ${yr} - Parcela 50% Agosto`,
+        dueDate: `${refYear}-08-30`,
+        percentual: 50,
+      });
+      payments.push({
+        ano: yr,
+        numeroParcela: pNum++,
+        descricao: `Ano ${yr} - Parcela 50% Março`,
+        dueDate: `${refYear + 1}-03-30`,
+        percentual: 50,
+      });
+    }
+
+    return {
+      firstDueDate: `${firstDueDateYear}-${String(firstDueDateMonth).padStart(2, '0')}-30`,
+      payments,
+    };
+  }
+
+  public generateSuggestedSchedules(
+    anosContrato: number,
+    yearAllocations: Array<{ ano: number; plotNames: string[] }>,
+    options: { incluirFolha?: boolean; incluirCompactacao?: boolean } = {},
+    baseDate: Date = new Date()
+  ) {
+    const baseYear = baseDate.getFullYear();
+    const schedules: Array<{
+      scheduledDate: string;
+      description: string;
+      yearCycle: number;
+      cycleLabel: string;
+      stageName: string;
+      plotNames: string[];
+    }> = [];
+
+    for (let yr = 1; yr <= anosContrato; yr++) {
+      const currentCycleYear = baseYear + (yr - 1);
+      const cycleLabel = `Ano ${yr} (Safra ${currentCycleYear}/${currentCycleYear + 1})`;
+      const alloc = yearAllocations.find((a) => a.ano === yr);
+      const apPlots = alloc?.plotNames || [];
+
+      // 1. Amostragem em Grid (AP)
+      schedules.push({
+        scheduledDate: `${currentCycleYear}-08-15`,
+        description: `Amostragem de Solo em Grid (AP) - ${cycleLabel}`,
+        yearCycle: yr,
+        cycleLabel,
+        stageName: 'Amostragem de Solo em Grid (AP)',
+        plotNames: apPlots,
+      });
+
+      // 2. Amostragem de Conferência
+      schedules.push({
+        scheduledDate: `${currentCycleYear}-09-10`,
+        description: `Conferência de Solo nos demais talhões - ${cycleLabel}`,
+        yearCycle: yr,
+        cycleLabel,
+        stageName: 'Conferência de Solo',
+        plotNames: [],
+      });
+
+      // 3. Compactação (se incluída)
+      if (options.incluirCompactacao) {
+        schedules.push({
+          scheduledDate: `${currentCycleYear}-10-05`,
+          description: `Avaliação de Compactação do Solo - ${cycleLabel}`,
+          yearCycle: yr,
+          cycleLabel,
+          stageName: 'Compactação de Solo',
+          plotNames: apPlots,
+        });
+      }
+
+      // 4. Análise Foliar (se incluída)
+      if (options.incluirFolha) {
+        schedules.push({
+          scheduledDate: `${currentCycleYear + 1}-01-15`,
+          description: `Coleta Foliar (Safra) - ${cycleLabel}`,
+          yearCycle: yr,
+          cycleLabel,
+          stageName: 'Coleta Foliar (Safra)',
+          plotNames: apPlots,
+        });
+      }
+
+      // 5. Apresentação e Devolutiva
+      schedules.push({
+        scheduledDate: `${currentCycleYear + 1}-03-05`,
+        description: `Devolutiva e Apresentação de Mapas - ${cycleLabel}`,
+        yearCycle: yr,
+        cycleLabel,
+        stageName: 'Reunião de Devolutiva / Apresentação de Mapas',
+        plotNames: apPlots,
+      });
+    }
+
+    return schedules;
   }
 }

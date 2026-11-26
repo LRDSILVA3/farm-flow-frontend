@@ -504,7 +504,15 @@ export const OrderForm = ({
           {(activeSpecializedService === "Sistema Equaliza" || activeSpecializedService === "Equaliza") && (
             <EqualizaServiceForm
               initialAlqueires={calculatedAlqueires}
+              availablePlots={formData.plots || []}
               onValuesChange={handleValuesChange}
+              onProductsChange={(products) => onInputChange("productsData", products)}
+              onServiceDetailsChange={(details) => {
+                onInputChange("serviceDetails", details);
+                if (details.contractYears) {
+                  onInputChange("contractYears", details.contractYears);
+                }
+              }}
             />
           )}
 

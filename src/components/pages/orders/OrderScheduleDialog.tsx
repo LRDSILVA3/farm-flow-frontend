@@ -70,6 +70,43 @@ export const OrderScheduleDialog: React.FC<OrderScheduleDialogProps> = ({
     return combined.includes('equaliza');
   }, [order]);
 
+  const contractYears = useMemo(() => {
+    if (!order) return 1;
+    // 1. Campo explícito no order
+    if ((order as any).contractYears && Number((order as any).contractYears) > 0) {
+      return Number((order as any).contractYears);
+    }
+    const details = (order as any).serviceDetails || (order as any).service_details || {};
+    if (details.contractYears && Number(details.contractYears) > 0) {
+      return Number(details.contractYears);
+    }
+    if (details.anosCiclo && Number(details.anosCiclo) > 0) {
+      return Number(details.anosCiclo);
+    }
+    // 2. ProductsData
+    if (Array.isArray(order.productsData)) {
+      const eqItem = order.productsData.find((p: any) => p.contractYears || p.anosCiclo || p.id === 'equaliza_contract');
+      if (eqItem?.contractYears && Number(eqItem.contractYears) > 0) {
+        return Number(eqItem.contractYears);
+      }
+      if (eqItem?.anosCiclo && Number(eqItem.anosCiclo) > 0) {
+        return Number(eqItem.anosCiclo);
+      }
+    }
+    // 3. Regex em campos de texto do pedido (ex: "2 anos", "2 safras")
+    const textToSearch = `${order.serviceName || ''} ${order.type || ''} ${order.serviceGroup || ''} ${JSON.stringify(order.productsData || [])}`;
+    const match = textToSearch.match(/(\d+)\s*(?:anos|safras|ano|safra)/i);
+    if (match && parseInt(match[1], 10) >= 1 && parseInt(match[1], 10) <= 5) {
+      return parseInt(match[1], 10);
+    }
+    // 4. Se houver agendamentos prévios com yearCycle, usa o maior
+    if (Array.isArray(order.schedules) && order.schedules.length > 0) {
+      const maxYear = order.schedules.reduce((max: number, s: any) => Math.max(max, s.yearCycle || 1), 1);
+      if (maxYear > 1) return Math.min(5, maxYear);
+    }
+    return 3;
+  }, [order]);
+
   const availablePlots = useMemo(() => {
     if (!order) return [];
     if (Array.isArray(order.plots) && order.plots.length > 0) {
@@ -139,6 +176,85 @@ export const OrderScheduleDialog: React.FC<OrderScheduleDialogProps> = ({
     setSelectedPlotsForSchedule(prev =>
       prev.includes(plotName) ? prev.filter(p => p !== plotName) : [...prev, plotName]
     );
+  };
+
+  const handleAutoPlanSchedules = async () => {
+    if (!order) return;
+    setSubmitting(true);
+    const currentYear = new Date().getFullYear();
+    const generated: OrderSchedule[] = [];
+    const plotNames = availablePlots.map((p) => typeof p === 'string' ? p : p.name || p.id);
+
+    for (let yr = 1; yr <= contractYears; yr++) {
+      const cycleYear = currentYear + (yr - 1);
+      const cycleLabel = `Ano ${yr} (Safra ${cycleYear}/${cycleYear + 1})`;
+      const apPlotsForYear = plotNames.filter((_, idx) => (idx % contractYears) === (yr - 1));
+
+      // 1. Amostragem em Grid (AP)
+      generated.push({
+        id: generateUUID(),
+        scheduledDate: `${cycleYear}-08-15`,
+        date: `${cycleYear}-08-15`,
+        description: `Amostragem em Grid (AP) - ${cycleLabel}`,
+        notes: `Amostragem em Grid (AP) - ${cycleLabel}`,
+        yearCycle: yr,
+        cycleLabel,
+        stageName: 'Amostragem de Solo (AP)',
+        plotNames: apPlotsForYear.length > 0 ? apPlotsForYear : plotNames,
+        plotName: (apPlotsForYear.length > 0 ? apPlotsForYear : plotNames).join(', '),
+        status: 'Agendado',
+        createdAt: new Date().toISOString(),
+      });
+
+      // 2. Conferência nos demais
+      generated.push({
+        id: generateUUID(),
+        scheduledDate: `${cycleYear}-09-10`,
+        date: `${cycleYear}-09-10`,
+        description: `Conferência de Solo nos demais talhões - ${cycleLabel}`,
+        notes: `Conferência de Solo nos demais talhões - ${cycleLabel}`,
+        yearCycle: yr,
+        cycleLabel,
+        stageName: 'Conferência de Solo',
+        plotNames: [],
+        status: 'Agendado',
+        createdAt: new Date().toISOString(),
+      });
+
+      // 3. Devolutiva de Mapas
+      generated.push({
+        id: generateUUID(),
+        scheduledDate: `${cycleYear + 1}-03-05`,
+        date: `${cycleYear + 1}-03-05`,
+        description: `Devolutiva e Apresentação de Mapas - ${cycleLabel}`,
+        notes: `Devolutiva e Apresentação de Mapas - ${cycleLabel}`,
+        yearCycle: yr,
+        cycleLabel,
+        stageName: 'Reunião de Devolutiva / Apresentação de Mapas',
+        plotNames: [],
+        status: 'Agendado',
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    setSchedulesList(generated);
+    try {
+      for (const item of generated) {
+        await onAddSchedule(order.id, {
+          scheduledDate: item.scheduledDate,
+          description: item.description,
+          plotNames: item.plotNames || [],
+          plotName: item.plotName,
+          yearCycle: item.yearCycle,
+          cycleLabel: item.cycleLabel,
+          stageName: item.stageName,
+        });
+      }
+    } catch {
+      // ignore
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -249,23 +365,54 @@ export const OrderScheduleDialog: React.FC<OrderScheduleDialogProps> = ({
             {/* SE FOR EQUALIZA: SELEÇÃO DE CICLO/ANO E ETAPA (PILAR 4) */}
             {isEqualiza && (
               <div className="p-2.5 bg-purple-50/70 border border-purple-200 rounded-md space-y-2">
-                <div className="text-[11px] font-bold text-purple-950 flex items-center gap-1">
-                  <Sparkles className="h-3.5 w-3.5 text-purple-600" />
-                  Planejamento Plurianual do Equaliza (Anos 1 a 5):
+                <div className="text-[11px] font-bold text-purple-950 flex items-center justify-between">
+                  <span className="flex items-center gap-1">
+                    <Sparkles className="h-3.5 w-3.5 text-purple-600" />
+                    Planejamento Plurianual do Equaliza ({contractYears} {contractYears === 1 ? 'Safra / Ano' : 'Safras / Anos'}):
+                  </span>
+                  <Badge variant="outline" className="text-[10px] bg-purple-100 text-purple-900 border-purple-300">
+                    Contrato de {contractYears} anos
+                  </Badge>
                 </div>
+
+                {schedulesList.length === 0 && (
+                  <div className="p-2 bg-purple-100/60 rounded border border-purple-300/60 flex items-center justify-between gap-2 text-xs">
+                    <span className="text-[11px] text-purple-900">
+                      Nenhuma visita agendada ainda. Deseja pré-gerar o cronograma padrão para as {contractYears} safras?
+                    </span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-6 px-2 text-[10px] bg-purple-700 hover:bg-purple-800 text-white shrink-0"
+                      onClick={handleAutoPlanSchedules}
+                      disabled={submitting || order.status === 'Pendente'}
+                    >
+                      <Sparkles className="h-3 w-3 mr-1" />
+                      Auto-Planejar Visitas
+                    </Button>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
                     <Label className="text-[11px]">Ano / Ciclo do Contrato:</Label>
-                    <Select value={String(yearCycle)} onValueChange={(v) => setYearCycle(parseInt(v, 10))}>
+                    <Select
+                      value={String(Math.min(yearCycle, contractYears))}
+                      onValueChange={(v) => setYearCycle(parseInt(v, 10))}
+                    >
                       <SelectTrigger className="h-8 text-xs bg-card">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="1">Ano 1 (Safra Atual 2025/2026)</SelectItem>
-                        <SelectItem value="2">Ano 2 (Safra 2026/2027)</SelectItem>
-                        <SelectItem value="3">Ano 3 (Safra 2027/2028)</SelectItem>
-                        <SelectItem value="4">Ano 4 (Safra 2028/2029)</SelectItem>
-                        <SelectItem value="5">Ano 5 (Safra 2029/2030)</SelectItem>
+                        {Array.from({ length: contractYears }, (_, i) => i + 1).map((yr) => {
+                          const currentYear = new Date().getFullYear();
+                          const cycleYearCalculated = currentYear + (yr - 1);
+                          return (
+                            <SelectItem key={yr} value={String(yr)}>
+                              Ano {yr} (Safra {cycleYearCalculated}/{cycleYearCalculated + 1})
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>

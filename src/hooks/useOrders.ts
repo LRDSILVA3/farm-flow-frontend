@@ -153,6 +153,8 @@ export interface Order {
   executedSamples?: number;
   totalSamples?: number;
   paidAmount: number;
+  contractYears?: number;
+  serviceDetails?: any;
   createdAt?: string;
 }
 
@@ -275,6 +277,14 @@ const mapFromDB = (db: OrderDB): Order => {
     logs: Array.isArray(db.logs) ? db.logs : [],
     executedArea: numExecuted,
     paidAmount: numPaid,
+    contractYears:
+      (db as any).contract_years ||
+      (db as any).contractYears ||
+      (Array.isArray(db.products_data) ? (db.products_data as any)?.[0]?.contractYears || (db.products_data as any)?.[0]?.serviceDetails?.contractYears : undefined),
+    serviceDetails:
+      (db as any).service_details ||
+      (db as any).serviceDetails ||
+      (Array.isArray(db.products_data) ? (db.products_data as any)?.[0]?.serviceDetails : undefined),
     createdAt: db.created_at,
   };
 };
@@ -414,9 +424,15 @@ export const useOrders = () => {
         status: order.status || "Pendente",
         payment: order.payment || "Aguardando",
         executions: [],
-        schedules: [],
+        schedules:
+          (order as any).schedules && (order as any).schedules.length > 0
+            ? (order as any).schedules
+            : (order as any).serviceDetails?.autoPlannedSchedules || [],
         payments: [],
-        payment_schedules: (order as any).paymentSchedules || [],
+        payment_schedules:
+          (order as any).paymentSchedules && (order as any).paymentSchedules.length > 0
+            ? (order as any).paymentSchedules
+            : (order as any).serviceDetails?.autoPlannedPayments || [],
         plots: (order as any).plots || [],
         total_samples: (order as any).totalSamples || 0,
         executed_samples: (order as any).executedSamples || 0,

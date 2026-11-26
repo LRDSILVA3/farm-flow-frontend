@@ -61,26 +61,23 @@ export const UserModal: React.FC<UserModalProps> = ({
   }, [positions]);
 
   const handleToggleModuleView = (modId: string, checked: boolean) => {
-    const viewKey = `${modId}:view`;
-    const editKey = `${modId}:edit`;
     let next = [...userFormData.permissions];
     if (checked) {
-      if (!next.includes(viewKey)) next.push(viewKey);
+      if (!next.includes(modId)) next.push(modId);
     } else {
-      next = next.filter((k) => k !== viewKey && k !== editKey && k !== modId);
+      next = next.filter((k) => k !== modId && k !== `${modId}:view` && k !== `${modId}:edit`);
     }
     handleUserInputChange("permissions", next);
   };
 
   const handleToggleModuleEdit = (modId: string, checked: boolean) => {
-    const viewKey = `${modId}:view`;
     const editKey = `${modId}:edit`;
     let next = [...userFormData.permissions];
     if (checked) {
       if (!next.includes(editKey)) next.push(editKey);
-      if (!next.includes(viewKey)) next.push(viewKey);
+      if (!next.includes(modId)) next.push(modId);
     } else {
-      next = next.filter((k) => k !== editKey && k !== modId);
+      next = next.filter((k) => k !== editKey);
     }
     handleUserInputChange("permissions", next);
   };
@@ -273,36 +270,41 @@ export const UserModal: React.FC<UserModalProps> = ({
                     className="py-2.5 flex items-center justify-between gap-4 hover:bg-white/60 px-2 rounded transition-colors"
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-800 leading-tight">
+                      <Label
+                        htmlFor={`permission-${mod.id}`}
+                        className="text-sm font-medium text-slate-800 leading-tight cursor-pointer"
+                      >
                         {mod.name}
-                      </p>
+                      </Label>
                       <p className="text-xs text-muted-foreground truncate">
                         {mod.description}
                       </p>
                     </div>
 
                     <div className="flex items-center gap-6 shrink-0">
-                      <label className="flex items-center gap-1.5 cursor-pointer text-xs font-medium text-slate-700 select-none">
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700">
                         <Checkbox
+                          id={`permission-${mod.id}`}
                           checked={isViewChecked}
                           onCheckedChange={(checked) =>
                             handleToggleModuleView(mod.id, !!checked)
                           }
                         />
                         <Eye className="h-3.5 w-3.5 text-blue-600 inline" />
-                        <span>Visualizar</span>
-                      </label>
+                        <span className="text-[11px] text-muted-foreground">Ver</span>
+                      </div>
 
-                      <label className="flex items-center gap-1.5 cursor-pointer text-xs font-medium text-slate-700 select-none">
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700">
                         <Checkbox
+                          id={`permission-${mod.id}-edit`}
                           checked={isEditChecked}
                           onCheckedChange={(checked) =>
                             handleToggleModuleEdit(mod.id, !!checked)
                           }
                         />
                         <Edit3 className="h-3.5 w-3.5 text-green-600 inline" />
-                        <span>Editar</span>
-                      </label>
+                        <span className="text-[11px] text-muted-foreground">Editar</span>
+                      </div>
                     </div>
                   </div>
                 );
