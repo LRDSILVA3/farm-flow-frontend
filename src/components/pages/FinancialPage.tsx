@@ -410,7 +410,7 @@ const FinancialPage = () => {
                               <div className="font-medium">{order.serviceName || order.type}</div>
                               {Array.isArray(order.paymentSchedules) && order.paymentSchedules.length > 0 && (
                                 <div className="text-[10px] text-amber-700 font-semibold mt-0.5">
-                                  🌾 {order.paymentSchedules.filter((s: any) => s.status === 'Pago').length}/{order.paymentSchedules.length} safras quitadas
+                                  💰 {order.paymentSchedules.filter((s: any) => s.status === 'Pago').length}/{order.paymentSchedules.length} pagamentos quitados
                                 </div>
                               )}
                               {Array.isArray(order.plots) && order.plots.length > 0 && (

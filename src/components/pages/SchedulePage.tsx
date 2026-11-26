@@ -1742,18 +1742,79 @@ export const SchedulePage = () => {
                           )}
                         </TableCell>
 
-                        <TableCell className="px-2.5 py-3 font-medium text-xs max-w-[150px]">
-                          <div>{execution.serviceName}</div>
-                          {Array.isArray(execution.rawOrder?.schedules) && execution.rawOrder.schedules.length > 1 && (
-                            <div className="text-[10px] text-indigo-600 font-semibold mt-0.5 flex items-center gap-1">
-                              <span>📅</span> {execution.rawOrder.schedules.length} visitas
-                            </div>
-                          )}
-                          {Array.isArray(execution.rawOrder?.payment_schedules) && execution.rawOrder.payment_schedules.length > 0 && (
-                            <div className="text-[10px] text-amber-700 font-semibold mt-0.5 flex items-center gap-1">
-                              <span>🌾</span> {execution.rawOrder.payment_schedules.filter((s: any) => s.status === 'Pago').length}/{execution.rawOrder.payment_schedules.length} safras
-                            </div>
-                          )}
+                        <TableCell className="px-2.5 py-3 font-medium text-xs max-w-[170px]">
+                          <div className="font-semibold text-slate-800">{execution.serviceName}</div>
+                          {(() => {
+                            const rawOrder = execution.rawOrder;
+                            const contractYears =
+                              rawOrder?.contractYears ||
+                              rawOrder?.contract_years ||
+                              rawOrder?.serviceDetails?.contractYears ||
+                              rawOrder?.service_details?.contractYears ||
+                              (rawOrder?.serviceName?.match(/(\d+)\s*anos/i)?.[1]
+                                ? parseInt(rawOrder.serviceName.match(/(\d+)\s*anos/i)![1], 10)
+                                : null) ||
+                              (Array.isArray(rawOrder?.payment_schedules) && rawOrder.payment_schedules.length > 0
+                                ? Math.max(...rawOrder.payment_schedules.map((p: any) => p.cycleYear || 1), 1)
+                                : 1);
+
+                            const allSchedules = Array.isArray(rawOrder?.schedules) ? rawOrder.schedules : [];
+                            const totalVisits = allSchedules.length;
+                            const realizedVisits = allSchedules.filter((s: any) => s.status === 'Realizado').length;
+
+                            const realizedSafrasFromVisits = new Set(
+                              allSchedules
+                                .filter((s: any) => s.status === 'Realizado' && s.yearCycle)
+                                .map((s: any) => s.yearCycle)
+                            ).size;
+
+                            const realizedSafrasFromArea =
+                              totalArea > 0 && contractYears > 1
+                                ? Math.min(contractYears, Math.floor((executedArea / totalArea) * contractYears))
+                                : (executedArea > 0 ? 1 : 0);
+
+                            const executedSafras = Math.max(realizedSafrasFromVisits, realizedSafrasFromArea);
+
+                            const allPaymentSchedules = Array.isArray(rawOrder?.payment_schedules)
+                              ? rawOrder.payment_schedules
+                              : (Array.isArray(rawOrder?.paymentSchedules) ? rawOrder.paymentSchedules : []);
+                            const totalPayments = allPaymentSchedules.length;
+                            const paidPayments = allPaymentSchedules.filter((s: any) => s.status === 'Pago').length;
+
+                            return (
+                              <div className="space-y-0.5 mt-1">
+                                {/* Visitas Técnicas */}
+                                {totalVisits > 0 && (
+                                  <div
+                                    className="text-[10px] text-indigo-700 font-semibold flex items-center gap-1"
+                                    title={`${realizedVisits} de ${totalVisits} visitas técnicas realizadas`}
+                                  >
+                                    <span>📅</span> {realizedVisits > 0 ? `${realizedVisits}/${totalVisits} visitas` : `${totalVisits} visitas`}
+                                  </div>
+                                )}
+
+                                {/* Safras Executadas no Campo */}
+                                {contractYears > 1 && (
+                                  <div
+                                    className="text-[10px] text-emerald-800 font-semibold flex items-center gap-1"
+                                    title={`${executedSafras} de ${contractYears} safras contratadas executadas no campo`}
+                                  >
+                                    <span>🌾</span> {executedSafras}/{contractYears} safras executadas
+                                  </div>
+                                )}
+
+                                {/* Pagamentos / Parcelas Quitadas */}
+                                {totalPayments > 0 && (
+                                  <div
+                                    className="text-[10px] text-amber-800 font-semibold flex items-center gap-1"
+                                    title={`${paidPayments} de ${totalPayments} parcelas/pagamentos programados quitados`}
+                                  >
+                                    <span>💰</span> {paidPayments}/{totalPayments} pagamentos pagos
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </TableCell>
 
                         {/* Coluna de Progresso em Hectares */}

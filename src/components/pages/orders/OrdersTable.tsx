@@ -459,6 +459,11 @@ export const OrdersTable = ({
                     <div className="text-right">
                       <span className="text-muted-foreground block text-[11px]">Valor</span>
                       <span className="font-bold text-sm text-foreground">{order.value || "R$ 0,00"}</span>
+                      {order.paymentSchedules && order.paymentSchedules.length > 0 && (
+                        <span className="text-[10px] text-amber-800 font-medium block">
+                          💰 {order.paymentSchedules.filter((s: any) => s.status === 'Pago').length}/{order.paymentSchedules.length} pagos
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -532,6 +537,27 @@ export const OrdersTable = ({
                 const plotNames = order.plots && Array.isArray(order.plots) && order.plots.length > 0
                   ? order.plots.map((p: any) => p.name).join(', ')
                   : null;
+
+                const contractYears =
+                  order.contractYears ||
+                  (order.serviceDetails?.contractYears) ||
+                  (order.serviceName?.match(/(\d+)\s*anos/i)?.[1] ? parseInt(order.serviceName.match(/(\d+)\s*anos/i)![1], 10) : null) ||
+                  (Array.isArray(order.paymentSchedules) && order.paymentSchedules.length > 0
+                    ? Math.max(...order.paymentSchedules.map((p: any) => p.cycleYear || 1), 1)
+                    : 1);
+
+                const realizedSafrasFromVisits = new Set(
+                  (order.schedules || [])
+                    .filter((s: any) => s.status === 'Realizado' && s.yearCycle)
+                    .map((s: any) => s.yearCycle)
+                ).size;
+
+                const realizedSafrasFromArea =
+                  totalArea > 0 && contractYears > 1
+                    ? Math.min(contractYears, Math.floor((executedArea / totalArea) * contractYears))
+                    : (executedArea > 0 ? 1 : 0);
+
+                const executedSafras = Math.max(realizedSafrasFromVisits, realizedSafrasFromArea);
 
                 return (
                   <TableRow key={order.id} className="hover:bg-muted/40 transition-colors">
@@ -636,6 +662,15 @@ export const OrdersTable = ({
                               <span className="font-bold">{sentSamples}</span>
                             </button>
                           ) : null}
+                          {contractYears > 1 && (
+                            <div
+                              className="text-[10px] text-emerald-800 font-semibold flex justify-between items-center pt-0.5 border-t border-muted/80"
+                              title={`${executedSafras} de ${contractYears} safras anuais executadas no campo`}
+                            >
+                              <span>🌾 Safras:</span>
+                              <span className="font-bold">{executedSafras}/{contractYears}</span>
+                            </div>
+                          )}
                         </div>
                       )}
                     </TableCell>
@@ -650,8 +685,11 @@ export const OrdersTable = ({
                           {order.payment}
                         </span>
                         {order.paymentSchedules && order.paymentSchedules.length > 0 && (
-                          <div className="text-[10px] text-purple-700 font-medium">
-                            🌾 {order.paymentSchedules.filter(s => s.status === 'Pago').length}/{order.paymentSchedules.length} safras
+                          <div
+                            className="text-[10px] text-amber-800 font-medium flex items-center gap-1"
+                            title={`${order.paymentSchedules.filter((s: any) => s.status === 'Pago').length} de ${order.paymentSchedules.length} pagamentos/parcelas quitadas`}
+                          >
+                            <span>💰</span> {order.paymentSchedules.filter((s: any) => s.status === 'Pago').length}/{order.paymentSchedules.length} pagamentos
                           </div>
                         )}
                       </div>
