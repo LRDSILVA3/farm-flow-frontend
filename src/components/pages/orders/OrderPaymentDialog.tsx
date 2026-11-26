@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -39,12 +40,13 @@ interface OrderPaymentDialogProps {
   onPayScheduledInstallment?: (orderId: string, scheduleId: string, paymentData: { amount: number; method: string; date?: string; notes?: string }) => Promise<void>;
 }
 
+const CURRENT_YEAR = new Date().getFullYear();
 const DEFAULT_SAFRA_CYCLES = [
-  { cycle: 1, label: 'Ano 1 (Safra 2025/2026)' },
-  { cycle: 2, label: 'Ano 2 (Safra 2026/2027)' },
-  { cycle: 3, label: 'Ano 3 (Safra 2027/2028)' },
-  { cycle: 4, label: 'Ano 4 (Safra 2028/2029)' },
-  { cycle: 5, label: 'Ano 5 (Safra 2029/2030)' },
+  { cycle: 1, label: `Ano 1 (Safra ${CURRENT_YEAR}/${CURRENT_YEAR + 1})` },
+  { cycle: 2, label: `Ano 2 (Safra ${CURRENT_YEAR + 1}/${CURRENT_YEAR + 2})` },
+  { cycle: 3, label: `Ano 3 (Safra ${CURRENT_YEAR + 2}/${CURRENT_YEAR + 3})` },
+  { cycle: 4, label: `Ano 4 (Safra ${CURRENT_YEAR + 3}/${CURRENT_YEAR + 4})` },
+  { cycle: 5, label: `Ano 5 (Safra ${CURRENT_YEAR + 4}/${CURRENT_YEAR + 5})` },
 ];
 
 export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
@@ -341,7 +343,7 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2 text-lg">
@@ -515,15 +517,15 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
                   <p className="text-[11px]">Use o gerador acima ou adicione parcelas avulsas abaixo para agendar os pagamentos plurianuais.</p>
                 </div>
               ) : (
-                <div className="border rounded-lg overflow-hidden bg-background">
-                  <Table className="text-xs">
+                <div className="border rounded-lg overflow-x-auto bg-background">
+                  <Table className="text-xs w-full">
                     <TableHeader className="bg-muted/40">
                       <TableRow className="h-8">
-                        <TableHead className="py-1">Safra / Parcela</TableHead>
-                        <TableHead className="py-1">Vencimento</TableHead>
-                        <TableHead className="py-1">Valor</TableHead>
-                        <TableHead className="py-1">Status</TableHead>
-                        <TableHead className="py-1 text-right">Ações</TableHead>
+                        <TableHead className="py-1.5 px-2.5">Safra / Parcela</TableHead>
+                        <TableHead className="py-1.5 px-2 w-[145px]">Vencimento</TableHead>
+                        <TableHead className="py-1.5 px-2 w-[135px]">Valor (R$)</TableHead>
+                        <TableHead className="py-1.5 px-2 w-[90px]">Status</TableHead>
+                        <TableHead className="py-1.5 px-2.5 text-right w-[135px]">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -531,25 +533,25 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
                         const isPaid = sched.status === 'Pago';
                         return (
                           <TableRow key={sched.id} className="hover:bg-muted/30">
-                            <TableCell className="py-2">
+                            <TableCell className="py-2 px-2.5 align-middle">
                               {isPaid ? (
                                 <div className="font-medium text-foreground">{sched.description}</div>
                               ) : (
                                 <Input
                                   value={sched.description}
                                   onChange={(e) => handleUpdateScheduleField(sched.id, 'description', e.target.value)}
-                                  className="h-7 text-xs bg-white px-2 min-w-[160px]"
+                                  className="h-8 text-xs bg-white px-2 w-full min-w-[150px]"
                                 />
                               )}
                               {sched.cycleLabel && (
-                                <Badge variant="outline" className="text-[10px] mt-1 bg-purple-50 text-purple-700 border-purple-200">
+                                <Badge variant="outline" className="text-[10px] mt-1 bg-purple-50 text-purple-700 border-purple-200 whitespace-nowrap">
                                   {sched.cycleLabel}
                                 </Badge>
                               )}
                             </TableCell>
-                            <TableCell className="py-2 text-muted-foreground">
+                            <TableCell className="py-2 px-2 align-middle text-muted-foreground">
                               {isPaid ? (
-                                formatDisplayDate(sched.dueDate)
+                                <span className="whitespace-nowrap">{formatDisplayDate(sched.dueDate)}</span>
                               ) : (
                                 <Input
                                   type="date"
@@ -559,42 +561,44 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
                                       : sched.dueDate || ''
                                   }
                                   onChange={(e) => handleUpdateScheduleField(sched.id, 'dueDate', e.target.value)}
-                                  className="h-7 w-[132px] text-xs bg-white px-2 font-medium text-slate-800"
+                                  className="h-8 w-[136px] text-xs bg-white px-2 font-medium text-slate-800"
                                 />
                               )}
                             </TableCell>
-                            <TableCell className="py-2 font-semibold text-foreground">
+                            <TableCell className="py-2 px-2 align-middle font-semibold text-foreground">
                               {isPaid ? (
-                                formatBRL(sched.amount)
+                                <span className="whitespace-nowrap">{formatBRL(sched.amount)}</span>
                               ) : (
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={sched.amount}
-                                  onChange={(e) => handleUpdateScheduleField(sched.id, 'amount', parseFloat(e.target.value) || 0)}
-                                  className="h-7 w-[105px] text-xs bg-white px-2 font-semibold text-slate-900"
-                                />
+                                <div className="relative flex items-center">
+                                  <span className="absolute left-2 text-[11px] font-medium text-muted-foreground pointer-events-none">
+                                    R$
+                                  </span>
+                                  <DecimalInput
+                                    value={sched.amount}
+                                    onValueChange={(val) => handleUpdateScheduleField(sched.id, 'amount', val ?? 0)}
+                                    className="h-8 w-[124px] text-xs bg-white pl-7 pr-2 font-semibold text-slate-900 text-right"
+                                  />
+                                </div>
                               )}
                             </TableCell>
-                            <TableCell className="py-2">
+                            <TableCell className="py-2 px-2 align-middle whitespace-nowrap">
                               {isPaid ? (
-                                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-[10px]">
+                                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-[10px] whitespace-nowrap">
                                   Quitado
                                 </Badge>
                               ) : (
-                                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]">
+                                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px] whitespace-nowrap">
                                   A Vencer
                                 </Badge>
                               )}
                             </TableCell>
-                            <TableCell className="py-2 text-right">
+                            <TableCell className="py-2 px-2.5 align-middle text-right whitespace-nowrap">
                               {isPaid ? (
                                 <span className="text-[11px] text-muted-foreground italic">
                                   {sched.paymentMethod || 'Pago'}
                                 </span>
                               ) : (
-                                <div className="flex justify-end items-center gap-1.5">
+                                <div className="flex justify-end items-center gap-1">
                                   <Button
                                     type="button"
                                     size="sm"
@@ -602,7 +606,7 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
                                       setPayingScheduleId(sched.id);
                                       setPaySchedDate(getLocalDateISO());
                                     }}
-                                    className="h-6 text-[11px] px-2 bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
+                                    className="h-7 text-[11px] px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white gap-1 whitespace-nowrap"
                                   >
                                     <Check className="h-3 w-3" />
                                     Dar Baixa
@@ -612,9 +616,10 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleRemoveSchedule(sched.id)}
-                                    className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                                    className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive shrink-0"
+                                    title="Remover parcela"
                                   >
-                                    <Trash2 className="h-3 w-3" />
+                                    <Trash2 className="h-3.5 w-3.5" />
                                   </Button>
                                 </div>
                               )}
