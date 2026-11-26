@@ -36,7 +36,9 @@ import {
   FlaskConical,
   AlertTriangle,
   RotateCcw,
-  TrendingUp
+  TrendingUp,
+  SlidersHorizontal,
+  ChevronDown
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/api";
@@ -228,6 +230,28 @@ export const SchedulePage = () => {
   const [filterState, setFilterState] = useState("all");
   const [filterCity, setFilterCity] = useState("all");
   const [filterStatus, setFilterStatus] = useState<string[]>([]);
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
+
+  const activeSecondaryCount = useMemo(() => {
+    let count = 0;
+    if (filterClient !== "all") count++;
+    if (filterFarm !== "all") count++;
+    if (filterResponsible !== "all") count++;
+    if (filterCollaborator !== "all") count++;
+    if (filterEquipment !== "all") count++;
+    if (filterState !== "all") count++;
+    if (filterCity !== "all") count++;
+    return count;
+  }, [filterClient, filterFarm, filterResponsible, filterCollaborator, filterEquipment, filterState, filterCity]);
+
+  const hasAnyFilter = useMemo(() => {
+    return (
+      searchTerm.trim() !== "" ||
+      filterStatus.length > 0 ||
+      filterService !== "all" ||
+      activeSecondaryCount > 0
+    );
+  }, [searchTerm, filterStatus, filterService, activeSecondaryCount]);
 
   const [collaboratorsList, setCollaboratorsList] = useState<CollaboratorOption[]>([]);
   const [equipmentList, setEquipmentList] = useState<EquipmentOption[]>([]);
@@ -1440,115 +1464,23 @@ export const SchedulePage = () => {
         </div>
       </div>
 
-      {/* Painel de Filtros Avançados */}
-      <Card className="p-4 bg-muted/20 border">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-          <div className="col-span-1 sm:col-span-2">
-            <Label className="text-xs font-semibold">Busca Geral</Label>
-            <div className="relative mt-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar cliente, fazenda, cidade..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8 text-xs bg-background h-9"
-              />
-            </div>
+      {/* Painel de Filtros com Acordeon Discreto */}
+      <Card className="p-3 bg-muted/20 border">
+        {/* Barra Principal (sempre visível) */}
+        <div className="flex flex-col sm:flex-row flex-wrap items-center gap-2">
+          {/* Busca Geral */}
+          <div className="relative flex-1 min-w-[220px] w-full sm:w-auto">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar cliente, fazenda, cidade..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8 text-xs bg-background h-9 w-full"
+            />
           </div>
 
-          <div>
-            <Label className="text-xs font-semibold">Cliente</Label>
-            <Select value={filterClient} onValueChange={setFilterClient}>
-              <SelectTrigger className="mt-1 text-xs bg-background h-9">
-                <SelectValue placeholder="Todos os clientes" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os clientes</SelectItem>
-                {uniqueClients.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label className="text-xs font-semibold">Fazenda</Label>
-            <Select value={filterFarm} onValueChange={setFilterFarm}>
-              <SelectTrigger className="mt-1 text-xs bg-background h-9">
-                <SelectValue placeholder="Todas as fazendas" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as fazendas</SelectItem>
-                {uniqueFarms.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label className="text-xs font-semibold">Serviço</Label>
-            <Select value={filterService} onValueChange={setFilterService}>
-              <SelectTrigger className="mt-1 text-xs bg-background h-9">
-                <SelectValue placeholder="Todos os serviços" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os serviços</SelectItem>
-                {uniqueServices.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label className="text-xs font-semibold">Responsável</Label>
-            <Select value={filterResponsible} onValueChange={setFilterResponsible}>
-              <SelectTrigger className="mt-1 text-xs bg-background h-9">
-                <SelectValue placeholder="Todos os responsáveis" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os responsáveis</SelectItem>
-                {uniqueResponsibles.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label className="text-xs font-semibold">Operador</Label>
-            <Select value={filterCollaborator} onValueChange={setFilterCollaborator}>
-              <SelectTrigger className="mt-1 text-xs bg-background h-9">
-                <SelectValue placeholder="Todos os operadores" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os operadores</SelectItem>
-                {collaboratorsList.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label className="text-xs font-semibold">Equipamento</Label>
-            <Select value={filterEquipment} onValueChange={setFilterEquipment}>
-              <SelectTrigger className="mt-1 text-xs bg-background h-9">
-                <SelectValue placeholder="Todos os equipamentos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os equipamentos</SelectItem>
-                {equipmentList.map(eq => <SelectItem key={eq.id} value={eq.name}>{eq.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label className="text-xs font-semibold">Estado (UF)</Label>
-            <Select value={filterState} onValueChange={setFilterState}>
-              <SelectTrigger className="mt-1 text-xs bg-background h-9">
-                <SelectValue placeholder="Todos os estados" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os estados</SelectItem>
-                {uniqueStates.map(st => <SelectItem key={st} value={st}>{st}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label className="text-xs font-semibold block mb-1">Status</Label>
+          {/* Status Multi-Seleção */}
+          <div className="w-full sm:w-44">
             <MultiStatusFilter
               placeholder="Status"
               options={[
@@ -1564,9 +1496,42 @@ export const SchedulePage = () => {
             />
           </div>
 
-          <div className="flex items-end">
+          {/* Serviço */}
+          <div className="w-full sm:w-44">
+            <Select value={filterService} onValueChange={setFilterService}>
+              <SelectTrigger className="text-xs bg-background h-9">
+                <SelectValue placeholder="Todos os serviços" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os serviços</SelectItem>
+                {uniqueServices.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Botão Acordeon Mais Filtros */}
+          <Button
+            type="button"
+            variant={showMoreFilters || activeSecondaryCount > 0 ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => setShowMoreFilters(prev => !prev)}
+            className="h-9 text-xs gap-1.5 shrink-0"
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+            <span>Mais Filtros</span>
+            {activeSecondaryCount > 0 && (
+              <Badge variant="secondary" className="h-4 px-1.5 text-[10px] bg-primary/10 text-primary font-bold">
+                {activeSecondaryCount}
+              </Badge>
+            )}
+            <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform duration-200", showMoreFilters && "rotate-180")} />
+          </Button>
+
+          {/* Botão Limpar Filtros */}
+          {hasAnyFilter && (
             <Button
-              variant="outline"
+              type="button"
+              variant="ghost"
               size="sm"
               onClick={() => {
                 setSearchTerm("");
@@ -1580,13 +1545,96 @@ export const SchedulePage = () => {
                 setFilterCity("all");
                 setFilterStatus([]);
               }}
-              className="w-full text-xs h-9 flex items-center justify-center gap-1.5"
+              className="h-9 text-xs gap-1 text-muted-foreground hover:text-foreground shrink-0"
             >
               <RotateCcw className="h-3.5 w-3.5" />
-              Limpar Filtros
+              Limpar
             </Button>
-          </div>
+          )}
         </div>
+
+        {/* Acordeon Discreto: Filtros Secundários */}
+        {showMoreFilters && (
+          <div className="pt-3 mt-3 border-t border-border/60 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div>
+              <Label className="text-xs font-semibold">Cliente</Label>
+              <Select value={filterClient} onValueChange={setFilterClient}>
+                <SelectTrigger className="mt-1 text-xs bg-background h-9">
+                  <SelectValue placeholder="Todos os clientes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os clientes</SelectItem>
+                  {uniqueClients.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold">Fazenda</Label>
+              <Select value={filterFarm} onValueChange={setFilterFarm}>
+                <SelectTrigger className="mt-1 text-xs bg-background h-9">
+                  <SelectValue placeholder="Todas as fazendas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as fazendas</SelectItem>
+                  {uniqueFarms.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold">Responsável</Label>
+              <Select value={filterResponsible} onValueChange={setFilterResponsible}>
+                <SelectTrigger className="mt-1 text-xs bg-background h-9">
+                  <SelectValue placeholder="Todos os responsáveis" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os responsáveis</SelectItem>
+                  {uniqueResponsibles.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold">Operador</Label>
+              <Select value={filterCollaborator} onValueChange={setFilterCollaborator}>
+                <SelectTrigger className="mt-1 text-xs bg-background h-9">
+                  <SelectValue placeholder="Todos os operadores" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os operadores</SelectItem>
+                  {collaboratorsList.map(c => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold">Equipamento</Label>
+              <Select value={filterEquipment} onValueChange={setFilterEquipment}>
+                <SelectTrigger className="mt-1 text-xs bg-background h-9">
+                  <SelectValue placeholder="Todos os equipamentos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os equipamentos</SelectItem>
+                  {equipmentList.map(eq => <SelectItem key={eq.id} value={eq.name}>{eq.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-xs font-semibold">Estado (UF)</Label>
+              <Select value={filterState} onValueChange={setFilterState}>
+                <SelectTrigger className="mt-1 text-xs bg-background h-9">
+                  <SelectValue placeholder="Todos os estados" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os estados</SelectItem>
+                  {uniqueStates.map(st => <SelectItem key={st} value={st}>{st}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Visão Mobile em Cards */}
