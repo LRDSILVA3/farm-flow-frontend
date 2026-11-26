@@ -8,15 +8,26 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Loader2, Info } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+
+export interface ConferenciaPlotItem {
+  id?: string;
+  name?: string;
+  area?: string | number;
+  dataProvavelColeta?: string;
+  observacao?: string;
+  [key: string]: any;
+}
 
 interface ConferenciaServiceFormProps {
   initialAlqueires: number;
   initialNumAnalises: number;
   totalFarmAlqueires: number;
+  plots?: any[];
+  onPlotsChange?: (plots: any[]) => void;
   onValuesChange: (calculatedValue: number) => void;
   onAllPlotsSelectedChange: (selected: boolean) => void;
   onProductsChange?: (products: any[]) => void;
@@ -26,6 +37,8 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
   initialAlqueires,
   initialNumAnalises,
   totalFarmAlqueires,
+  plots,
+  onPlotsChange,
   onValuesChange,
   onAllPlotsSelectedChange,
   onProductsChange,
@@ -42,6 +55,20 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
   const [numAnalises, setNumAnalises] = useState<number | null>(initialNumAnalises === 0 ? null : initialNumAnalises);
   const [isAllPlotsSelected, setIsAllPlotsSelected] = useState<boolean>(false);
 
+  // Desconto e Valor Fechado (igual ao pedido de AP)
+  const [descontoManual, setDescontoManual] = useState<number | null>(null);
+  const [descontoPercentualManual, setDescontoPercentualManual] = useState<number | null>(null);
+  const [valorFechadoManual, setValorFechadoManual] = useState<number | null>(null);
+  const [descontoPctInput, setDescontoPctInput] = useState<string>('');
+  const [descontoValorInput, setDescontoValorInput] = useState<string>('');
+  const [valorFechadoInput, setValorFechadoInput] = useState<string>('');
+
+  // Planejamento por área / talhão (Data Provável de Coleta e OBS)
+  const [localPlots, setLocalPlots] = useState<ConferenciaPlotItem[]>(() => {
+    if (plots && plots.length > 0) return plots;
+    return [{ id: '1', name: 'Área 1', area: (initialAlqueires || 0) * 2.42, dataProvavelColeta: '', observacao: '' }];
+  });
+
   const [calculationResult, setCalculationResult] = useState<ConferenciaCalculationResult | null>(null);
 
   const conferenciaService = useMemo(() => {
@@ -54,6 +81,26 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
   useEffect(() => {
     setAlqueires(initialAlqueires === 0 ? null : initialAlqueires);
   }, [initialAlqueires]);
+
+  useEffect(() => {
+    if (plots && plots.length > 0) {
+      setLocalPlots(plots);
+    }
+  }, [plots]);
+
+  const onPlotsChangeRef = React.useRef(onPlotsChange);
+  React.useEffect(() => {
+    onPlotsChangeRef.current = onPlotsChange;
+  }, [onPlotsChange]);
+
+  const handlePlotFieldChange = (index: number, field: 'dataProvavelColeta' | 'observacao', val: string) => {
+    const updated = [...localPlots];
+    updated[index] = { ...updated[index], [field]: val };
+    setLocalPlots(updated);
+    if (onPlotsChangeRef.current) {
+      onPlotsChangeRef.current(updated);
+    }
+  };
 
   const onValuesChangeRef = React.useRef(onValuesChange);
   const onProductsChangeRef = React.useRef(onProductsChange);
@@ -82,6 +129,9 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
         alqueires: alqueiresToCalculate,
         numAnalises: numAnalises === null ? 0 : numAnalises,
         totalAlqueires: totalFarmAlqueires,
+        descontoManual: descontoManual === null ? undefined : descontoManual,
+        descontoPercentualManual: descontoPercentualManual === null ? undefined : descontoPercentualManual,
+        valorFechadoManual: valorFechadoManual === null ? undefined : valorFechadoManual,
       });
 
       setCalculationResult(result);
@@ -99,7 +149,12 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
             name: `SERVIÇO DE COLETA DE ANÁLISE DE CONFERÊNCIA (DISTÂNCIA: ${((distanciaFazendaKm || 0) * 2).toFixed(1)} Km)`,
             quantity: alqueiresToCalculate || 10,
             unit: 'ALQ',
-            price: result.details.breakdown.coletaServicoPerAlq
+            price: result.details.breakdown.coletaServicoPerAlq,
+            totalPrice: result.details.breakdown.coletaServicoTotal,
+            valorFechado: result.totalValue,
+            desconto: result.desconto,
+            descontoPercentual: result.descontoPercentual,
+            plotsPlan: localPlots,
           },
           {
             id: 'analises_macro_prem',
@@ -107,7 +162,8 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
             name: `ANÁLISE DE SOLO (MACRO+S+P_REM${desejaAnaliseFisica ? '+FÍSICA' : ''})`,
             quantity: numAnalises || 0,
             unit: 'PTOS',
-            price: result.details.custoAnaliseFisica || 91.40
+            price: result.details.custoAnaliseFisica || 91.40,
+            totalPrice: result.details.breakdown.analiseMacroTotal,
           },
           ...(result.details.numAnalises20_40cm > 0 ? [{
             id: 'analises_20_40',
@@ -115,7 +171,8 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
             name: 'ANÁLISE DE SOLO 20-40 CM (MACRO+S)',
             quantity: result.details.numAnalises20_40cm,
             unit: 'PTOS',
-            price: result.details.breakdown.analise20_40Unit || 73.90
+            price: result.details.breakdown.analise20_40Unit || 73.90,
+            totalPrice: result.details.breakdown.analise20_40Total,
           }] : []),
           ...(result.details.numAnalisesBIOAS > 0 ? [{
             id: 'analises_bioas',
@@ -123,7 +180,8 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
             name: 'ANÁLISE BIOAS',
             quantity: result.details.numAnalisesBIOAS,
             unit: 'PTOS',
-            price: result.details.breakdown.analiseBIOASUnit || 205.20
+            price: result.details.breakdown.analiseBIOASUnit || 205.20,
+            totalPrice: result.details.breakdown.analiseBIOASTotal,
           }] : []),
         ]);
       }
@@ -140,6 +198,10 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
     totalFarmAlqueires,
     isAllPlotsSelected,
     conferenciaService,
+    descontoManual,
+    descontoPercentualManual,
+    valorFechadoManual,
+    localPlots,
   ]);
 
   if (loadingCostVariables) {
@@ -162,13 +224,21 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
   const totalValue = calculationResult?.totalValue ?? 0;
   const totalValuePerAlq = calculationResult?.totalValuePerAlq ?? 0;
   const totalValuePerPoint = calculationResult?.totalValuePerPoint ?? 0;
+  const valorTotalSugerido = calculationResult?.valorTotalSugerido ?? 0;
+  const sugeridoPerAlq = calculationResult?.sugeridoPerAlq ?? 0;
+  const desconto = calculationResult?.desconto ?? 0;
+  const descontoPercentual = calculationResult?.descontoPercentual ?? 0;
+  const descontoPerAlq = calculationResult?.descontoPerAlq ?? 0;
   const details = calculationResult?.details;
+
+  const displayPlots = localPlots.length > 0 ? localPlots : [
+    { id: '1', name: 'Área 1', area: (alqueires || 0) * 2.42, dataProvavelColeta: '', observacao: '' }
+  ];
 
   return (
     <div className="space-y-4 p-4 border rounded-md bg-card">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Cálculo de Conferência de Solo</h3>
-        
+        <h3 className="text-lg font-semibold">Conferência</h3>
       </div>
 
       <div className="space-y-4">
@@ -324,18 +394,221 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
             />
           </div>
         </div>
+
+        {/* Planejamento de Coleta por Talhão / Área (Data Provável da Coleta e OBS - INPUT CONFERENCIA Colunas H e I) */}
+        <div className="pt-3 border-t space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-semibold">Planejamento de Coleta por Área / Talhão:</Label>
+            <span className="text-xs text-muted-foreground">
+              {displayPlots.length} {displayPlots.length === 1 ? 'área' : 'áreas'}
+            </span>
+          </div>
+
+          <div className="border rounded-md overflow-x-auto bg-background">
+            <table className="w-full text-xs text-left">
+              <thead className="bg-muted/60 text-muted-foreground font-medium border-b">
+                <tr>
+                  <th className="py-2 px-3">Talhão / Área</th>
+                  <th className="py-2 px-3">Área</th>
+                  <th className="py-2 px-3 min-w-[150px]">Data Prov. Coleta</th>
+                  <th className="py-2 px-3 min-w-[200px]">Observação (OBS)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {displayPlots.map((plot, idx) => {
+                  const plotAreaHa = parseFloat(plot.area || '0') || 0;
+                  const plotAreaAlq = plotAreaHa > 0 ? (plotAreaHa / 2.42).toFixed(2) : '-';
+                  return (
+                    <tr key={plot.id || idx} className="hover:bg-muted/30">
+                      <td className="py-2 px-3 font-medium text-foreground">
+                        {plot.name || `Talhão ${idx + 1}`}
+                      </td>
+                      <td className="py-2 px-3 text-muted-foreground">
+                        {plotAreaHa > 0
+                          ? `${plotAreaHa.toFixed(2)} ha (${plotAreaAlq} alq)`
+                          : `${((alqueires || 0) * 2.42).toFixed(2)} ha (${(alqueires || 0).toFixed(2)} alq)`}
+                      </td>
+                      <td className="py-2 px-3">
+                        <Input
+                          type="date"
+                          value={plot.dataProvavelColeta || ''}
+                          onChange={(e) => handlePlotFieldChange(idx, 'dataProvavelColeta', e.target.value)}
+                          className="h-8 text-xs bg-card"
+                        />
+                      </td>
+                      <td className="py-2 px-3">
+                        <Input
+                          type="text"
+                          placeholder="Ex: Pivô 1, colheita prevista..."
+                          value={plot.observacao || ''}
+                          onChange={(e) => handlePlotFieldChange(idx, 'observacao', e.target.value)}
+                          className="h-8 text-xs bg-card"
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Bloco de Negociação Comercial / Desconto / Valor Fechado (igual ao Pedido de AP) */}
+        <div className="pt-3 border-t">
+          <h4 className="text-sm font-semibold mb-2">Condições Comerciais e Desconto:</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <Label htmlFor="conf-desconto-pct" className="text-xs font-medium">Desconto (%):</Label>
+              <div className="relative mt-1">
+                <Input
+                  id="conf-desconto-pct"
+                  type="text"
+                  inputMode="decimal"
+                  value={
+                    descontoPctInput !== ''
+                      ? descontoPctInput
+                      : descontoPercentualManual !== null && descontoPercentualManual > 0
+                      ? String(Number(descontoPercentualManual.toFixed(2))).replace('.', ',')
+                      : ''
+                  }
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setDescontoPctInput(raw);
+                    setDescontoValorInput('');
+                    setValorFechadoInput('');
+
+                    const normalized = raw.replace(',', '.');
+                    if (normalized.trim() === '' || normalized === '.') {
+                      setDescontoPercentualManual(null);
+                      setDescontoManual(null);
+                      setValorFechadoManual(null);
+                    } else {
+                      const parsed = parseFloat(normalized);
+                      if (!isNaN(parsed) && parsed >= 0) {
+                        setDescontoPercentualManual(parsed);
+                        setDescontoManual(null);
+                        setValorFechadoManual(null);
+                      }
+                    }
+                  }}
+                  onBlur={() => setDescontoPctInput('')}
+                  placeholder="0,00%"
+                  className="pr-7"
+                />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="conf-desconto-val" className="text-xs font-medium">Desconto em Valor (R$):</Label>
+              <div className="relative mt-1">
+                <Input
+                  id="conf-desconto-val"
+                  type="text"
+                  inputMode="decimal"
+                  value={
+                    descontoValorInput !== ''
+                      ? descontoValorInput
+                      : descontoManual !== null && descontoManual > 0
+                      ? String(Number(descontoManual.toFixed(2))).replace('.', ',')
+                      : (desconto > 0 && !descontoPercentualManual && !valorFechadoManual)
+                      ? desconto.toFixed(2).replace('.', ',')
+                      : ''
+                  }
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setDescontoValorInput(raw);
+                    setDescontoPctInput('');
+                    setValorFechadoInput('');
+
+                    const normalized = raw.replace(',', '.');
+                    if (normalized.trim() === '' || normalized === '.') {
+                      setDescontoManual(null);
+                      setDescontoPercentualManual(null);
+                      setValorFechadoManual(null);
+                    } else {
+                      const parsed = parseFloat(normalized);
+                      if (!isNaN(parsed) && parsed >= 0) {
+                        setDescontoManual(parsed);
+                        setDescontoPercentualManual(null);
+                        setValorFechadoManual(null);
+                      }
+                    }
+                  }}
+                  onBlur={() => setDescontoValorInput('')}
+                  placeholder="R$ 0,00"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="conf-valor-fechado" className="text-xs font-medium">Valor Total Fechado (R$):</Label>
+              <div className="relative mt-1">
+                <Input
+                  id="conf-valor-fechado"
+                  type="text"
+                  inputMode="decimal"
+                  value={
+                    valorFechadoInput !== ''
+                      ? valorFechadoInput
+                      : valorFechadoManual !== null && valorFechadoManual > 0
+                      ? String(Number(valorFechadoManual.toFixed(2))).replace('.', ',')
+                      : ''
+                  }
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setValorFechadoInput(raw);
+                    setDescontoPctInput('');
+                    setDescontoValorInput('');
+
+                    const normalized = raw.replace(',', '.');
+                    if (normalized.trim() === '' || normalized === '.') {
+                      setValorFechadoManual(null);
+                      setDescontoManual(null);
+                      setDescontoPercentualManual(null);
+                    } else {
+                      const parsed = parseFloat(normalized);
+                      if (!isNaN(parsed) && parsed >= 0) {
+                        setValorFechadoManual(parsed);
+                        setDescontoManual(null);
+                        setDescontoPercentualManual(null);
+                      }
+                    }
+                  }}
+                  onBlur={() => setValorFechadoInput('')}
+                  placeholder={valorTotalSugerido > 0 ? `Sugerido: ${valorTotalSugerido.toFixed(2).replace('.', ',')}` : 'R$ 0,00'}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="mt-6 pt-4 border-t space-y-3">
         <h4 className="text-md font-semibold">Valores Calculados:</h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="p-3 bg-muted/50 rounded-md">
-            <span className="text-xs text-muted-foreground block">Valor Total do Trabalho</span>
+            <span className="text-xs text-muted-foreground block">
+              {desconto > 0 ? 'Valor Total Fechado' : 'Valor Total Sugerido'}
+            </span>
             <strong className="text-lg text-primary">{conferenciaService.formatCurrency(totalValue)}</strong>
+            {desconto > 0 && (
+              <span className="text-xs text-muted-foreground block line-through">
+                Sugerido: {conferenciaService.formatCurrency(valorTotalSugerido)}
+              </span>
+            )}
           </div>
           <div className="p-3 bg-muted/50 rounded-md">
             <span className="text-xs text-muted-foreground block">Valor por Área</span>
             <strong className="text-lg">{conferenciaService.formatCurrency(totalValuePerAlq)}/ALQ</strong>
+            {desconto > 0 && (
+              <span className="text-xs text-muted-foreground block">
+                Sugerido: {conferenciaService.formatCurrency(sugeridoPerAlq)}/alq
+              </span>
+            )}
           </div>
           <div className="p-3 bg-muted/50 rounded-md">
             <span className="text-xs text-muted-foreground block">Valor por Ponto</span>
@@ -364,6 +637,12 @@ export const ConferenciaServiceForm: React.FC<ConferenciaServiceFormProps> = ({
               <div className="flex justify-between">
                 <span>Análise BIOAS ({details.numAnalisesBIOAS} un):</span>
                 <span className="font-medium">{conferenciaService.formatCurrency(details.breakdown.analiseBIOASTotal)} ({conferenciaService.formatCurrency(details.breakdown.analiseBIOASUnit)}/un)</span>
+              </div>
+            )}
+            {desconto > 0 && (
+              <div className="flex justify-between text-destructive py-1 border-t border-b font-medium">
+                <span>DESCONTO DE -{descontoPercentual.toFixed(2)}% (-{conferenciaService.formatCurrency(descontoPerAlq)}/alq):</span>
+                <span>-{conferenciaService.formatCurrency(desconto)}</span>
               </div>
             )}
             <div className="flex justify-between text-muted-foreground pt-1 border-t">

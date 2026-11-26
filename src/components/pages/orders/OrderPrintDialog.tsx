@@ -619,7 +619,38 @@ export const OrderPrintDialog: React.FC<OrderPrintDialogProps> = ({
                   </div>
                 )}
               </div>
-              <div>Data Prov. Coleta..: <span className="font-normal">{todayStr}</span></div>
+              <div>
+                Data Prov. Coleta..: <span className="font-normal">
+                  {Array.isArray(order.plots) && order.plots.some((p: any) => p.dataProvavelColeta)
+                    ? order.plots.filter((p: any) => p.dataProvavelColeta).map((p: any) => `${p.name || 'Talhão'}: ${p.dataProvavelColeta}`).join(' | ')
+                    : todayStr}
+                </span>
+              </div>
+              {Array.isArray(order.plots) && order.plots.some((p: any) => p.dataProvavelColeta || p.observacao) && (
+                <div className="mt-2 pt-1 border-t border-dashed border-gray-300">
+                  <div className="font-semibold text-[10px] uppercase text-gray-700 mb-1">Detalhamento dos Talhões:</div>
+                  <table className="w-full text-[10px] text-left border border-collapse border-gray-400">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="border border-gray-400 px-1 py-0.5">Talhão</th>
+                        <th className="border border-gray-400 px-1 py-0.5">Área</th>
+                        <th className="border border-gray-400 px-1 py-0.5">Data Prov. Coleta</th>
+                        <th className="border border-gray-400 px-1 py-0.5">Observações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {order.plots.map((p: any, idx: number) => (
+                        <tr key={idx}>
+                          <td className="border border-gray-400 px-1 py-0.5 font-medium">{p.name || `Talhão ${idx + 1}`}</td>
+                          <td className="border border-gray-400 px-1 py-0.5">{p.area ? `${p.area} ha` : '-'}</td>
+                          <td className="border border-gray-400 px-1 py-0.5">{p.dataProvavelColeta || '-'}</td>
+                          <td className="border border-gray-400 px-1 py-0.5">{p.observacao || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
               <div className="grid grid-cols-3 gap-2 items-center">
                 <div className="flex items-center gap-1">
                   <span>Lote......................:</span>

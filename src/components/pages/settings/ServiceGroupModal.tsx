@@ -24,7 +24,7 @@ interface ServiceGroupModalProps {
 
 const DEFAULT_OFFICIAL_SERVICES: ServiceOption[] = [
   { id: "serv-ap", name: "Amostragem de Solo (AP)" },
-  { id: "serv-conf", name: "Conferência de Amostragem" },
+  { id: "serv-conf", name: "Conferência" },
   { id: "serv-foliar", name: "Coleta Foliar" },
   { id: "serv-drone-map", name: "Voo de Drone (Mapeamento)" },
   { id: "serv-drone-pulve", name: "Pulverização Drone" },

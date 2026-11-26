@@ -434,7 +434,7 @@ export const ReportsPage: React.FC = () => {
                 <SelectContent>
                   <SelectItem value="all">Todos os Serviços</SelectItem>
                   <SelectItem value="Amostragem">Amostragem de Solo (AP)</SelectItem>
-                  <SelectItem value="Conferência">Conferência de Amostragem</SelectItem>
+                  <SelectItem value="Conferência">Conferência</SelectItem>
                   <SelectItem value="Drone">Voo / Pulverização Drone</SelectItem>
                   <SelectItem value="Foliar">Coleta Foliar</SelectItem>
                   <SelectItem value="Compactação">Compactação de Solo</SelectItem>

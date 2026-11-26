@@ -269,7 +269,7 @@ export const OrderForm = ({
               <SelectContent>
                 <SelectItem value="Produto">🛒 Venda de Produto (Biológicos, Adjuvantes, Insumos)</SelectItem>
                 <SelectItem value="Amostragem de Solo (AP)">Amostragem de Solo (AP)</SelectItem>
-                <SelectItem value="Conferência">Conferência de Amostragem</SelectItem>
+                <SelectItem value="Conferência">Conferência</SelectItem>
                 <SelectItem value="Voo de Drone (Mapeamento)">Voo de Drone (Mapeamento)</SelectItem>
                 <SelectItem value="Pulverização com Drone">Pulverização com Drone</SelectItem>
                 <SelectItem value="Compactação de Solo">Compactação de Solo</SelectItem>
@@ -388,6 +388,8 @@ export const OrderForm = ({
               initialAlqueires={calculatedAlqueires}
               initialNumAnalises={parseInt(formData.productsData?.[0]?.quantity?.toString() || "0")}
               totalFarmAlqueires={currentFarmTotalAlqueires}
+              plots={formData.plots || []}
+              onPlotsChange={(updatedPlots) => onInputChange("plots", updatedPlots)}
               onValuesChange={handleValuesChange}
               onAllPlotsSelectedChange={setIsConferenciaAllPlotsSelected}
               onProductsChange={(products) => onInputChange("productsData", products)}
