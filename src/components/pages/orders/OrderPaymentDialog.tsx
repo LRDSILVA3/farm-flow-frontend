@@ -68,13 +68,14 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
   // Estado da aba de Cronograma de Parcelas / Safras
   const [schedulesList, setSchedulesList] = useState<OrderPaymentSchedule[]>([]);
   const [numSafrasToGenerate, setNumSafrasToGenerate] = useState<number>(3);
-  const [firstDueDate, setFirstDueDate] = useState<string>('2026-04-30');
+  const [firstDueDate, setFirstDueDate] = useState<string>(() => getLocalDateISO());
 
   // Campos para adicionar parcela avulsa ao cronograma
   const [newInstDesc, setNewInstDesc] = useState<string>('');
   const [newInstAmount, setNewInstAmount] = useState<string>('');
-  const [newInstDueDate, setNewInstDueDate] = useState<string>('2026-04-30');
+  const [newInstDueDate, setNewInstDueDate] = useState<string>(() => getLocalDateISO());
   const [newInstCycle, setNewInstCycle] = useState<number>(1);
+  const [hasUnsavedScheduleChanges, setHasUnsavedScheduleChanges] = useState<boolean>(false);
 
   // Mini-modal / estado para quitação de parcela específica
   const [payingScheduleId, setPayingScheduleId] = useState<string | null>(null);
@@ -128,7 +129,19 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
       }
       setPaymentDate(getLocalDateISO());
       setNotes('');
-      setSchedulesList(order.paymentSchedules || []);
+      const normalizedSchedules: OrderPaymentSchedule[] = (order.paymentSchedules || []).map((s: any, idx: number, arr: any[]) => ({
+        ...s,
+        id: s.id || `sched-pay-${idx}-${Date.now()}`,
+        dueDate: typeof s.dueDate === 'string' && s.dueDate.includes('T') ? s.dueDate.split('T')[0] : (s.dueDate || getLocalDateISO()),
+        amount: Number(s.amount) || 0,
+        description: s.description || s.descricao || `${idx + 1}ª Parcela`,
+        cycleYear: s.cycleYear || s.ano || 1,
+        installmentNumber: s.installmentNumber || s.numeroParcela || idx + 1,
+        totalInstallments: s.totalInstallments || arr.length,
+        status: s.status || 'Pendente',
+      }));
+      setSchedulesList(normalizedSchedules);
+      setHasUnsavedScheduleChanges(false);
       setPayingScheduleId(null);
 
       // Define aba inicial: se for Equaliza ou tiver cronograma, foca em 'cronograma'
@@ -195,6 +208,7 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
     }
 
     setSchedulesList(generated);
+    setHasUnsavedScheduleChanges(true);
   };
 
   // Adicionar Parcela Avulsa Manualmente
@@ -227,14 +241,34 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
     }));
 
     setSchedulesList(updated);
+    setHasUnsavedScheduleChanges(true);
     setNewInstDesc('');
     setNewInstAmount('');
+  };
+
+  // Editar campo de uma parcela do cronograma (data de vencimento, valor ou descrição)
+  const handleUpdateScheduleField = (
+    id: string,
+    field: 'dueDate' | 'amount' | 'description',
+    value: string | number
+  ) => {
+    setSchedulesList((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        if (field === 'amount') {
+          return { ...item, amount: Number(value) || 0 };
+        }
+        return { ...item, [field]: value };
+      })
+    );
+    setHasUnsavedScheduleChanges(true);
   };
 
   // Remover Parcela do Cronograma
   const handleRemoveSchedule = (id: string) => {
     const updated = schedulesList.filter(s => s.id !== id);
     setSchedulesList(updated);
+    setHasUnsavedScheduleChanges(true);
   };
 
   // Salvar Cronograma Completo de Parcelas
@@ -244,6 +278,7 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
     try {
       if (onSavePaymentSchedules) {
         await onSavePaymentSchedules(order.id, schedulesList);
+        setHasUnsavedScheduleChanges(false);
       }
     } finally {
       setSubmitting(false);
@@ -443,22 +478,33 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
 
             {/* Listagem das Parcelas Agendadas */}
             <div className="space-y-2">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center gap-2 flex-wrap">
                 <Label className="font-semibold text-xs text-foreground flex items-center gap-1.5">
                   <Calendar className="h-4 w-4 text-primary" />
                   Parcelas e Safras Programadas ({schedulesList.length}):
                 </Label>
                 {schedulesList.length > 0 && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={handleSaveCronograma}
-                    disabled={submitting}
-                    className="h-7 text-xs text-purple-700 border-purple-200 hover:bg-purple-50"
-                  >
-                    Salvar Cronograma
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {hasUnsavedScheduleChanges && (
+                      <span className="text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                        Alterações pendentes
+                      </span>
+                    )}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={hasUnsavedScheduleChanges ? "default" : "outline"}
+                      onClick={handleSaveCronograma}
+                      disabled={submitting}
+                      className={
+                        hasUnsavedScheduleChanges
+                          ? "h-7 text-xs bg-purple-600 hover:bg-purple-700 text-white"
+                          : "h-7 text-xs text-purple-700 border-purple-200 hover:bg-purple-50"
+                      }
+                    >
+                      Salvar Cronograma
+                    </Button>
+                  </div>
                 )}
               </div>
 
@@ -486,18 +532,50 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
                         return (
                           <TableRow key={sched.id} className="hover:bg-muted/30">
                             <TableCell className="py-2">
-                              <div className="font-medium text-foreground">{sched.description}</div>
+                              {isPaid ? (
+                                <div className="font-medium text-foreground">{sched.description}</div>
+                              ) : (
+                                <Input
+                                  value={sched.description}
+                                  onChange={(e) => handleUpdateScheduleField(sched.id, 'description', e.target.value)}
+                                  className="h-7 text-xs bg-white px-2 min-w-[160px]"
+                                />
+                              )}
                               {sched.cycleLabel && (
-                                <Badge variant="outline" className="text-[10px] mt-0.5 bg-purple-50 text-purple-700 border-purple-200">
+                                <Badge variant="outline" className="text-[10px] mt-1 bg-purple-50 text-purple-700 border-purple-200">
                                   {sched.cycleLabel}
                                 </Badge>
                               )}
                             </TableCell>
                             <TableCell className="py-2 text-muted-foreground">
-                              {formatDisplayDate(sched.dueDate)}
+                              {isPaid ? (
+                                formatDisplayDate(sched.dueDate)
+                              ) : (
+                                <Input
+                                  type="date"
+                                  value={
+                                    typeof sched.dueDate === 'string' && sched.dueDate.includes('T')
+                                      ? sched.dueDate.split('T')[0]
+                                      : sched.dueDate || ''
+                                  }
+                                  onChange={(e) => handleUpdateScheduleField(sched.id, 'dueDate', e.target.value)}
+                                  className="h-7 w-[132px] text-xs bg-white px-2 font-medium text-slate-800"
+                                />
+                              )}
                             </TableCell>
                             <TableCell className="py-2 font-semibold text-foreground">
-                              {formatBRL(sched.amount)}
+                              {isPaid ? (
+                                formatBRL(sched.amount)
+                              ) : (
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={sched.amount}
+                                  onChange={(e) => handleUpdateScheduleField(sched.id, 'amount', parseFloat(e.target.value) || 0)}
+                                  className="h-7 w-[105px] text-xs bg-white px-2 font-semibold text-slate-900"
+                                />
+                              )}
                             </TableCell>
                             <TableCell className="py-2">
                               {isPaid ? (
