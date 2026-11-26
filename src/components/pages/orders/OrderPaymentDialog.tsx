@@ -9,7 +9,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -98,6 +97,18 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
 
   const formatBRL = (val: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+
+  const formatCurrencyInput = (val: number) =>
+    (Number(val) || 0).toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+  const parseCurrencyMask = (raw: string): number => {
+    const digits = raw.replace(/\D/g, '');
+    if (!digits) return 0;
+    return parseInt(digits, 10) / 100;
+  };
 
   const formatDisplayDate = (raw: any): string => {
     if (!raw) return '—';
@@ -573,10 +584,12 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
                                   <span className="absolute left-2 text-[11px] font-medium text-muted-foreground pointer-events-none">
                                     R$
                                   </span>
-                                  <DecimalInput
-                                    value={sched.amount}
-                                    onValueChange={(val) => handleUpdateScheduleField(sched.id, 'amount', val ?? 0)}
-                                    className="h-8 w-[124px] text-xs bg-white pl-7 pr-2 font-semibold text-slate-900 text-right"
+                                  <Input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={formatCurrencyInput(sched.amount)}
+                                    onChange={(e) => handleUpdateScheduleField(sched.id, 'amount', parseCurrencyMask(e.target.value))}
+                                    className="h-8 w-[124px] text-xs bg-white pl-7 pr-2 font-semibold text-slate-900 text-right tabular-nums"
                                   />
                                 </div>
                               )}
@@ -735,12 +748,22 @@ export const OrderPaymentDialog: React.FC<OrderPaymentDialogProps> = ({
 
                   <div>
                     <Label className="text-[11px]">Valor da Parcela (R$):</Label>
-                    <Input
-                      placeholder="0,00"
-                      value={newInstAmount}
-                      onChange={(e) => setNewInstAmount(e.target.value)}
-                      className="h-8 text-xs bg-white"
-                    />
+                    <div className="relative flex items-center">
+                      <span className="absolute left-2 text-[11px] font-medium text-muted-foreground pointer-events-none">
+                        R$
+                      </span>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="0,00"
+                        value={newInstAmount}
+                        onChange={(e) => {
+                          const num = parseCurrencyMask(e.target.value);
+                          setNewInstAmount(num > 0 ? formatCurrencyInput(num) : '');
+                        }}
+                        className="h-8 text-xs bg-white pl-7 pr-2 text-right tabular-nums"
+                      />
+                    </div>
                   </div>
 
                   <Button

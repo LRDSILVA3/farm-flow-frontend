@@ -1126,11 +1126,25 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
                   </div>
                   <div>
                     <label className="text-[10px] font-medium text-slate-500 block mb-0.5">Valor (R$)</label>
-                    <DecimalInput
-                      value={p.amount}
-                      onValueChange={(val) => handleUpdatePaymentItem(p.id, 'amount', val ?? 0)}
-                      className="h-7 text-xs bg-slate-50 border-slate-200 font-bold text-blue-700 px-2"
-                    />
+                    <div className="relative flex items-center">
+                      <span className="absolute left-2 text-[10px] font-medium text-slate-500 pointer-events-none">
+                        R$
+                      </span>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        value={(Number(p.amount) || 0).toLocaleString('pt-BR', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, '');
+                          const num = digits ? parseInt(digits, 10) / 100 : 0;
+                          handleUpdatePaymentItem(p.id, 'amount', num);
+                        }}
+                        className="h-7 text-xs bg-slate-50 border-slate-200 font-bold text-blue-700 pl-6 pr-2 text-right tabular-nums"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
