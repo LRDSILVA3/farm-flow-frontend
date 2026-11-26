@@ -153,23 +153,10 @@ export class EqualizaService {
   }
 
   public getAutoPlannedDates(anosContrato: number, baseDate: Date = new Date()) {
-    const currentMonth = baseDate.getMonth() + 1;
-    const currentYear = baseDate.getFullYear();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    let firstDueDateYear = currentYear;
-    let firstDueDateMonth = 8;
-
-    if (currentMonth > 8) {
-      firstDueDateYear = currentYear + 1;
-      firstDueDateMonth = 3;
-    } else if (currentMonth <= 2) {
-      firstDueDateYear = currentYear;
-      firstDueDateMonth = 3;
-    } else {
-      firstDueDateYear = currentYear;
-      firstDueDateMonth = 8;
-    }
-
+    const baseYear = baseDate.getFullYear();
     const payments: Array<{
       ano: number;
       numeroParcela: number;
@@ -178,28 +165,60 @@ export class EqualizaService {
       percentual: number;
     }> = [];
 
+    // Checa se 30/08 do ano base já está no passado em relação a hoje
+    const augBase = new Date(baseYear, 7, 30);
+    const isAugPast = augBase < today;
+
     let pNum = 1;
     for (let yr = 1; yr <= anosContrato; yr++) {
       const yearOffset = yr - 1;
-      const refYear = currentYear + yearOffset;
-      payments.push({
-        ano: yr,
-        numeroParcela: pNum++,
-        descricao: `Ano ${yr} - Parcela 50% Agosto`,
-        dueDate: `${refYear}-08-30`,
-        percentual: 50,
-      });
-      payments.push({
-        ano: yr,
-        numeroParcela: pNum++,
-        descricao: `Ano ${yr} - Parcela 50% Março`,
-        dueDate: `${refYear + 1}-03-30`,
-        percentual: 50,
-      });
+
+      if (!isAugPast) {
+        // Sequência normal: Agosto do ano base + offset -> Março do próximo ano
+        const augYear = baseYear + yearOffset;
+        const marYear = augYear + 1;
+
+        payments.push({
+          ano: yr,
+          numeroParcela: pNum++,
+          descricao: `Ano ${yr} - Parcela 50% Agosto`,
+          dueDate: `${augYear}-08-30`,
+          percentual: 50,
+        });
+        payments.push({
+          ano: yr,
+          numeroParcela: pNum++,
+          descricao: `Ano ${yr} - Parcela 50% Março`,
+          dueDate: `${marYear}-03-30`,
+          percentual: 50,
+        });
+      } else {
+        // Se Agosto do ano base já passou, o primeiro vencimento futuro do ciclo é Março do próximo ano,
+        // seguido por Agosto do mesmo próximo ano (sempre datas futuras)
+        const marYear = baseYear + 1 + yearOffset;
+        const augYear = baseYear + 1 + yearOffset;
+
+        payments.push({
+          ano: yr,
+          numeroParcela: pNum++,
+          descricao: `Ano ${yr} - Parcela 50% Março`,
+          dueDate: `${marYear}-03-30`,
+          percentual: 50,
+        });
+        payments.push({
+          ano: yr,
+          numeroParcela: pNum++,
+          descricao: `Ano ${yr} - Parcela 50% Agosto`,
+          dueDate: `${augYear}-08-30`,
+          percentual: 50,
+        });
+      }
     }
 
+    const firstDueDate = payments[0]?.dueDate || `${baseYear}-08-30`;
+
     return {
-      firstDueDate: `${firstDueDateYear}-${String(firstDueDateMonth).padStart(2, '0')}-30`,
+      firstDueDate,
       payments,
     };
   }
@@ -210,7 +229,13 @@ export class EqualizaService {
     options: { incluirFolha?: boolean; incluirCompactacao?: boolean } = {},
     baseDate: Date = new Date()
   ) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     const baseYear = baseDate.getFullYear();
+    const augBase = new Date(baseYear, 7, 15);
+    const isAugPast = augBase < today;
+
     const schedules: Array<{
       scheduledDate: string;
       description: string;
@@ -221,7 +246,8 @@ export class EqualizaService {
     }> = [];
 
     for (let yr = 1; yr <= anosContrato; yr++) {
-      const currentCycleYear = baseYear + (yr - 1);
+      const yearOffset = yr - 1;
+      const currentCycleYear = isAugPast ? baseYear + 1 + yearOffset : baseYear + yearOffset;
       const cycleLabel = `Ano ${yr} (Safra ${currentCycleYear}/${currentCycleYear + 1})`;
       const alloc = yearAllocations.find((a) => a.ano === yr);
       const apPlots = alloc?.plotNames || [];

@@ -32,7 +32,10 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
   );
   const [anosCiclo, setAnosCiclo] = useState<string>('3'); // 2, 3, 4, 5 anos
   const currentCalYear = new Date().getFullYear();
-  const [startYear, setStartYear] = useState<number>(currentCalYear);
+  const currentMonth = new Date().getMonth() + 1;
+  // Se hoje já passou de Agosto (Setembro a Dezembro), a safra contratada padrão já é a do próximo ciclo
+  const defaultStartYear = currentMonth > 8 ? currentCalYear + 1 : currentCalYear;
+  const [startYear, setStartYear] = useState<number>(defaultStartYear);
   const [customPaymentDates, setCustomPaymentDates] = useState<Record<number, string>>({});
   const [incluirFolha, setIncluirFolha] = useState<boolean>(false);
   const [incluirFungoNema, setIncluirFungoNema] = useState<boolean>(false);
@@ -347,7 +350,7 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
                 <SelectValue placeholder="Selecione a safra inicial" />
               </SelectTrigger>
               <SelectContent>
-                {[currentCalYear - 1, currentCalYear, currentCalYear + 1, currentCalYear + 2].map((yr) => (
+                {[currentCalYear, currentCalYear + 1, currentCalYear + 2, currentCalYear + 3].map((yr) => (
                   <SelectItem key={yr} value={String(yr)}>
                     Safra {yr}/{yr + 1}
                   </SelectItem>
@@ -584,7 +587,7 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
       {/* Resumo do Contrato */}
       <div className="mt-4 pt-3 border-t space-y-3">
         <h4 className="text-sm font-bold uppercase tracking-wider text-slate-800">
-          Resumo do Contrato Equalizado:
+          Resumo do Contrato Equaliza:
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="p-3 bg-muted/50 rounded-md border">
