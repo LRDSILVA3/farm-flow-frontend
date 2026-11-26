@@ -112,7 +112,7 @@ const MainLayoutContent = () => {
   const [showOfflineDialog, setShowOfflineDialog] = useState(false);
   const { toast } = useToast();
   const { profile, hasPermission, signOut } = useAuth();
-  const { isMobile, setOpenMobile } = useSidebar();
+  const { isMobile, setOpenMobile, setOpen } = useSidebar();
   const { isOnline, pendingCount, isPreparing, isSyncing, prepareForField } = useOffline();
 
   useEffect(() => {
@@ -128,13 +128,18 @@ const MainLayoutContent = () => {
       const targetPage = customEvent.detail;
       if (targetPage && hasPermission(targetPage)) {
         setCurrentPage(targetPage);
+        if (isMobile) {
+          setOpenMobile(false);
+        } else {
+          setOpen(false);
+        }
       }
     };
     window.addEventListener('farmflow-navigate', handleCustomNavigate);
     return () => {
       window.removeEventListener('farmflow-navigate', handleCustomNavigate);
     };
-  }, [hasPermission]);
+  }, [hasPermission, isMobile, setOpen, setOpenMobile]);
 
   const handleLogout = async () => {
     await signOut();
@@ -162,8 +167,12 @@ const MainLayoutContent = () => {
     }
     setFarmClientFilter({ cpf: customerCpf, name: customerName, id: customerId });
     setCurrentPage("farms");
-    if (isMobile) setOpenMobile(false);
-  }, [hasPermission, isMobile, setOpenMobile, toast]);
+    if (isMobile) {
+      setOpenMobile(false);
+    } else {
+      setOpen(false);
+    }
+  }, [hasPermission, isMobile, setOpen, setOpenMobile, toast]);
 
   const handleMenuClick = useCallback((pageId: string) => {
     if (!hasPermission(pageId)) {
@@ -182,8 +191,13 @@ const MainLayoutContent = () => {
     if (targetPath && location.pathname !== targetPath) {
       navigate(targetPath);
     }
-    if (isMobile) setOpenMobile(false);
-  }, [hasPermission, isMobile, location.pathname, navigate, setOpenMobile, toast]);
+    // Auto fechar o menu ao selecionar uma tela para dar mais espaço na tela
+    if (isMobile) {
+      setOpenMobile(false);
+    } else {
+      setOpen(false);
+    }
+  }, [hasPermission, isMobile, location.pathname, navigate, setOpen, setOpenMobile, toast]);
 
   const currentPageComponent = useMemo(() => {
     if (!effectivePage) {
@@ -286,7 +300,7 @@ const MainLayoutContent = () => {
       <SidebarInset className="flex flex-col flex-1 w-full min-w-0 bg-slate-50/50">
         <header className="flex h-14 sm:h-16 shrink-0 items-center justify-between border-b px-4 sm:px-8 bg-white sticky top-0 z-10 shadow-sm w-full gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <SidebarTrigger className="-ml-1" />
+            <SidebarTrigger className="-ml-1" title="Alternar Menu Lateral (Abrir/Fechar)" />
             <span className="text-xs sm:text-sm font-semibold text-slate-800 hidden sm:inline">
               Preciza CRM
             </span>
