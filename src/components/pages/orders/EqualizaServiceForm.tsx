@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Sparkles, Calendar, MapPin, DollarSign, Layers } from 'lucide-react';
+import { Loader2, Sparkles, Calendar, MapPin, DollarSign, Layers, RotateCcw } from 'lucide-react';
 
 interface EqualizaServiceFormProps {
   initialAlqueires: number;
@@ -31,6 +31,9 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
     initialAlqueires === 0 ? null : initialAlqueires
   );
   const [anosCiclo, setAnosCiclo] = useState<string>('3'); // 2, 3, 4, 5 anos
+  const currentCalYear = new Date().getFullYear();
+  const [startYear, setStartYear] = useState<number>(currentCalYear);
+  const [customPaymentDates, setCustomPaymentDates] = useState<Record<number, string>>({});
   const [incluirFolha, setIncluirFolha] = useState<boolean>(false);
   const [incluirFungoNema, setIncluirFungoNema] = useState<boolean>(false);
   const [incluirCompactacao, setIncluirCompactacao] = useState<boolean>(false);
@@ -159,8 +162,13 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
       setCalculationResult(result);
       onValuesChange(result.totalAnualContrato);
 
-      // Previsão das datas e parcelas de pagamento
-      const autoPlannedDates = equalizaService.getAutoPlannedDates(anos);
+      // Previsão das datas e parcelas de pagamento alinhadas com o ano inicial do contrato
+      const contractBaseDate = new Date(startYear, 0, 1);
+      const plannedDates = equalizaService.getAutoPlannedDates(anos, contractBaseDate);
+      const paymentsWithCustomDates = plannedDates.payments.map((p) => ({
+        ...p,
+        dueDate: customPaymentDates[p.numeroParcela] || p.dueDate,
+      }));
 
       // Previsão do cronograma de visitas/etapas
       const autoPlannedSchedules = equalizaService.generateSuggestedSchedules(
@@ -169,12 +177,14 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
           ano: parseInt(yr, 10),
           plotNames: plots,
         })),
-        { incluirFolha, incluirCompactacao }
+        { incluirFolha, incluirCompactacao },
+        contractBaseDate
       );
 
       const serviceDetails = {
         contractYears: anos,
         anosCiclo: anos,
+        startYear,
         percentualAnualAP,
         percentualAnualConf: Math.max(0, 1 - percentualAnualAP),
         incluirFolha,
@@ -188,7 +198,7 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
         parcelaAgosto: result.parcelaAgosto,
         parcelaMarco: result.parcelaMarco,
         yearAllocations,
-        autoPlannedPayments: autoPlannedDates.payments,
+        autoPlannedPayments: paymentsWithCustomDates,
         autoPlannedSchedules,
       };
 
@@ -215,6 +225,8 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
   }, [
     totalAlqueires,
     anosCiclo,
+    startYear,
+    customPaymentDates,
     incluirFolha,
     incluirFungoNema,
     incluirCompactacao,
@@ -244,7 +256,39 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
   }
 
   const details = calculationResult?.details;
-  const autoPlannedDates = equalizaService.getAutoPlannedDates(numAnos);
+  const baseDate = useMemo(() => new Date(startYear, 0, 1), [startYear]);
+  const autoPlannedDates = useMemo(() => {
+    return equalizaService
+      ? equalizaService.getAutoPlannedDates(numAnos, baseDate)
+      : { firstDueDate: '', payments: [] };
+  }, [equalizaService, numAnos, baseDate]);
+
+  const paymentsList = useMemo(() => {
+    return autoPlannedDates.payments.map((p) => {
+      const customDate = customPaymentDates[p.numeroParcela];
+      return {
+        ...p,
+        dueDate: customDate || p.dueDate,
+        isCustom: Boolean(customDate && customDate !== p.dueDate),
+      };
+    });
+  }, [autoPlannedDates, customPaymentDates]);
+
+  const handlePaymentDateChange = (numeroParcela: number, newDate: string) => {
+    setCustomPaymentDates((prev) => ({
+      ...prev,
+      [numeroParcela]: newDate,
+    }));
+  };
+
+  const handleResetPaymentDates = () => {
+    setCustomPaymentDates({});
+  };
+
+  const handleStartYearChange = (newYear: number) => {
+    setStartYear(newYear);
+    setCustomPaymentDates({});
+  };
 
   return (
     <div className="space-y-4 p-4 border rounded-md bg-card">
@@ -265,7 +309,7 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
 
       <div className="space-y-4">
         {/* Parâmetros Gerais */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label htmlFor="equaliza-area">Área Total da Propriedade (Alqueires):</Label>
             <DecimalInput
@@ -294,6 +338,25 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
                 <SelectItem value="5">5 anos (20% AP / 80% Conferência ao ano)</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="equaliza-safra">Safra / Ano Inicial do Contrato:</Label>
+            <Select value={String(startYear)} onValueChange={(val) => handleStartYearChange(parseInt(val, 10))}>
+              <SelectTrigger id="equaliza-safra">
+                <SelectValue placeholder="Selecione a safra inicial" />
+              </SelectTrigger>
+              <SelectContent>
+                {[currentCalYear - 1, currentCalYear, currentCalYear + 1, currentCalYear + 2].map((yr) => (
+                  <SelectItem key={yr} value={String(yr)}>
+                    Safra {yr}/{yr + 1}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="text-[11px] text-muted-foreground mt-1 block">
+              Define o ciclo inicial para a escala de safras e pagamentos.
+            </span>
           </div>
         </div>
 
@@ -397,7 +460,7 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
                   <div key={yr} className="p-2.5 border rounded-lg bg-card space-y-2">
                     <div className="flex items-center justify-between border-b pb-1">
                       <span className="font-bold text-xs text-purple-900">
-                        {yr}° Ano (Safra {new Date().getFullYear() + (yr - 1)}/{new Date().getFullYear() + yr})
+                        {yr}° Ano (Safra {startYear + (yr - 1)}/{startYear + yr})
                       </span>
                       <span className="text-[11px] font-semibold text-slate-600">
                         {assignedAreaAlq > 0
@@ -434,33 +497,83 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
         </div>
 
         {/* AGENDA DE PAGAMENTO E AUTO-PLANEJAMENTO (CONFORME PLANILHA) */}
-        <div className="border rounded-md p-3.5 bg-blue-50/50 space-y-2">
-          <div className="flex items-center justify-between border-b pb-1.5">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-950 flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5 text-blue-600" />
-              Agenda de Pagamento Auto-Planejada (Agosto e Março):
-            </span>
-            <span className="text-xs text-blue-800 font-medium">
-              Primeiro Vencimento Sugerido: {autoPlannedDates.firstDueDate.split('-').reverse().join('/')}
-            </span>
+        <div className="border rounded-md p-3.5 bg-blue-50/50 space-y-3">
+          <div className="flex flex-wrap items-center justify-between border-b pb-2 gap-2">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-blue-950 flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5 text-blue-600" />
+                Agenda de Pagamento (Agosto e Março / Customizável):
+              </span>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Altere qualquer data de vencimento diretamente nos campos abaixo conforme combinado com o produtor.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-blue-800 font-medium bg-blue-100/70 px-2 py-0.5 rounded border border-blue-200">
+                1° Vencimento: {paymentsList[0]?.dueDate ? paymentsList[0].dueDate.split('-').reverse().join('/') : ''}
+              </span>
+              {Object.keys(customPaymentDates).length > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResetPaymentDates}
+                  className="h-7 text-xs text-slate-600 hover:text-slate-900 border-slate-300"
+                >
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                  Restaurar Sugestão
+                </Button>
+              )}
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 pt-1">
-            {autoPlannedDates.payments.map((p) => {
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-1">
+            {paymentsList.map((p) => {
               const parcelValue = (calculationResult?.totalAnualContrato || 0) * 0.5;
               return (
-                <div key={p.numeroParcela} className="p-2 border rounded bg-white/90 text-xs flex justify-between items-center">
-                  <div>
-                    <span className="font-semibold block text-slate-800">
-                      {p.numeroParcela}ª Parcela ({p.descricao})
-                    </span>
-                    <span className="text-[11px] text-muted-foreground">
-                      Vencimento: {p.dueDate.split('-').reverse().join('/')}
-                    </span>
+                <div
+                  key={p.numeroParcela}
+                  className={`p-2.5 border rounded-lg bg-white/95 text-xs space-y-2 shadow-xs transition-all ${
+                    p.isCustom ? 'border-purple-300 ring-1 ring-purple-200' : 'border-slate-200'
+                  }`}
+                >
+                  <div className="flex justify-between items-start gap-1">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold block text-slate-800">
+                          {p.numeroParcela}ª Parcela
+                        </span>
+                        {p.isCustom && (
+                          <span className="text-[9px] font-semibold text-purple-700 bg-purple-50 px-1 py-0.2 rounded border border-purple-200">
+                            Data Alterada
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[11px] text-slate-500">
+                        {p.descricao}
+                      </span>
+                    </div>
+                    <strong className="text-blue-700 font-bold text-sm whitespace-nowrap">
+                      {equalizaService.formatCurrency(parcelValue)}
+                    </strong>
                   </div>
-                  <strong className="text-blue-700 font-bold">
-                    {equalizaService.formatCurrency(parcelValue)}
-                  </strong>
+
+                  <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-slate-100">
+                    <label
+                      htmlFor={`due-date-${p.numeroParcela}`}
+                      className="text-[11px] font-medium text-slate-600 flex items-center gap-1 whitespace-nowrap"
+                    >
+                      <Calendar className="h-3 w-3 text-blue-600" />
+                      Vencimento:
+                    </label>
+                    <Input
+                      id={`due-date-${p.numeroParcela}`}
+                      type="date"
+                      value={p.dueDate}
+                      onChange={(e) => handlePaymentDateChange(p.numeroParcela, e.target.value)}
+                      className="h-7 w-36 text-xs bg-slate-50 border-slate-200 font-medium px-2 py-0 focus-visible:ring-1"
+                    />
+                  </div>
                 </div>
               );
             })}
