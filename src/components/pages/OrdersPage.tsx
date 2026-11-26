@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Search, Clock, Play, CheckCircle2, DollarSign, RotateCcw } from "lucide-react";
 import { OrdersTable } from "./orders/OrdersTable";
 import { OrderForm } from "./orders/OrderForm";
+import { MultiStatusFilter } from "@/components/ui/multi-status-filter";
 import { useOrders, Order } from "@/hooks/useOrders";
 import { useClients } from "@/hooks/useClients";
 import { useFarms } from "@/hooks/useFarms";
@@ -42,7 +43,17 @@ const OrdersPage = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [serviceFilter, setServiceFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+
+  const toggleKpiStatus = (status: string) => {
+    setStatusFilter((prev) => {
+      if (prev.includes(status)) {
+        return prev.filter((s) => s !== status);
+      }
+      return [...prev, status];
+    });
+    setCurrentPage(1);
+  };
 
   const handleEdit = (order: Order) => {
     if (order.status !== "Pendente") {
@@ -141,9 +152,30 @@ const OrdersPage = () => {
       }
     }
 
+    // Garantir deduplicação de talhões físicos na criação/edição do pedido (ex: em ATV com múltiplos produtos no mesmo talhão)
+    const payload = { ...formData };
+    if (Array.isArray(payload.plots) && payload.plots.length > 0) {
+      const seen = new Set<string>();
+      const deduped: any[] = [];
+      payload.plots.forEach((p: any) => {
+        const name = typeof p === 'string' ? p.trim() : (p?.name || p?.id || '').trim();
+        if (name && !seen.has(name.toLowerCase())) {
+          seen.add(name.toLowerCase());
+          deduped.push(p);
+        }
+      });
+      payload.plots = deduped;
+
+      // Se for aplicação ou serviço onde a área física é a soma dos talhões distintos:
+      const physicalAreaSum = deduped.reduce((acc, p) => acc + (parseFloat(p.area || '0') || 0), 0);
+      if (physicalAreaSum > 0 && Math.abs(physicalAreaSum - (parseFloat(payload.area || '0') || 0)) > 0.05) {
+        payload.area = physicalAreaSum.toFixed(2);
+      }
+    }
+
     const result = editingOrder
-      ? await updateOrder(formData)
-      : await addOrder(formData);
+      ? await updateOrder(payload)
+      : await addOrder(payload);
     if (result) {
       resetForm();
     }
@@ -173,7 +205,10 @@ const OrdersPage = () => {
       serviceName.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesService = serviceFilter === "all" || serviceName === serviceFilter || order.type === serviceFilter;
-    const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+    const matchesStatus =
+      statusFilter.length === 0 ||
+      statusFilter.includes(order.status) ||
+      (statusFilter.includes("Em Andamento") && order.status === "Aprovado");
 
     return matchesSearch && matchesService && matchesStatus;
   });
@@ -197,7 +232,7 @@ const OrdersPage = () => {
     return { pendentes, emAndamento, concluidos, totalValorFiltrado };
   }, [orders, filteredOrders]);
 
-  const hasActiveFilters = searchTerm.trim() !== "" || serviceFilter !== "all" || statusFilter !== "all";
+  const hasActiveFilters = searchTerm.trim() !== "" || serviceFilter !== "all" || statusFilter.length > 0;
 
   return (
     <div className="space-y-6 pt-1">
@@ -212,11 +247,11 @@ const OrdersPage = () => {
         </Button>
       </div>
 
-      {/* Mini-KPIs Clicáveis */}
+      {/* Mini-KPIs Clicáveis com Seleção Múltipla */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Card
-          onClick={() => setStatusFilter(statusFilter === "Pendente" ? "all" : "Pendente")}
-          className={`cursor-pointer transition-all hover:shadow-sm ${statusFilter === "Pendente" ? "ring-2 ring-amber-400 bg-amber-50/40" : ""}`}
+          onClick={() => toggleKpiStatus("Pendente")}
+          className={`cursor-pointer transition-all hover:shadow-sm ${statusFilter.includes("Pendente") ? "ring-2 ring-amber-400 bg-amber-50/40" : ""}`}
         >
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
@@ -227,8 +262,8 @@ const OrdersPage = () => {
           </CardContent>
         </Card>
         <Card
-          onClick={() => setStatusFilter(statusFilter === "Em Andamento" ? "all" : "Em Andamento")}
-          className={`cursor-pointer transition-all hover:shadow-sm ${statusFilter === "Em Andamento" ? "ring-2 ring-blue-400 bg-blue-50/40" : ""}`}
+          onClick={() => toggleKpiStatus("Em Andamento")}
+          className={`cursor-pointer transition-all hover:shadow-sm ${statusFilter.includes("Em Andamento") ? "ring-2 ring-blue-400 bg-blue-50/40" : ""}`}
         >
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
@@ -239,8 +274,8 @@ const OrdersPage = () => {
           </CardContent>
         </Card>
         <Card
-          onClick={() => setStatusFilter(statusFilter === "Concluído" ? "all" : "Concluído")}
-          className={`cursor-pointer transition-all hover:shadow-sm ${statusFilter === "Concluído" ? "ring-2 ring-emerald-400 bg-emerald-50/40" : ""}`}
+          onClick={() => toggleKpiStatus("Concluído")}
+          className={`cursor-pointer transition-all hover:shadow-sm ${statusFilter.includes("Concluído") ? "ring-2 ring-emerald-400 bg-emerald-50/40" : ""}`}
         >
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
@@ -295,19 +330,21 @@ const OrdersPage = () => {
                 </SelectContent>
               </Select>
 
-              <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}>
-                <SelectTrigger className="w-full sm:w-40">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os Status</SelectItem>
-                  <SelectItem value="Pendente">Pendente</SelectItem>
-                  <SelectItem value="Aprovado">Aprovado</SelectItem>
-                  <SelectItem value="Em Andamento">Em Andamento</SelectItem>
-                  <SelectItem value="Concluído">Concluído</SelectItem>
-                  <SelectItem value="Cancelado">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Filtro Multi-Seleção de Status */}
+              <MultiStatusFilter
+                placeholder="Status"
+                options={[
+                  { value: "Pendente", label: "Aguardando Aprovação", count: kpiStats.pendentes },
+                  { value: "Em Andamento", label: "Em Andamento / Aprovado", count: kpiStats.emAndamento },
+                  { value: "Concluído", label: "Concluído", count: kpiStats.concluidos },
+                  { value: "Cancelado", label: "Cancelado" },
+                ]}
+                selected={statusFilter}
+                onChange={(val) => {
+                  setStatusFilter(val);
+                  setCurrentPage(1);
+                }}
+              />
 
               {hasActiveFilters && (
                 <Button
@@ -317,7 +354,7 @@ const OrdersPage = () => {
                   onClick={() => {
                     setSearchTerm("");
                     setServiceFilter("all");
-                    setStatusFilter("all");
+                    setStatusFilter([]);
                     setCurrentPage(1);
                   }}
                   className="text-xs text-muted-foreground gap-1"

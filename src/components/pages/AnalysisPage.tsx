@@ -15,6 +15,7 @@ import { getLocalDateISO } from "@/lib/utils";
 import { ImportOrderAnalysesDialog } from "./analyses/ImportOrderAnalysesDialog";
 import { SampleLabelsDialog } from "./analyses/SampleLabelsDialog";
 import { DeleteConfirmDialog } from "./settings/DeleteConfirmDialog";
+import { MultiStatusFilter } from "@/components/ui/multi-status-filter";
 
 interface AnalysisExecution {
   id: string;
@@ -63,7 +64,7 @@ const AnalisesPrincipalPage = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [collaboratorFilter, setCollaboratorFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkStatus, setBulkStatus] = useState<AnalysisExecution["status"]>("Recebido");
   const [bulkDate, setBulkDate] = useState<string>(getLocalDateISO());
@@ -177,7 +178,7 @@ const AnalisesPrincipalPage = () => {
       (analysis.analysisName || "").toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesCollab = !collaboratorFilter || analysis.collaborator === collaboratorFilter;
-    const matchesStatus = !statusFilter || analysis.status === statusFilter;
+    const matchesStatus = statusFilter.length === 0 || statusFilter.includes(analysis.status);
     return matchesSearch && matchesCollab && matchesStatus;
   });
 
@@ -464,19 +465,22 @@ const AnalisesPrincipalPage = () => {
               </Select>
             </div>
             <div>
-              <Select value={statusFilter || "all"} onValueChange={(val) => { setStatusFilter(val === "all" ? "" : val); setAnalysesPage(1); }}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filtrar por Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os Status</SelectItem>
-                  <SelectItem value="Pendente">Pendente</SelectItem>
-                  <SelectItem value="Enviado">Enviado</SelectItem>
-                  <SelectItem value="Recebido">Recebido</SelectItem>
-                  <SelectItem value="Executando">Executando</SelectItem>
-                  <SelectItem value="Finalizado">Finalizado</SelectItem>
-                </SelectContent>
-              </Select>
+              <MultiStatusFilter
+                placeholder="Filtrar por Status"
+                options={[
+                  { value: "Pendente", label: "Pendente" },
+                  { value: "Enviado", label: "Enviado" },
+                  { value: "Recebido", label: "Recebido" },
+                  { value: "Executando", label: "Executando" },
+                  { value: "Finalizado", label: "Finalizado" },
+                ]}
+                selected={statusFilter}
+                onChange={(val) => {
+                  setStatusFilter(val);
+                  setAnalysesPage(1);
+                }}
+                triggerClassName="h-10 text-sm"
+              />
             </div>
           </div>
         </CardHeader>

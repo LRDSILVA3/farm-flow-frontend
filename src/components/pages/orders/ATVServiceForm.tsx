@@ -79,6 +79,29 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
   const [clienteAlmoco, setClienteAlmoco] = useState<boolean>(false);
   const [descontoManual, setDescontoManual] = useState<number | null>(null);
 
+  const isInternalUpdateRef = React.useRef(false);
+
+  // Lista unificada de talhões disponíveis (da ordem e da fazenda inteira)
+  const effectiveAvailablePlots = useMemo(() => {
+    const list: any[] = [];
+    const seen = new Set<string>();
+    (plots || []).forEach((p: any) => {
+      const name = p.name || p.id || '';
+      if (name && !seen.has(name.toLowerCase())) {
+        seen.add(name.toLowerCase());
+        list.push(p);
+      }
+    });
+    (availablePlots || []).forEach((p: any) => {
+      const name = p.name || p.id || '';
+      if (name && !seen.has(name.toLowerCase())) {
+        seen.add(name.toLowerCase());
+        list.push(p);
+      }
+    });
+    return list;
+  }, [plots, availablePlots]);
+
   // Inicialização inteligente dos talhões e áreas a partir do pedido
   const [itens, setItens] = useState<ATVItemParam[]>(() => {
     if (plots && plots.length > 0) {
@@ -128,12 +151,24 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
     onProductsChangeRef.current = onProductsChange;
   }, [onProductsChange]);
 
-  // Sincronizar itens quando talhões selecionados mudam
+  // Sincronizar itens quando talhões selecionados mudam no formulário pai
   useEffect(() => {
+    if (isInternalUpdateRef.current) {
+      isInternalUpdateRef.current = false;
+      return;
+    }
+
     if (plots && plots.length > 0) {
       setItens((prev) => {
         const isDefault = prev.length === 1 && (!prev[0].idTalhao || prev[0].areaHa === 0);
-        if (!isDefault && prev.length === plots.length) return prev;
+        // Se já temos itens preenchidos e o usuário está trabalhando neles, não sobrescreve
+        if (!isDefault) {
+          // Atualiza apenas se a lista externa de talhões mudou de forma estrutural (novos talhões selecionados no topo)
+          const prevNames = prev.map((it) => (it.idTalhao || '').toLowerCase());
+          const allPlotsPresent = plots.every((p: any) => prevNames.includes((p.name || '').toLowerCase()));
+          if (allPlotsPresent) return prev;
+        }
+
         return plots.map((p: any, idx: number) => {
           const area = parseFloat(p.area || '0') || 0;
           const prevItem = prev[idx];
@@ -154,7 +189,7 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
         if (prev.length === 1 && prev[0].areaHa === 0) {
           return [{
             ...prev[0],
-            idTalhao: availablePlots && availablePlots.length === 1 ? availablePlots[0].name : prev[0].idTalhao,
+            idTalhao: effectiveAvailablePlots && effectiveAvailablePlots.length === 1 ? effectiveAvailablePlots[0].name : prev[0].idTalhao,
             areaHa: initialAreaHa,
             toneladas: Math.round((initialAreaHa / 2.42) * 3.18 * 10) / 10,
             cobraFrete: true,
@@ -163,7 +198,7 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
         return prev;
       });
     }
-  }, [plots, initialAreaHa, availablePlots]);
+  }, [plots, initialAreaHa, effectiveAvailablePlots]);
 
   const [calculationResult, setCalculationResult] = useState<ATVCalculationResult | null>(null);
 
@@ -175,6 +210,7 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
   }, [costVariables]);
 
   const syncParentPlotsAndArea = (currentItens: ATVItemParam[]) => {
+    isInternalUpdateRef.current = true;
     // 1. Consolidar talhões físicos únicos (se aplicar Calcítico e Dolomítico no mesmo talhão, o talhão não duplica)
     const plotMap = new Map<string, { id: string; name: string; area: number; produtos: string[]; toneladas: number }>();
 
@@ -218,7 +254,7 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
   };
 
   const handleAddItem = () => {
-    const nextPlot = availablePlots && availablePlots.length > itens.length ? availablePlots[itens.length] : null;
+    const nextPlot = effectiveAvailablePlots && effectiveAvailablePlots.length > itens.length ? effectiveAvailablePlots[itens.length] : null;
     const nextArea = nextPlot?.area ? parseFloat(nextPlot.area) : 0;
     const nextTon = nextArea > 0 ? Math.round((nextArea / 2.42) * 3.18 * 10) / 10 : 0;
     const updated = [
@@ -247,17 +283,25 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
     const newItens = [...itens];
     newItens[index] = { ...newItens[index], [field]: value };
 
-    // Se selecionou um talhão da fazenda, puxa automaticamente a sua área
-    if (field === 'idTalhao' && availablePlots && availablePlots.length > 0) {
-      const match = availablePlots.find((p: any) => p.name === value || p.id === value);
+    // Se selecionou um talhão da fazenda, puxa automaticamente a sua área e estima toneladas
+    if (field === 'idTalhao') {
+      const match = effectiveAvailablePlots.find((p: any) => p.name === value || p.id === value);
       if (match && match.area) {
         const numArea = parseFloat(match.area) || 0;
         if (numArea > 0) {
           newItens[index].areaHa = numArea;
-          if (newItens[index].toneladas === 0) {
+          if (newItens[index].toneladas === 0 || !newItens[index].toneladas) {
             newItens[index].toneladas = Math.round((numArea / 2.42) * 3.18 * 10) / 10;
           }
         }
+      }
+    }
+
+    // Se alterou a área (ha), e toneladas ainda não foi personalizada, atualiza estimativa
+    if (field === 'areaHa') {
+      const numArea = parseFloat(value as any) || 0;
+      if (numArea > 0 && (newItens[index].toneladas === 0 || !newItens[index].toneladas)) {
+        newItens[index].toneladas = Math.round((numArea / 2.42) * 3.18 * 10) / 10;
       }
     }
 
@@ -581,10 +625,10 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
 
                   <div className="md:col-span-3">
                     <Label className="text-xs">Talhão</Label>
-                    {availablePlots && availablePlots.length > 0 ? (
+                    {effectiveAvailablePlots && effectiveAvailablePlots.length > 0 ? (
                       <div className="space-y-1">
                         <Select
-                          value={availablePlots.some(p => p.name === item.idTalhao) ? item.idTalhao : '__custom__'}
+                          value={effectiveAvailablePlots.some(p => p.name === item.idTalhao) ? item.idTalhao : '__custom__'}
                           onValueChange={(val) => {
                             if (val !== '__custom__') {
                               handleItemChange(idx, 'idTalhao', val);
@@ -595,7 +639,7 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
                             <SelectValue placeholder="Selecione o talhão" />
                           </SelectTrigger>
                           <SelectContent>
-                            {availablePlots.map((plot: any) => (
+                            {effectiveAvailablePlots.map((plot: any) => (
                               <SelectItem key={plot.id || plot.name} value={plot.name}>
                                 {plot.name} ({plot.area ? `${plot.area} ha` : ''})
                               </SelectItem>
@@ -603,7 +647,7 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
                             <SelectItem value="__custom__">Outro / Digitar livremente...</SelectItem>
                           </SelectContent>
                         </Select>
-                        {(!availablePlots.some(p => p.name === item.idTalhao)) && (
+                        {(!effectiveAvailablePlots.some(p => p.name === item.idTalhao)) && (
                           <Input
                             type="text"
                             value={item.idTalhao || ''}
@@ -687,6 +731,20 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
+
+                  {details?.itens[idx] && (
+                    <div className="md:col-span-12 flex flex-wrap items-center justify-between text-[11px] pt-1.5 border-t border-muted-foreground/15 text-muted-foreground">
+                      <span className="font-semibold text-foreground">
+                        Investimento Linha: {atvService.formatCurrency(details.itens[idx].investimentoTotal)}
+                      </span>
+                      <div className="flex gap-3">
+                        <span>ATV: {atvService.formatCurrency(details.itens[idx].investimentoATV)} ({atvService.formatCurrency(details.itens[idx].precoUnitarioAlq)}/alq)</span>
+                        {item.cobraFrete && (
+                          <span>Frete: {atvService.formatCurrency(details.itens[idx].investimentoFrete)} ({details.itens[idx].cargas} cargas)</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -765,9 +823,25 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
               </div>
             )}
 
-            <div className="pt-2 text-muted-foreground flex flex-col sm:flex-row sm:justify-between gap-1 text-[11px] font-mono border-t">
+            {/* Indicadores complementares idênticos à planilha */}
+            <div className="pt-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] font-mono border-t text-muted-foreground">
+              <div className="p-1.5 bg-background/50 rounded border">
+                <span className="text-[10px] block text-muted-foreground/80 font-sans">FRETE (R$/Km ida/Ton):</span>
+                <strong className="text-foreground">R$ {(calculationResult?.indicadorFreteKmTon || 0).toFixed(2)}</strong>
+              </div>
+              <div className="p-1.5 bg-background/50 rounded border">
+                <span className="text-[10px] block text-muted-foreground/80 font-sans">R$ TOTAL (Frete+ATV/Km ida/Ton):</span>
+                <strong className="text-foreground">R$ {(calculationResult?.indicadorTotalKmTon || 0).toFixed(2)}</strong>
+              </div>
+              <div className="p-1.5 bg-background/50 rounded border">
+                <span className="text-[10px] block text-muted-foreground/80 font-sans">(CARREGAMENTO+FRETE PÁ)/Ton:</span>
+                <strong className="text-foreground">R$ {(calculationResult?.indicadorCarregamentoTon || 0).toFixed(2)}</strong>
+              </div>
+            </div>
+
+            <div className="pt-1 text-muted-foreground flex flex-col sm:flex-row sm:justify-between gap-1 text-[11px] font-mono">
               <span>
-                {calculationResult?.totalAreaAlq.toFixed(1)}Alq/{calculationResult?.totalToneladas.toFixed(0)}Ton (R$/Alq = {precoPorAlqueire.toFixed(2)} - R$/CARGA = {precoPorCarga.toFixed(1)})
+                {calculationResult?.totalAreaAlq.toFixed(1)} Alq / {calculationResult?.totalToneladas.toFixed(0)} Ton (R$/Alq = {precoPorAlqueire.toFixed(2)} - R$/CARGA = {precoPorCarga.toFixed(1)})
               </span>
               <span className="font-semibold">R$ {precoPorTonelada.toFixed(2)}/Ton</span>
             </div>

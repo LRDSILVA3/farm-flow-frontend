@@ -43,6 +43,7 @@ import { api } from "@/services/api";
 import { SoilSamplingService } from "@/services/SoilSamplingService";
 import { useCostVariables } from "@/hooks/useCostVariables";
 import { cn, getLocalDateISO } from "@/lib/utils";
+import { MultiStatusFilter } from "@/components/ui/multi-status-filter";
 
 interface CollaboratorOption {
   id: string;
@@ -223,7 +224,7 @@ export const SchedulePage = () => {
   const [filterEquipment, setFilterEquipment] = useState("all");
   const [filterState, setFilterState] = useState("all");
   const [filterCity, setFilterCity] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterStatus, setFilterStatus] = useState<string[]>([]);
 
   const [collaboratorsList, setCollaboratorsList] = useState<CollaboratorOption[]>([]);
   const [equipmentList, setEquipmentList] = useState<EquipmentOption[]>([]);
@@ -465,9 +466,9 @@ export const SchedulePage = () => {
       if (filterService !== "all" && e.serviceName !== filterService) return false;
       if (filterState !== "all" && e.state !== filterState) return false;
       if (filterCity !== "all" && e.city !== filterCity) return false;
-      if (filterStatus === "all") {
+      if (filterStatus.length === 0) {
         if (e.status === "Cancelado") return false;
-      } else if (e.status !== filterStatus) {
+      } else if (!filterStatus.includes(e.status)) {
         return false;
       }
 
@@ -1518,15 +1519,20 @@ export const SchedulePage = () => {
           </div>
 
           <div>
-            <Label className="text-xs font-semibold">Status</Label>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="mt-1 text-xs bg-background h-9">
-                <SelectValue placeholder="Todos os status" />
-              </SelectTrigger>
-              <SelectContent>
-                {statusOptions.map(st => <SelectItem key={st} value={st === "Todos" ? "all" : st}>{st}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <Label className="text-xs font-semibold block mb-1">Status</Label>
+            <MultiStatusFilter
+              placeholder="Status"
+              options={[
+                { value: "Pendente", label: "Pendente" },
+                { value: "Agendado", label: "Agendado" },
+                { value: "Em Andamento", label: "Em Andamento" },
+                { value: "Concluído", label: "Concluído" },
+                { value: "Cancelado", label: "Cancelado" },
+              ]}
+              selected={filterStatus}
+              onChange={setFilterStatus}
+              triggerClassName="w-full h-9 text-xs"
+            />
           </div>
 
           <div className="flex items-end">
@@ -1542,7 +1548,7 @@ export const SchedulePage = () => {
                 setFilterEquipment("all");
                 setFilterState("all");
                 setFilterCity("all");
-                setFilterStatus("all");
+                setFilterStatus([]);
               }}
               className="w-full text-xs h-9 flex items-center justify-center gap-1.5"
             >

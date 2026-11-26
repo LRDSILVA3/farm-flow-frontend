@@ -125,6 +125,14 @@ export const OrderScheduleDialog: React.FC<OrderScheduleDialogProps> = ({
     return [];
   }, [order]);
 
+  const totalPhysicalArea = useMemo(() => {
+    if (availablePlots.length > 0) {
+      const sum = availablePlots.reduce((acc, p) => acc + (parseFloat(p.area || '0') || 0), 0);
+      if (sum > 0) return sum.toFixed(1);
+    }
+    return order?.area || '0';
+  }, [availablePlots, order?.area]);
+
   useEffect(() => {
     if (order?.schedules) {
       setSchedulesList(order.schedules);
@@ -346,7 +354,7 @@ export const OrderScheduleDialog: React.FC<OrderScheduleDialogProps> = ({
               )}
             </div>
             <div className="text-muted-foreground flex justify-between">
-              <span>{order.serviceName || order.type} • {order.area} ha</span>
+              <span>{order.serviceName || order.type} • {totalPhysicalArea} ha</span>
               {availablePlots && availablePlots.length > 0 && (
                 <span className="text-primary font-medium">
                   {availablePlots.length} {availablePlots.length === 1 ? 'talhão contratado' : 'talhões contratados'}

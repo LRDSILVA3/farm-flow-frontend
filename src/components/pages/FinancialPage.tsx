@@ -31,6 +31,7 @@ import { FinancialTransactionsTab } from "./financial/FinancialTransactionsTab";
 import { api } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { getLocalDateISO } from "@/lib/utils";
+import { MultiStatusFilter } from "@/components/ui/multi-status-filter";
 
 // Utilitários de máscara monetária BRL (R$ 1.250,50)
 const formatCurrencyInput = (value: string | number): string => {
@@ -68,7 +69,7 @@ const FinancialPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
-  const [paymentFilter, setPaymentFilter] = useState("all");
+  const [paymentFilter, setPaymentFilter] = useState<string[]>([]);
   const [serviceFilter, setServiceFilter] = useState("all");
   const [clientFilter, setClientFilter] = useState("all");
 
@@ -143,8 +144,9 @@ const FinancialPage = () => {
         serviceName.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesPayment =
-        paymentFilter === "all" ||
-        (paymentFilter === "ConcluidoPendente" ? o.status === "Concluído" && o.payment !== "Pago" : o.payment === paymentFilter);
+        paymentFilter.length === 0 ||
+        paymentFilter.includes(o.payment) ||
+        (paymentFilter.includes("ConcluidoPendente") && o.status === "Concluído" && o.payment !== "Pago");
 
       const matchesService = serviceFilter === "all" || serviceName === serviceFilter;
       const matchesClient = clientFilter === "all" || clientName === clientFilter;
@@ -347,24 +349,21 @@ const FinancialPage = () => {
                     </SelectContent>
                   </Select>
 
-                  <Select
-                    value={paymentFilter}
-                    onValueChange={(val) => {
+                  <MultiStatusFilter
+                    placeholder="Status Pagamento"
+                    options={[
+                      { value: "Aguardando", label: "Aguardando Pagamento" },
+                      { value: "Parcial", label: "Pagamento Parcial" },
+                      { value: "Pago", label: "Totalmente Pago" },
+                      { value: "ConcluidoPendente", label: "Concluído (Não Pago)" },
+                    ]}
+                    selected={paymentFilter}
+                    onChange={(val) => {
                       setPaymentFilter(val);
                       setCurrentPage(1);
                     }}
-                  >
-                    <SelectTrigger className="h-9 text-xs">
-                      <SelectValue placeholder="Status Financeiro" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os Pagamentos</SelectItem>
-                      <SelectItem value="Aguardando">Aguardando Pagamento</SelectItem>
-                      <SelectItem value="Parcial">Pagamento Parcial</SelectItem>
-                      <SelectItem value="Pago">Totalmente Pago</SelectItem>
-                      <SelectItem value="ConcluidoPendente">Concluído (Não Pago)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    triggerClassName="h-9 text-xs"
+                  />
                 </div>
               </div>
             </CardHeader>
