@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit, Trash2, Users, Shield, Eye, Edit3 } from "lucide-react";
-import { PERMISSION_LABELS, PERMISSION_MODULES } from "@/constants/permissions";
+import { PERMISSION_LABELS, PERMISSION_MODULES, ROLE_OPTIONS } from "@/constants/permissions";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { UserModal } from "./UserModal";
 import { PositionModal } from "./PositionModal";
@@ -344,6 +344,11 @@ export const UsersSection = () => {
                         const totalMods = PERMISSION_MODULES.length;
                         const viewsCount = pos.permissions.filter((p) => p.endsWith(":view")).length;
                         const editsCount = pos.permissions.filter((p) => p.endsWith(":edit")).length;
+                        const isSystemStandard =
+                          pos.isDefault ||
+                          (ROLE_OPTIONS as readonly string[]).includes(pos.name) ||
+                          String(pos.id).startsWith("default-");
+                        const isBuiltinAdmin = pos.name.toLowerCase() === "administrador";
 
                         return (
                           <TableRow key={pos.id}>
@@ -351,6 +356,11 @@ export const UsersSection = () => {
                               <div className="flex items-center gap-2">
                                 <Shield className="h-4 w-4 text-green-600" />
                                 {pos.name}
+                                {isSystemStandard && (
+                                  <span className="text-[10px] font-normal text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border">
+                                    Padrão
+                                  </span>
+                                )}
                               </div>
                             </TableCell>
                             <TableCell>
@@ -389,15 +399,17 @@ export const UsersSection = () => {
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  aria-label="Excluir cargo"
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => setPositionToDelete(pos)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                {!isBuiltinAdmin && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    aria-label="Excluir cargo"
+                                    className="text-destructive hover:text-destructive"
+                                    onClick={() => setPositionToDelete(pos)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>
