@@ -1,9 +1,12 @@
+import { useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collaborator } from "../../../hooks/useCollaborators";
+import { usePositions } from "../../../hooks/usePositions";
+import { ROLE_OPTIONS } from "@/constants/permissions";
 
 interface CollaboratorModalProps {
   showCollaboratorForm: boolean;
@@ -24,6 +27,45 @@ export const CollaboratorModal = ({
   handleCollaboratorSubmit,
   resetCollaboratorForm
 }: CollaboratorModalProps) => {
+  const { positions } = usePositions();
+
+  const roleOptions = useMemo(() => {
+    const list: string[] = [];
+
+    // 1. Cargos ativos cadastrados no sistema
+    positions.forEach((p) => {
+      if (p.name && p.status !== "Inativo") {
+        const trimmed = p.name.trim();
+        if (!list.some((r) => r.toLowerCase() === trimmed.toLowerCase())) {
+          list.push(trimmed);
+        }
+      }
+    });
+
+    // 2. Cargos padrão do sistema
+    ROLE_OPTIONS.forEach((r) => {
+      if (!list.some((item) => item.toLowerCase() === r.toLowerCase())) {
+        list.push(r);
+      }
+    });
+
+    // 3. Funções operacionais comuns de campo se não existirem
+    ["Técnico Agrícola", "Piloto de Drone"].forEach((r) => {
+      if (!list.some((item) => item.toLowerCase() === r.toLowerCase())) {
+        list.push(r);
+      }
+    });
+
+    // 4. Valor atual do colaborador se já preenchido
+    if (collaboratorFormData.role && collaboratorFormData.role.trim()) {
+      const current = collaboratorFormData.role.trim();
+      if (!list.some((item) => item.toLowerCase() === current.toLowerCase())) {
+        list.push(current);
+      }
+    }
+
+    return list;
+  }, [positions, collaboratorFormData.role]);
   return (
     <Dialog open={showCollaboratorForm} onOpenChange={setShowCollaboratorForm}>
       <DialogContent className="sm:max-w-[480px]">
@@ -50,13 +92,21 @@ export const CollaboratorModal = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="cargo">Função / Cargo</Label>
-              <Input
-                id="cargo"
-                placeholder="Ex: Piloto de Drone, Operador"
-                value={collaboratorFormData.role}
-                onChange={(e) => handleCollaboratorInputChange("role", e.target.value)}
-                required
-              />
+              <Select
+                value={collaboratorFormData.role || "Operador de Campo"}
+                onValueChange={(value) => handleCollaboratorInputChange("role", value)}
+              >
+                <SelectTrigger id="cargo">
+                  <SelectValue placeholder="Selecione o cargo / função" />
+                </SelectTrigger>
+                <SelectContent>
+                  {roleOptions.map((role) => (
+                    <SelectItem key={role} value={role}>
+                      {role}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

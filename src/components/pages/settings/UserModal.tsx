@@ -51,14 +51,31 @@ export const UserModal: React.FC<UserModalProps> = ({
   }, [showUserForm]);
 
   const allRoleOptions = useMemo(() => {
-    const list = [...ROLE_OPTIONS] as string[];
+    const list: string[] = [];
+    // 1. Cargos cadastrados no banco de dados (ativos ou o cargo atual do usuário)
     positions.forEach((p) => {
-      if (p.name && !list.some((r) => r.toLowerCase() === p.name.toLowerCase())) {
-        list.push(p.name);
+      if (p.name && (p.status !== "Inativo" || p.name.toLowerCase() === (userFormData.role || "").toLowerCase())) {
+        const trimmed = p.name.trim();
+        if (!list.some((r) => r.toLowerCase() === trimmed.toLowerCase())) {
+          list.push(trimmed);
+        }
       }
     });
+    // 2. Cargos padrão do sistema
+    ROLE_OPTIONS.forEach((r) => {
+      if (!list.some((item) => item.toLowerCase() === r.toLowerCase())) {
+        list.push(r);
+      }
+    });
+    // 3. Cargo atual caso ainda não esteja na lista
+    if (userFormData.role && userFormData.role.trim()) {
+      const current = userFormData.role.trim();
+      if (!list.some((item) => item.toLowerCase() === current.toLowerCase())) {
+        list.push(current);
+      }
+    }
     return list;
-  }, [positions]);
+  }, [positions, userFormData.role]);
 
   const handleToggleModuleView = (modId: string, checked: boolean) => {
     let next = [...userFormData.permissions];
