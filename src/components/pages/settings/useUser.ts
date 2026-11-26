@@ -5,6 +5,7 @@ import { api } from "@/services/api";
 import { formatDateBR } from "@/lib/utils";
 import { useSafeQueryClient } from "@/hooks/useSafeQueryClient";
 import { syncCurrentUserProfile, useAuth } from "@/hooks/useAuth";
+import { usePositions } from "@/hooks/usePositions";
 import {
   AVAILABLE_PERMISSIONS,
   getDefaultPermissionsForRole,
@@ -45,6 +46,13 @@ export const useUser = () => {
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
   const queryClient = useSafeQueryClient();
+  const {
+    positions,
+    loading: loadingPositions,
+    saving: savingPosition,
+    savePosition,
+    deletePosition,
+  } = usePositions();
 
   const { data: users = [], isLoading: loading } = useQuery<User[]>({
     queryKey: ["system-users"],
@@ -203,11 +211,19 @@ export const useUser = () => {
   };
 
   const handleRoleChange = (role: string) => {
-    const normalizedRole = normalizeRoleLabel(role);
+    const customPos = positions.find(
+      (p) => p.name.toLowerCase() === role.toLowerCase()
+    );
+    const normalizedRole = customPos ? customPos.name : normalizeRoleLabel(role);
+    const newPerms =
+      customPos && customPos.permissions.length > 0
+        ? [...customPos.permissions]
+        : getDefaultPermissionsForRole(normalizedRole);
+
     setUserFormData((prev) => ({
       ...prev,
       role: normalizedRole,
-      permissions: getDefaultPermissionsForRole(normalizedRole),
+      permissions: newPerms,
     }));
   };
 
@@ -269,5 +285,10 @@ export const useUser = () => {
     usersStartIndex,
     usersEndIndex,
     currentUsers,
+    positions,
+    loadingPositions,
+    savingPosition,
+    savePosition,
+    deletePosition,
   };
 };

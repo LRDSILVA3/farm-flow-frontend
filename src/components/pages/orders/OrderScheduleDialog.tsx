@@ -118,7 +118,7 @@ export const OrderScheduleDialog: React.FC<OrderScheduleDialogProps> = ({
       ]);
       if (Array.isArray(collabs)) setCollaboratorsList(collabs);
       if (Array.isArray(equips)) setEquipmentList(equips);
-    } catch {}
+    } catch { }
   };
 
   if (!order) return null;
@@ -342,11 +342,10 @@ export const OrderScheduleDialog: React.FC<OrderScheduleDialogProps> = ({
                       type="button"
                       key={plot.id}
                       onClick={() => togglePlot(plot.name)}
-                      className={`text-[11px] px-1.5 py-0.5 rounded border transition-colors ${
-                        selectedPlotsForSchedule.includes(plot.name)
+                      className={`text-[11px] px-1.5 py-0.5 rounded border transition-colors ${selectedPlotsForSchedule.includes(plot.name)
                           ? 'bg-emerald-100 border-emerald-400 text-emerald-800 font-medium'
                           : 'bg-muted/40 hover:bg-muted text-muted-foreground border-transparent'
-                      }`}
+                        }`}
                     >
                       {plot.name} ({parseFloat(plot.area || "0").toFixed(1)} ha)
                     </button>
@@ -382,11 +381,10 @@ export const OrderScheduleDialog: React.FC<OrderScheduleDialogProps> = ({
                       type="button"
                       key={c.id}
                       onClick={() => toggleCollaborator(c.name)}
-                      className={`text-[11px] px-1.5 py-0.5 rounded border transition-colors ${
-                        selectedCollaborators.includes(c.name)
+                      className={`text-[11px] px-1.5 py-0.5 rounded border transition-colors ${selectedCollaborators.includes(c.name)
                           ? 'bg-blue-100 border-blue-400 text-blue-800 font-medium'
                           : 'bg-muted/40 hover:bg-muted text-muted-foreground border-transparent'
-                      }`}
+                        }`}
                     >
                       {c.name} {c.role && <span className="opacity-60 text-[9px]">({c.role})</span>}
                     </button>
@@ -422,11 +420,10 @@ export const OrderScheduleDialog: React.FC<OrderScheduleDialogProps> = ({
                       type="button"
                       key={eq.id}
                       onClick={() => toggleEquipment(eq.name)}
-                      className={`text-[11px] px-1.5 py-0.5 rounded border transition-colors ${
-                        selectedEquipment.includes(eq.name)
+                      className={`text-[11px] px-1.5 py-0.5 rounded border transition-colors ${selectedEquipment.includes(eq.name)
                           ? 'bg-amber-100 border-amber-400 text-amber-800 font-medium'
                           : 'bg-muted/40 hover:bg-muted text-muted-foreground border-transparent'
-                      }`}
+                        }`}
                     >
                       {eq.name}
                     </button>

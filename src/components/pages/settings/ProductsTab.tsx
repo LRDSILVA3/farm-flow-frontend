@@ -27,6 +27,31 @@ import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { StockMovementDialog } from "./StockMovementDialog";
 import { StockHistoryDialog } from "./StockHistoryDialog";
 
+export const isProtectedServiceProduct = (product?: Product | null): boolean => {
+  if (!product?.name) return false;
+  const name = product.name.toLowerCase().trim();
+  const protectedKeywords = [
+    'calcário',
+    'calcario',
+    'gesso',
+    'cama de frango',
+    'pó de rocha',
+    'po de rocha',
+    'kcl',
+    'superfosfato',
+    'análise foliar',
+    'analise foliar',
+    'análise de solo',
+    'analise de solo',
+  ];
+  return (
+    protectedKeywords.some((kw) => name.includes(kw)) ||
+    (product as any).isServiceProduct === true ||
+    product.category?.toLowerCase() === 'serviço' ||
+    product.category?.toLowerCase() === 'insumo de serviço'
+  );
+};
+
 interface ProductsTabProps {
   products: Product[];
   productsStartIndex: number;
@@ -561,15 +586,31 @@ export const ProductsTab: React.FC<ProductsTabProps> = ({
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => openDeleteDialog(product.id)}
-                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                                  title="Excluir Produto"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
+                                {(() => {
+                                  const isProtected = isProtectedServiceProduct(product);
+                                  return (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        if (!isProtected) openDeleteDialog(product.id);
+                                      }}
+                                      disabled={isProtected}
+                                      className={`h-8 w-8 p-0 ${
+                                        isProtected
+                                          ? "opacity-30 cursor-not-allowed text-muted-foreground bg-muted/40"
+                                          : "text-destructive hover:text-destructive"
+                                      }`}
+                                      title={
+                                        isProtected
+                                          ? `Insumo utilizado em serviços (${product.name}) - Não pode ser excluído`
+                                          : "Excluir Produto"
+                                      }
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  );
+                                })()}
                               </div>
                             </TableCell>
                           </TableRow>

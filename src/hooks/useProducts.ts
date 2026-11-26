@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/services/api";
+import { isProtectedServiceProduct } from "@/components/pages/settings/ProductsTab";
 
 export interface Product {
   id: string;
@@ -237,6 +238,15 @@ export const useProducts = () => {
   };
 
   const handleDeleteProduct = async (id: string) => {
+    const prod = products.find(p => p.id === id);
+    if (prod && isProtectedServiceProduct(prod)) {
+      toast({
+        title: "Produto Protegido",
+        description: `O produto "${prod.name}" é utilizado em serviços e não pode ser excluído.`,
+        variant: "destructive"
+      });
+      return;
+    }
     try {
       await api.delete(`/products/${id}`);
       toast({ title: "Produto excluído", description: "O produto foi excluído com sucesso." });

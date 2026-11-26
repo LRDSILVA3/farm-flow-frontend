@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api, ApiError } from '@/services/api';
 import {
+  canUserEdit,
+  canUserView,
   normalizeRoleLabel,
   PermissionKey,
   resolveUserPermissions,
@@ -163,11 +165,37 @@ export const useAuth = () => {
     window.dispatchEvent(new CustomEvent('@FarmFlow:authChange'));
   };
 
+  const canView = useCallback(
+    (moduleName: string): boolean => {
+      if (profile?.role === 'Administrador' || user?.role === 'Administrador') return true;
+      return canUserView(permissions, moduleName);
+    },
+    [permissions, profile?.role, user?.role],
+  );
+
+  const canEdit = useCallback(
+    (moduleName: string): boolean => {
+      if (profile?.role === 'Administrador' || user?.role === 'Administrador') return true;
+      return canUserEdit(permissions, moduleName);
+    },
+    [permissions, profile?.role, user?.role],
+  );
+
   const hasPermission = useCallback(
     (permission: string): boolean => {
-      return permissions.includes(permission as PermissionKey);
+      if (profile?.role === 'Administrador' || user?.role === 'Administrador') return true;
+      if (permissions.includes(permission as PermissionKey)) return true;
+      if (permission.endsWith(':view')) {
+        const base = permission.replace(':view', '');
+        return canUserView(permissions, base);
+      }
+      if (permission.endsWith(':edit')) {
+        const base = permission.replace(':edit', '');
+        return canUserEdit(permissions, base);
+      }
+      return canUserView(permissions, permission);
     },
-    [permissions],
+    [permissions, profile?.role, user?.role],
   );
 
   return {
@@ -176,6 +204,8 @@ export const useAuth = () => {
     profile,
     permissions,
     hasPermission,
+    canView,
+    canEdit,
     loading,
     signIn,
     signOut,

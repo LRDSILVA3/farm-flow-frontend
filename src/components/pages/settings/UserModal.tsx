@@ -1,16 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Eye, EyeOff } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Eye, EyeOff, Edit3, CheckCheck, RotateCcw } from "lucide-react";
 import {
-  AVAILABLE_PERMISSIONS,
+  PERMISSION_MODULES,
   PermissionKey,
   ROLE_OPTIONS,
 } from "@/constants/permissions";
 import { User } from "./useUser";
+import { Position } from "@/hooks/usePositions";
 
 interface UserModalProps {
   showUserForm: boolean;
@@ -19,11 +21,12 @@ interface UserModalProps {
   userFormData: User;
   handleUserSubmit: (e: React.FormEvent) => void;
   resetUserForm: () => void;
-  handleUserInputChange: (field: keyof User, value: string | string[]) => void;
+  handleUserInputChange: (field: keyof User, value: any) => void;
   handleRoleChange: (role: string) => void;
   handlePermissionChange: (permission: PermissionKey, checked: boolean) => void;
   handleSelectAllPermissions: () => void;
   handleClearPermissions: () => void;
+  positions?: Position[];
 }
 
 export const UserModal: React.FC<UserModalProps> = ({
@@ -35,9 +38,9 @@ export const UserModal: React.FC<UserModalProps> = ({
   resetUserForm,
   handleUserInputChange,
   handleRoleChange,
-  handlePermissionChange,
   handleSelectAllPermissions,
   handleClearPermissions,
+  positions = [],
 }) => {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -46,6 +49,54 @@ export const UserModal: React.FC<UserModalProps> = ({
       setShowPassword(false);
     }
   }, [showUserForm]);
+
+  const allRoleOptions = useMemo(() => {
+    const list = [...ROLE_OPTIONS] as string[];
+    positions.forEach((p) => {
+      if (p.name && !list.some((r) => r.toLowerCase() === p.name.toLowerCase())) {
+        list.push(p.name);
+      }
+    });
+    return list;
+  }, [positions]);
+
+  const handleToggleModuleView = (modId: string, checked: boolean) => {
+    const viewKey = `${modId}:view`;
+    const editKey = `${modId}:edit`;
+    let next = [...userFormData.permissions];
+    if (checked) {
+      if (!next.includes(viewKey)) next.push(viewKey);
+    } else {
+      next = next.filter((k) => k !== viewKey && k !== editKey && k !== modId);
+    }
+    handleUserInputChange("permissions", next);
+  };
+
+  const handleToggleModuleEdit = (modId: string, checked: boolean) => {
+    const viewKey = `${modId}:view`;
+    const editKey = `${modId}:edit`;
+    let next = [...userFormData.permissions];
+    if (checked) {
+      if (!next.includes(editKey)) next.push(editKey);
+      if (!next.includes(viewKey)) next.push(viewKey);
+    } else {
+      next = next.filter((k) => k !== editKey && k !== modId);
+    }
+    handleUserInputChange("permissions", next);
+  };
+
+  const handleSelectOnlyView = () => {
+    const views: PermissionKey[] = PERMISSION_MODULES.map((mod) => mod.viewKey);
+    handleUserInputChange("permissions", views);
+  };
+
+  const handleSelectAll = () => {
+    const all: PermissionKey[] = [];
+    PERMISSION_MODULES.forEach((mod) => {
+      all.push(mod.viewKey, mod.editKey);
+    });
+    handleUserInputChange("permissions", all);
+  };
 
   return (
     <Dialog
@@ -137,7 +188,7 @@ export const UserModal: React.FC<UserModalProps> = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {ROLE_OPTIONS.map((roleName) => (
+                  {allRoleOptions.map((roleName) => (
                     <SelectItem key={roleName} value={roleName}>
                       {roleName}
                     </SelectItem>
@@ -164,17 +215,33 @@ export const UserModal: React.FC<UserModalProps> = ({
           </div>
 
           <div className="space-y-2 border rounded-lg p-3 bg-slate-50/70">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <Label className="font-semibold">Permissões de Acesso aos Módulos</Label>
-              <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-2">
+              <div>
+                <Label className="font-semibold text-sm">Permissões de Acesso aos Módulos</Label>
+                <p className="text-xs text-muted-foreground">
+                  Personalize o que este usuário pode Visualizar e Editar.
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5">
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  className="h-7 px-2 text-xs text-green-700 hover:text-green-800"
-                  onClick={handleSelectAllPermissions}
+                  className="h-7 px-2 text-xs"
+                  onClick={handleSelectAll}
                 >
-                  Selecionar Todas
+                  <CheckCheck className="h-3.5 w-3.5 mr-1 text-green-600" />
+                  Todos
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={handleSelectOnlyView}
+                >
+                  <Eye className="h-3.5 w-3.5 mr-1 text-blue-600" />
+                  Apenas Ver
                 </Button>
                 <Button
                   type="button"
@@ -183,25 +250,63 @@ export const UserModal: React.FC<UserModalProps> = ({
                   className="h-7 px-2 text-xs text-slate-600 hover:text-slate-900"
                   onClick={handleClearPermissions}
                 >
+                  <RotateCcw className="h-3.5 w-3.5 mr-1" />
                   Limpar
                 </Button>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-1">
-              {AVAILABLE_PERMISSIONS.map((permission) => (
-                <div key={permission.id} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id={`permission-${permission.id}`}
-                    checked={userFormData.permissions.includes(permission.id)}
-                    onChange={(e) => handlePermissionChange(permission.id, e.target.checked)}
-                    className="rounded border-gray-300"
-                  />
-                  <Label htmlFor={`permission-${permission.id}`} className="text-sm font-normal cursor-pointer">
-                    {permission.name}
-                  </Label>
-                </div>
-              ))}
+
+            <div className="divide-y divide-slate-200">
+              {PERMISSION_MODULES.map((mod) => {
+                const isViewChecked =
+                  userFormData.permissions.includes(mod.viewKey) ||
+                  userFormData.permissions.includes(mod.id) ||
+                  userFormData.permissions.includes(mod.editKey);
+
+                const isEditChecked =
+                  userFormData.permissions.includes(mod.editKey) ||
+                  userFormData.permissions.includes(mod.id);
+
+                return (
+                  <div
+                    key={mod.id}
+                    className="py-2.5 flex items-center justify-between gap-4 hover:bg-white/60 px-2 rounded transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-800 leading-tight">
+                        {mod.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {mod.description}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-6 shrink-0">
+                      <label className="flex items-center gap-1.5 cursor-pointer text-xs font-medium text-slate-700 select-none">
+                        <Checkbox
+                          checked={isViewChecked}
+                          onCheckedChange={(checked) =>
+                            handleToggleModuleView(mod.id, !!checked)
+                          }
+                        />
+                        <Eye className="h-3.5 w-3.5 text-blue-600 inline" />
+                        <span>Visualizar</span>
+                      </label>
+
+                      <label className="flex items-center gap-1.5 cursor-pointer text-xs font-medium text-slate-700 select-none">
+                        <Checkbox
+                          checked={isEditChecked}
+                          onCheckedChange={(checked) =>
+                            handleToggleModuleEdit(mod.id, !!checked)
+                          }
+                        />
+                        <Edit3 className="h-3.5 w-3.5 text-green-600 inline" />
+                        <span>Editar</span>
+                      </label>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
