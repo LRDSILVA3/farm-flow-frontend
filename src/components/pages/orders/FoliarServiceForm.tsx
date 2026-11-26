@@ -148,6 +148,7 @@ export const FoliarServiceForm: React.FC<FoliarServiceFormProps> = ({
             unit: alqToCalc > 0 ? 'ALQ' : 'PTOS',
             price: precoServicoUnit,
             plotsPlan: displayPlots,
+            points: points,
           },
           ...(points > 0 ? [{
             id: 'analise_foliar',
@@ -283,17 +284,31 @@ export const FoliarServiceForm: React.FC<FoliarServiceFormProps> = ({
             />
           </div>
           <div>
-            <Label htmlFor="foliar-pontos">Número de pontos:</Label>
+            <Label htmlFor="foliar-pontos" className="flex items-center gap-1 font-semibold">
+              Número de pontos:
+              <span className="text-red-500 font-bold">*</span>
+            </Label>
             <Input
               id="foliar-pontos"
-              type="number" step="any"
+              type="number"
+              step="any"
               value={numPontos === null ? '' : numPontos}
               onChange={(e) => {
                 const value = e.target.value;
                 setNumPontos(value === '' ? null : parseInt(value));
               }}
-              min="0"
+              min="1"
+              placeholder="Ex: 10 (obrigatório)"
+              className={cn(
+                "transition-colors",
+                (!numPontos || numPontos <= 0) && "border-amber-500 focus-visible:ring-amber-500"
+              )}
             />
+            {(!numPontos || numPontos <= 0) && (
+              <span className="text-[11px] text-amber-600 font-medium block mt-1">
+                * Obrigatório: informe os pontos de amostragem
+              </span>
+            )}
           </div>
         </div>
 

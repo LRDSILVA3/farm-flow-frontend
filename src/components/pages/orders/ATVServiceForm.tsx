@@ -19,6 +19,10 @@ import { cn } from '@/lib/utils';
 interface ATVServiceFormProps {
   initialDistanciaKm?: number;
   initialAreaHa?: number;
+  plots?: any[];
+  availablePlots?: any[];
+  onPlotsChange?: (plots: any[]) => void;
+  onAreaChange?: (areaHa: number) => void;
   onValuesChange: (calculatedValue: number) => void;
   onProductsChange?: (products: any[]) => void;
 }
@@ -37,6 +41,10 @@ const DEFAULT_ATV_PRODUCTS = [
 export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
   initialDistanciaKm,
   initialAreaHa,
+  plots,
+  availablePlots,
+  onPlotsChange,
+  onAreaChange,
   onValuesChange,
   onProductsChange,
 }) => {
@@ -61,7 +69,7 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
 
   const [distanciaIdaKm, setDistanciaIdaKm] = useState<number | null>(initialDistanciaKm || 40);
   const [vencimentoServico, setVencimentoServico] = useState<Date | undefined>(undefined);
-  const [quantosProdutos, setQuantosProdutos] = useState<number>(3);
+  const [quantosProdutos, setQuantosProdutos] = useState<number>(1);
   const [quantosCaminhoes, setQuantosCaminhoes] = useState<number>(2);
 
   // Parâmetros operacionais da planilha INPUT ATV
@@ -71,15 +79,91 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
   const [clienteAlmoco, setClienteAlmoco] = useState<boolean>(false);
   const [descontoManual, setDescontoManual] = useState<number | null>(null);
 
-  const [itens, setItens] = useState<ATVItemParam[]>([
-    {
-      produto: 'Calcário Dolomítico',
-      idTalhao: 'TL44',
-      areaHa: 72,
-      toneladas: 20,
-      cobraFrete: false,
-    },
-  ]);
+  // Inicialização inteligente dos talhões e áreas a partir do pedido
+  const [itens, setItens] = useState<ATVItemParam[]>(() => {
+    if (plots && plots.length > 0) {
+      return plots.map((p: any, idx: number) => {
+        const area = parseFloat(p.area || '0') || initialAreaHa || 0;
+        const estTon = area > 0 ? Math.round((area / 2.42) * 3.18 * 10) / 10 : 0;
+        return {
+          produto: 'Calcário Dolomítico',
+          idTalhao: p.name || `Talhão ${idx + 1}`,
+          areaHa: area,
+          toneladas: p.toneladas ? parseFloat(p.toneladas) : estTon,
+          cobraFrete: true,
+        };
+      });
+    }
+    const defArea = initialAreaHa && initialAreaHa > 0 ? initialAreaHa : 0;
+    const estTon = defArea > 0 ? Math.round((defArea / 2.42) * 3.18 * 10) / 10 : 0;
+    const defaultTalhaoName = availablePlots && availablePlots.length === 1 ? availablePlots[0].name : '';
+    return [
+      {
+        produto: 'Calcário Dolomítico',
+        idTalhao: defaultTalhaoName,
+        areaHa: defArea,
+        toneladas: estTon,
+        cobraFrete: true,
+      },
+    ];
+  });
+
+  const onAreaChangeRef = React.useRef(onAreaChange);
+  React.useEffect(() => {
+    onAreaChangeRef.current = onAreaChange;
+  }, [onAreaChange]);
+
+  const onPlotsChangeRef = React.useRef(onPlotsChange);
+  React.useEffect(() => {
+    onPlotsChangeRef.current = onPlotsChange;
+  }, [onPlotsChange]);
+
+  const onValuesChangeRef = React.useRef(onValuesChange);
+  React.useEffect(() => {
+    onValuesChangeRef.current = onValuesChange;
+  }, [onValuesChange]);
+
+  const onProductsChangeRef = React.useRef(onProductsChange);
+  React.useEffect(() => {
+    onProductsChangeRef.current = onProductsChange;
+  }, [onProductsChange]);
+
+  // Sincronizar itens quando talhões selecionados mudam
+  useEffect(() => {
+    if (plots && plots.length > 0) {
+      setItens((prev) => {
+        const isDefault = prev.length === 1 && (!prev[0].idTalhao || prev[0].areaHa === 0);
+        if (!isDefault && prev.length === plots.length) return prev;
+        return plots.map((p: any, idx: number) => {
+          const area = parseFloat(p.area || '0') || 0;
+          const prevItem = prev[idx];
+          return {
+            produto: prevItem?.produto || 'Calcário Dolomítico',
+            idTalhao: p.name || `Talhão ${idx + 1}`,
+            areaHa: area > 0 ? area : (prevItem?.areaHa || 0),
+            toneladas:
+              prevItem?.toneladas && prevItem.toneladas > 0
+                ? prevItem.toneladas
+                : (area > 0 ? Math.round((area / 2.42) * 3.18 * 10) / 10 : 0),
+            cobraFrete: prevItem?.cobraFrete ?? true,
+          };
+        });
+      });
+    } else if (initialAreaHa && initialAreaHa > 0) {
+      setItens((prev) => {
+        if (prev.length === 1 && prev[0].areaHa === 0) {
+          return [{
+            ...prev[0],
+            idTalhao: availablePlots && availablePlots.length === 1 ? availablePlots[0].name : prev[0].idTalhao,
+            areaHa: initialAreaHa,
+            toneladas: Math.round((initialAreaHa / 2.42) * 3.18 * 10) / 10,
+            cobraFrete: true,
+          }];
+        }
+        return prev;
+      });
+    }
+  }, [plots, initialAreaHa, availablePlots]);
 
   const [calculationResult, setCalculationResult] = useState<ATVCalculationResult | null>(null);
 
@@ -91,28 +175,77 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
   }, [costVariables]);
 
   const handleAddItem = () => {
-    setItens([
+    const nextPlot = availablePlots && availablePlots.length > itens.length ? availablePlots[itens.length] : null;
+    const nextArea = nextPlot?.area ? parseFloat(nextPlot.area) : 0;
+    const nextTon = nextArea > 0 ? Math.round((nextArea / 2.42) * 3.18 * 10) / 10 : 0;
+    const updated = [
       ...itens,
       {
         produto: availableProducts[0] || 'Calcário Dolomítico',
-        idTalhao: '',
-        areaHa: 0,
-        toneladas: 0,
-        cobraFrete: false,
+        idTalhao: nextPlot?.name || '',
+        areaHa: nextArea,
+        toneladas: nextTon,
+        cobraFrete: true,
       },
-    ]);
+    ];
+    setItens(updated);
+    if (nextArea > 0) {
+      const totalHa = updated.reduce((sum, it) => sum + (parseFloat(it.areaHa as any) || 0), 0);
+      if (onAreaChangeRef.current) {
+        onAreaChangeRef.current(totalHa);
+      }
+    }
   };
 
   const handleRemoveItem = (index: number) => {
     if (itens.length > 1) {
-      setItens(itens.filter((_, i) => i !== index));
+      const updated = itens.filter((_, i) => i !== index);
+      setItens(updated);
+      const totalHa = updated.reduce((sum, it) => sum + (parseFloat(it.areaHa as any) || 0), 0);
+      if (onAreaChangeRef.current) {
+        onAreaChangeRef.current(totalHa);
+      }
     }
   };
 
   const handleItemChange = (index: number, field: keyof ATVItemParam, value: any) => {
     const newItens = [...itens];
     newItens[index] = { ...newItens[index], [field]: value };
+
+    // Se selecionou um talhão da fazenda, puxa automaticamente a sua área
+    if (field === 'idTalhao' && availablePlots && availablePlots.length > 0) {
+      const match = availablePlots.find((p: any) => p.name === value || p.id === value);
+      if (match && match.area) {
+        const numArea = parseFloat(match.area) || 0;
+        if (numArea > 0) {
+          newItens[index].areaHa = numArea;
+          if (newItens[index].toneladas === 0) {
+            newItens[index].toneladas = Math.round((numArea / 2.42) * 3.18 * 10) / 10;
+          }
+        }
+      }
+    }
+
     setItens(newItens);
+
+    // Notificar formulário pai se a área foi alterada
+    if (field === 'areaHa' || (field === 'idTalhao' && newItens[index].areaHa > 0)) {
+      const totalHa = newItens.reduce((sum, it) => sum + (parseFloat(it.areaHa as any) || 0), 0);
+      if (onAreaChangeRef.current) {
+        onAreaChangeRef.current(totalHa);
+      }
+    }
+
+    if (onPlotsChangeRef.current) {
+      const mappedPlots = newItens.map((it, i) => ({
+        id: `plot_${i + 1}`,
+        name: it.idTalhao || `Talhão ${i + 1}`,
+        area: it.areaHa,
+        produto: it.produto,
+        toneladas: it.toneladas,
+      }));
+      onPlotsChangeRef.current(mappedPlots);
+    }
   };
 
   useEffect(() => {
@@ -133,19 +266,69 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
       });
 
       setCalculationResult(result);
-      onValuesChange(result.totalValue);
+      if (onValuesChangeRef.current) {
+        onValuesChangeRef.current(result.totalValue);
+      }
 
-      if (onProductsChange && itens.length > 0) {
-        const prods = itens.map((item, idx) => ({
-          id: `atv_prod_${idx}`,
-          name: item.produto,
-          produto: item.produto,
-          quantity: item.toneladas,
-          unit: 'Ton',
-          areaHa: item.areaHa,
-          plotName: item.idTalhao,
-        }));
-        onProductsChange(prods);
+      if (onProductsChangeRef.current && result) {
+        const prods: any[] = [];
+
+        // Itens de aplicação ATV e frete detalhados
+        result.details.itens.forEach((it, idx) => {
+          prods.push({
+            id: `atv_app_${idx}`,
+            type: 'SERVICO_ATV',
+            name: `APLICAÇÃO TAXA VARIÁVEL (ATV) - ${it.produto.toUpperCase()} (${it.idTalhao || 'Talhão'})`,
+            produto: it.produto,
+            plotName: it.idTalhao,
+            quantity: it.areaAlq > 0 ? it.areaAlq : (it.areaHa > 0 ? Number((it.areaHa / 2.42).toFixed(2)) : it.toneladas),
+            unit: it.areaHa > 0 ? 'ALQ' : 'TON',
+            price: it.areaAlq > 0 ? Number((it.investimentoATV / it.areaAlq).toFixed(2)) : it.investimentoATV,
+            totalPrice: it.investimentoATV,
+            areaHa: it.areaHa,
+            toneladas: it.toneladas,
+          });
+
+          if (it.investimentoFrete > 0) {
+            prods.push({
+              id: `atv_frete_${idx}`,
+              type: 'FRETE_INSUMO',
+              name: `FRETE DE INSUMO (${it.produto}) - ${it.cargas} CARGA(S) [${it.toneladas} TON]`,
+              quantity: it.cargas,
+              unit: 'CARGA',
+              price: Number((it.investimentoFrete / it.cargas).toFixed(2)),
+              totalPrice: it.investimentoFrete,
+            });
+          }
+        });
+
+        // Carregamento com pá carregadeira e prancha
+        if (result.custoCarregamento > 0) {
+          prods.push({
+            id: 'atv_carregamento',
+            type: 'CARREGAMENTO_PA',
+            name: `CARREGAMENTO (${result.diasServico} DIÁRIA(S) PÁ CARREGADEIRA + PRANCHA)`,
+            quantity: result.diasServico,
+            unit: 'DIÁRIA',
+            price: result.custoCarregamento / result.diasServico,
+            totalPrice: result.custoCarregamento,
+          });
+        }
+
+        // Deslocamento vazio excedente se aplicável
+        if (result.adicionalDeslocamento > 0) {
+          prods.push({
+            id: 'atv_deslocamento_vazio',
+            type: 'DESLOCAMENTO_VAZIO',
+            name: `ADICIONAL DE DESLOCAMENTO VAZIO (>20%)`,
+            quantity: 1,
+            unit: 'SV',
+            price: result.adicionalDeslocamento,
+            totalPrice: result.adicionalDeslocamento,
+          });
+        }
+
+        onProductsChangeRef.current(prods);
       }
     }
   }, [
@@ -159,8 +342,6 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
     clienteAlmoco,
     descontoManual,
     itens,
-    onValuesChange,
-    onProductsChange,
     atvService,
   ]);
 
@@ -251,9 +432,15 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">1 Produto (R$ 290/alq)</SelectItem>
-                <SelectItem value="2">2 Produtos (R$ 280/alq)</SelectItem>
-                <SelectItem value="3">3 ou Mais Produtos (R$ 260/alq)</SelectItem>
+                <SelectItem value="1">
+                  1 Produto ({atvService ? atvService.formatCurrency(atvService.getVariableValue('ATV_1_PRODUTO') || 315) : 'R$ 315,00'}/alq)
+                </SelectItem>
+                <SelectItem value="2">
+                  2 Produtos ({atvService ? atvService.formatCurrency(atvService.getVariableValue('ATV_2_PRODUTOS') || 310) : 'R$ 310,00'}/alq)
+                </SelectItem>
+                <SelectItem value="3">
+                  3 ou Mais Produtos ({atvService ? atvService.formatCurrency(atvService.getVariableValue('ATV_3_PRODUTOS') || 300) : 'R$ 300,00'}/alq)
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -337,7 +524,12 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
         {/* Product Items Table */}
         <div className="pt-2">
           <div className="flex justify-between items-center mb-2">
-            <Label className="font-semibold">Produtos e Talhões:</Label>
+            <div>
+              <Label className="font-semibold">Produtos e Talhões:</Label>
+              <span className="text-xs text-muted-foreground ml-2">
+                Selecione o talhão da fazenda ou informe a área desejada
+              </span>
+            </div>
             <Button type="button" size="sm" variant="outline" onClick={handleAddItem}>
               <Plus className="h-4 w-4 mr-1" />
               Adicionar Produto/Talhão
@@ -345,80 +537,142 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
           </div>
 
           <div className="space-y-3">
-            {itens.map((item, idx) => (
-              <div key={idx} className="p-3 border rounded-md bg-muted/30 grid grid-cols-1 md:grid-cols-7 gap-3 items-end">
-                <div className="md:col-span-2">
-                  <Label className="text-xs">Produto</Label>
-                  <Select
-                    value={item.produto}
-                    onValueChange={(val) => handleItemChange(idx, 'produto', val)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableProducts.map((prod) => (
-                        <SelectItem key={prod} value={prod}>
-                          {prod}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+            {itens.map((item, idx) => {
+              const itemAlq = (item.areaHa || 0) > 0 ? (item.areaHa / 2.42).toFixed(2) : '0.00';
+              const doseTonHa = item.areaHa > 0 && item.toneladas > 0 ? (item.toneladas / item.areaHa).toFixed(1) : null;
+              const cargasCalc = Math.ceil(item.toneladas / 13);
+              return (
+                <div key={idx} className="p-3 border rounded-md bg-muted/30 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                  <div className="md:col-span-3">
+                    <Label className="text-xs">Produto</Label>
+                    <Select
+                      value={item.produto}
+                      onValueChange={(val) => handleItemChange(idx, 'produto', val)}
+                    >
+                      <SelectTrigger className="h-9 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableProducts.map((prod) => (
+                          <SelectItem key={prod} value={prod}>
+                            {prod}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div>
-                  <Label className="text-xs">Talhão</Label>
-                  <Input
-                    type="text"
-                    value={item.idTalhao || ''}
-                    onChange={(e) => handleItemChange(idx, 'idTalhao', e.target.value)}
-                    placeholder="Ex: TL44"
-                  />
-                </div>
+                  <div className="md:col-span-3">
+                    <Label className="text-xs">Talhão</Label>
+                    {availablePlots && availablePlots.length > 0 ? (
+                      <div className="space-y-1">
+                        <Select
+                          value={availablePlots.some(p => p.name === item.idTalhao) ? item.idTalhao : '__custom__'}
+                          onValueChange={(val) => {
+                            if (val !== '__custom__') {
+                              handleItemChange(idx, 'idTalhao', val);
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="h-9 text-xs">
+                            <SelectValue placeholder="Selecione o talhão" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availablePlots.map((plot: any) => (
+                              <SelectItem key={plot.id || plot.name} value={plot.name}>
+                                {plot.name} ({plot.area ? `${plot.area} ha` : ''})
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="__custom__">Outro / Digitar livremente...</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {(!availablePlots.some(p => p.name === item.idTalhao)) && (
+                          <Input
+                            type="text"
+                            value={item.idTalhao || ''}
+                            onChange={(e) => handleItemChange(idx, 'idTalhao', e.target.value)}
+                            placeholder="Nome do talhão (ex: aeroporto)"
+                            className="h-8 text-xs mt-1"
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <Input
+                        type="text"
+                        value={item.idTalhao || ''}
+                        onChange={(e) => handleItemChange(idx, 'idTalhao', e.target.value)}
+                        placeholder="Nome do talhão (ex: aeroporto)"
+                        className="h-9 text-xs"
+                      />
+                    )}
+                  </div>
 
-                <div>
-                  <Label className="text-xs">Área (ha)</Label>
-                  <DecimalInput
-                    value={item.areaHa}
-                    onValueChange={(newHa) => handleItemChange(idx, 'areaHa', newHa ?? 0)}
-                    placeholder="0,00"
-                  />
-                </div>
+                  <div className="md:col-span-2">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-xs">Área (ha)</Label>
+                      <span className="text-[10px] text-muted-foreground font-mono">
+                        {itemAlq} alq
+                      </span>
+                    </div>
+                    <DecimalInput
+                      value={item.areaHa}
+                      onValueChange={(newHa) => handleItemChange(idx, 'areaHa', newHa ?? 0)}
+                      placeholder="0,00"
+                    />
+                  </div>
 
-                <div>
-                  <Label className="text-xs">Toneladas (Ton)</Label>
-                  <Input
-                    type="number"
-                    value={item.toneladas}
-                    onChange={(e) => handleItemChange(idx, 'toneladas', parseFloat(e.target.value) || 0)}
-                    min="0"
-                    step="0.5"
-                  />
-                </div>
+                  <div className="md:col-span-2">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-xs">Toneladas (Ton)</Label>
+                      {doseTonHa && (
+                        <span className="text-[10px] text-muted-foreground font-mono">
+                          {doseTonHa} t/ha
+                        </span>
+                      )}
+                    </div>
+                    <Input
+                      type="number"
+                      value={item.toneladas === 0 ? '' : item.toneladas}
+                      onChange={(e) => handleItemChange(idx, 'toneladas', parseFloat(e.target.value) || 0)}
+                      min="0"
+                      step="any"
+                      placeholder="Ex: 63.6"
+                      className="h-9 text-xs"
+                    />
+                  </div>
 
-                <div className="flex items-center space-x-2 pb-2">
-                  <Switch
-                    id={"frete-" + idx}
-                    checked={item.cobraFrete}
-                    onCheckedChange={(checked) => handleItemChange(idx, 'cobraFrete', checked)}
-                  />
-                  <Label htmlFor={"frete-" + idx} className="text-xs cursor-pointer">Frete?</Label>
-                </div>
+                  <div className="md:col-span-1 flex flex-col justify-end pb-1">
+                    <div className="flex items-center space-x-1.5">
+                      <Switch
+                        id={"frete-" + idx}
+                        checked={item.cobraFrete}
+                        onCheckedChange={(checked) => handleItemChange(idx, 'cobraFrete', checked)}
+                      />
+                      <Label htmlFor={"frete-" + idx} className="text-xs cursor-pointer font-medium">Frete?</Label>
+                    </div>
+                    {item.cobraFrete && item.toneladas > 0 && (
+                      <span className="text-[10px] text-muted-foreground mt-0.5">
+                        {cargasCalc} carga{cargasCalc > 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
 
-                <div className="flex justify-end pb-1">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive hover:bg-destructive/10"
-                    onClick={() => handleRemoveItem(idx)}
-                    disabled={itens.length <= 1}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="md:col-span-1 flex justify-end pb-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
+                      onClick={() => handleRemoveItem(idx)}
+                      disabled={itens.length <= 1}
+                      title="Remover linha"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -475,7 +729,7 @@ export const ATVServiceForm: React.FC<ATVServiceFormProps> = ({
 
             {details.jurosFactor > 1 && (
               <div className="flex justify-between text-muted-foreground pt-1">
-                <span>Fator de juros até vencimento (1,5%/mês):</span>
+                <span>Fator de juros até vencimento (1,2%/mês):</span>
                 <span>{details.jurosFactor.toFixed(4)}x</span>
               </div>
             )}

@@ -405,7 +405,13 @@ export const OrderForm = ({
           {activeSpecializedService === "Coleta Foliar" && (
             <FoliarServiceForm
               initialAlqueires={calculatedAlqueires}
-              initialNumPontos={parseInt(formData.productsData?.[0]?.quantity?.toString() || "0")}
+              initialNumPontos={
+                parseInt(
+                  (formData.productsData?.find((p: any) => p.id === "analise_foliar")?.quantity ||
+                   formData.productsData?.find((p: any) => p.id === "servico_foliar")?.points ||
+                   "0").toString()
+                )
+              }
               totalFarmAlqueires={currentFarmTotalAlqueires}
               plots={formData.plots || []}
               onPlotsChange={(updatedPlots) => onInputChange("plots", updatedPlots)}
@@ -444,7 +450,17 @@ export const OrderForm = ({
 
           {activeSpecializedService === "Aplicação ATV" && (
             <ATVServiceForm
-              initialAreaHa={parseFloat(formData.area) || 10}
+              initialDistanciaKm={40}
+              initialAreaHa={parseFloat(formData.area || "0") || 0}
+              plots={formData.plots || []}
+              availablePlots={availablePlots}
+              onAreaChange={(areaHa) => {
+                const cur = parseFloat(formData.area || "0") || 0;
+                if (Math.abs(cur - areaHa) > 0.05) {
+                  onInputChange("area", areaHa.toFixed(2));
+                }
+              }}
+              onPlotsChange={(updatedPlots) => onInputChange("plots", updatedPlots)}
               onValuesChange={handleValuesChange}
               onProductsChange={(products) => onInputChange("productsData", products)}
             />
@@ -569,24 +585,48 @@ export const OrderForm = ({
                   !isProductOrder ||
                   (Array.isArray(formData.productsData) &&
                     formData.productsData.some((p: any) => p.id && Number(p.quantity) > 0));
+
+                const isFoliar = activeSpecializedService === "Coleta Foliar";
+                const foliarHasPoints = !isFoliar || (
+                  Array.isArray(formData.productsData) &&
+                  formData.productsData.some((p: any) => p.id === "analise_foliar" && Number(p.quantity) > 0)
+                );
+
+                const isCompactacao = activeSpecializedService === "Compactação de Solo";
+                const compactacaoHasPoints = !isCompactacao || (
+                  Array.isArray(formData.productsData) &&
+                  formData.productsData.some((p: any) => p.id === "compactacao_solo" && Number(p.quantity) > 0)
+                );
+
+                const numVal = Number(formData.numericValue) || parseFloat(String(formData.value || "0").replace(/[^\d.-]/g, "")) || 0;
+                const hasValidServiceValue = isProductOrder || numVal > 0;
+
                 const isInvalid =
                   !formData.clientId ||
                   (!isProductOrder && (!formData.farmId || !formData.area || isNaN(numArea) || numArea <= 0)) ||
-                  !hasValidProduct;
+                  !hasValidProduct ||
+                  !foliarHasPoints ||
+                  !compactacaoHasPoints ||
+                  !hasValidServiceValue;
+
+                const getDisabledReason = () => {
+                  if (isProductOrder && !formData.clientId) return "Selecione o cliente comprador para prosseguir";
+                  if (!isProductOrder && !formData.clientId) return "Selecione o cliente para prosseguir";
+                  if (!isProductOrder && !formData.farmId) return "Selecione a fazenda para prosseguir";
+                  if (!isProductOrder && (!formData.area || isNaN(numArea) || numArea <= 0)) return "Informe uma área válida maior que zero";
+                  if (!hasValidProduct) return "Adicione pelo menos um produto com quantidade maior que zero para prosseguir";
+                  if (!foliarHasPoints) return "Informe o número de pontos de amostragem da coleta foliar";
+                  if (!compactacaoHasPoints) return "Informe o número de pontos de compactação";
+                  if (!hasValidServiceValue) return "O valor total do serviço deve ser maior que zero";
+                  return "";
+                };
+
                 return (
                   <Button
                     type="submit"
                     disabled={isInvalid}
                     className="w-full sm:w-auto bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-sm"
-                    title={
-                      !hasValidProduct
-                        ? "Adicione pelo menos um produto com quantidade maior que zero para prosseguir"
-                        : isInvalid
-                        ? isProductOrder
-                          ? "Selecione o cliente comprador para prosseguir"
-                          : "Preencha cliente, fazenda e uma área válida para prosseguir"
-                        : ""
-                    }
+                    title={getDisabledReason()}
                   >
                     {editingOrder
                       ? (isProductOrder ? "Atualizar Pedido de Venda" : "Atualizar Pedido")

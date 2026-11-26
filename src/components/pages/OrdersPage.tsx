@@ -100,6 +100,45 @@ const OrdersPage = () => {
         });
         return;
       }
+
+      if (formData.serviceName === "Coleta Foliar" || formData.type === "Coleta Foliar") {
+        const foliarPoints =
+          formData.productsData?.find((p: any) => p.id === "analise_foliar")?.quantity ||
+          formData.productsData?.find((p: any) => p.id === "servico_foliar")?.points;
+        if (!foliarPoints || Number(foliarPoints) <= 0) {
+          toast({
+            title: "Número de pontos obrigatório",
+            description: "Por favor, informe a quantidade de pontos de amostragem para a Coleta Foliar.",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+
+      if (formData.serviceName === "Compactação de Solo" || formData.type === "Compactação de Solo") {
+        const compPoints = formData.productsData?.find((p: any) => p.id === "compactacao_solo")?.quantity;
+        if (!compPoints || Number(compPoints) <= 0) {
+          toast({
+            title: "Número de pontos obrigatório",
+            description: "Por favor, informe a quantidade de pontos para a avaliação de Compactação de Solo.",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+
+      const numVal =
+        Number(formData.numericValue) ||
+        parseFloat(String(formData.value || "0").replace(/[^\d.-]/g, "")) ||
+        0;
+      if (numVal <= 0) {
+        toast({
+          title: "Valor do serviço inválido",
+          description: "O valor total do serviço não pode ser zero. Verifique o número de pontos e parâmetros informados.",
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     const result = editingOrder
