@@ -252,7 +252,7 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
         <div>
           <h3 className="text-base font-bold flex items-center gap-2 text-slate-900">
             <Sparkles className="h-4 w-4 text-purple-600" />
-            Sistema EQUALIZA (Contrato Multi-anual Inteligente)
+            EQUALIZA (Contrato Multi-anual Inteligente)
           </h3>
           <p className="text-xs text-muted-foreground">
             Diluição de custo anual garantindo 100% da área com amostragem contínua (AP + Conferência).

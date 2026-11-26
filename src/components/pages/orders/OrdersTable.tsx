@@ -8,7 +8,9 @@ const formatServiceName = (name: string | null | undefined): string => {
   s = s.replace(/Compacta[?\uFFFD]?o|CompactaÃ§Ã£o|Compactao/gi, 'Compactação');
   s = s.replace(/Aplica[?\uFFFD]?o|AplicaÃ§Ã£o|Aplicao/gi, 'Aplicação');
   s = s.replace(/Pulveriza[?\uFFFD]?o|PulverizaÃ§Ã£o|Pulverizao/gi, 'Pulverização');
-  s = s.replace(/Equaliza[?\uFFFD]?o|EqualizaÃ§Ã£o|Equalizao/gi, 'Equalização');
+  s = s.replace(/Equaliza[?\uFFFD]?o\s+de\s+Servi[?\uFFFD]?os/gi, 'Equaliza');
+  s = s.replace(/Equaliza[?\uFFFD]?o|EqualizaÃ§Ã£o|Equalizao/gi, 'Equaliza');
+  s = s.replace(/Sistema\s+Equaliza/gi, 'Equaliza');
   return s;
 };
 import { cn } from "@/lib/utils";

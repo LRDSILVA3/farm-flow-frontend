@@ -57,7 +57,7 @@ const getImpactedServices = (variable: CostVariable): string[] => {
     services.push('Aplicação ATV');
   }
   if (code.includes('EQUALIZA') || category.includes('EQUALIZA')) {
-    services.push('Equalização de Serviços');
+    services.push('Equaliza');
   }
   if (code.includes('ANALISE') || code.includes('LAB') || code.includes('MACRO') || code.includes('FISICA') || code.includes('ENXOFRE') || code.includes('ADUBO') || category.includes('LABORATÓRIO') || category.includes('LABORATORIO')) {
     services.push('Análises Laboratoriais');

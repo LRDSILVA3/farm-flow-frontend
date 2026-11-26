@@ -134,7 +134,7 @@ export const OrderForm = ({
       { id: "5", name: "Voo de Drone (Mapeamento)", valorAlqueire: "50.00", status: "Ativo" },
       { id: "6", name: "Pulverização com Drone", valorAlqueire: "240.00", status: "Ativo" },
       { id: "7", name: "Aplicação ATV", valorAlqueire: "315.00", status: "Ativo" },
-      { id: "8", name: "Sistema Equaliza", valorAlqueire: "671.65", status: "Ativo" },
+      { id: "8", name: "Equaliza", valorAlqueire: "671.65", status: "Ativo" },
     ];
   }, [catalogServices]);
 
@@ -308,7 +308,7 @@ export const OrderForm = ({
                 <SelectItem value="Compactação de Solo">Compactação de Solo</SelectItem>
                 <SelectItem value="Coleta Foliar">Coleta Foliar</SelectItem>
                 <SelectItem value="Aplicação ATV">Aplicação ATV (Sistematização)</SelectItem>
-                <SelectItem value="Sistema Equaliza">Sistema Equaliza</SelectItem>
+                <SelectItem value="Equaliza">Equaliza</SelectItem>
                 <SelectItem value="Serviço">Outro Serviço Avulso</SelectItem>
               </SelectContent>
             </Select>

@@ -1,3 +1,12 @@
+const formatServiceName = (name: string | null | undefined): string => {
+  if (!name) return 'Serviço';
+  let s = String(name);
+  s = s.replace(/Equaliza[?\uFFFD]?o\s+de\s+Servi[?\uFFFD]?os/gi, 'Equaliza');
+  s = s.replace(/Equaliza[?\uFFFD]?o|EqualizaÃ§Ã£o|Equalizao/gi, 'Equaliza');
+  s = s.replace(/Sistema\s+Equaliza/gi, 'Equaliza');
+  return s;
+};
+
 import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -393,7 +402,7 @@ export const SchedulePage = () => {
             farmId: o.farm_id || "",
             city: o.farm?.city || o.city || "-",
             state: o.farm?.state || o.state || "-",
-            serviceName: o.service_name || o.service || o.type || "Serviço Geral",
+            serviceName: formatServiceName(o.service_name || o.service || o.type || "Serviço Geral"),
             area: (o.area !== null && o.area !== undefined) ? String(o.area) : "0",
             value: o.value ? String(o.value) : "0",
             numericValue: typeof o.value === 'number' ? o.value : (parseFloat(String(o.value || "0").replace(/[^0-9.]/g, '')) || 0),
@@ -1743,7 +1752,7 @@ export const SchedulePage = () => {
                         </TableCell>
 
                         <TableCell className="px-2.5 py-3 font-medium text-xs max-w-[170px]">
-                          <div className="font-semibold text-slate-800">{execution.serviceName}</div>
+                          <div className="font-semibold text-slate-800">{formatServiceName(execution.serviceName)}</div>
                           {(() => {
                             const rawOrder = execution.rawOrder;
                             const contractYears =

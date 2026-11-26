@@ -439,7 +439,7 @@ export const ReportsPage: React.FC = () => {
                   <SelectItem value="Foliar">Coleta Foliar</SelectItem>
                   <SelectItem value="Compactação">Compactação de Solo</SelectItem>
                   <SelectItem value="ATV">Aplicação ATV</SelectItem>
-                  <SelectItem value="Equaliza">Sistema Equaliza</SelectItem>
+                  <SelectItem value="Equaliza">Equaliza</SelectItem>
                 </SelectContent>
               </Select>
             </div>

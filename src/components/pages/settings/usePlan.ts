@@ -67,7 +67,7 @@ export const usePlan = () => {
     { id: 5, name: "Voo de Drone (Mapeamento)" },
     { id: 6, name: "Pulverização com Drone" },
     { id: 7, name: "Aplicação ATV" },
-    { id: 8, name: "Sistema Equaliza" }
+    { id: 8, name: "Equaliza" }
   ]);
 
   const [plansPage, setPlansPage] = useState(1);

@@ -30,7 +30,7 @@ const DEFAULT_OFFICIAL_SERVICES: ServiceOption[] = [
   { id: "serv-drone-pulve", name: "Pulverização Drone" },
   { id: "serv-compacta", name: "Compactação de Solo" },
   { id: "serv-atv", name: "Aplicação ATV (Sistematização)" },
-  { id: "serv-equaliza", name: "Sistema Equaliza (Multi-anual)" },
+  { id: "serv-equaliza", name: "Equaliza (Multi-anual)" },
 ];
 
 export const ServiceGroupModal: React.FC<ServiceGroupModalProps> = ({
