@@ -52,6 +52,20 @@ const parseCurrencyInput = (formatted: string): number => {
   return parseFloat(clean) || 0;
 };
 
+const normalizeISODate = (raw?: string | null): string => {
+  if (!raw) return "";
+  const str = String(raw);
+  return str.includes("T") ? str.split("T")[0] : str;
+};
+
+const formatShortDate = (raw?: string | null): string => {
+  const iso = normalizeISODate(raw);
+  if (!iso) return "";
+  const parts = iso.split("-");
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  return iso;
+};
+
 const FinancialPage = () => {
   const { toast } = useToast();
   const {
@@ -379,7 +393,7 @@ const FinancialPage = () => {
                 </div>
               ) : (
                 <div className="overflow-x-auto w-full">
-                  <Table className="min-w-[700px] w-full text-xs sm:text-sm">
+                  <Table className="min-w-[820px] w-full text-xs sm:text-sm">
                     <TableHeader>
                       <TableRow className="bg-slate-50">
                         <TableHead className="font-semibold">Cliente</TableHead>
@@ -388,6 +402,7 @@ const FinancialPage = () => {
                         <TableHead className="font-semibold text-right">Valor Total</TableHead>
                         <TableHead className="font-semibold text-right">Valor Pago</TableHead>
                         <TableHead className="font-semibold text-right">Saldo a Pagar</TableHead>
+                        <TableHead className="font-semibold text-center whitespace-nowrap">Pagamento / Próx. Venc.</TableHead>
                         <TableHead className="font-semibold text-center">Status</TableHead>
                         <TableHead className="font-semibold text-center">Ações</TableHead>
                       </TableRow>
@@ -398,6 +413,21 @@ const FinancialPage = () => {
                         const paid = order.paidAmount || 0;
                         const remaining = Math.max(0, total - paid);
                         const isFullyPaid = order.payment === "Pago" || (paid >= total && total > 0);
+                        const todayISO = getLocalDateISO();
+
+                        const schedules = Array.isArray(order.paymentSchedules) ? order.paymentSchedules : [];
+                        const pendingSchedules = schedules
+                          .filter((s: any) => s.status !== "Pago" && normalizeISODate(s.dueDate))
+                          .sort((a: any, b: any) => normalizeISODate(a.dueDate).localeCompare(normalizeISODate(b.dueDate)));
+                        const nextDue = pendingSchedules[0] || null;
+                        const nextDueISO = nextDue ? normalizeISODate(nextDue.dueDate) : "";
+                        const isOverdue = Boolean(nextDueISO && nextDueISO < todayISO);
+
+                        const paidDates = [
+                          ...schedules.filter((s: any) => s.status === "Pago" && s.paidDate).map((s: any) => normalizeISODate(s.paidDate)),
+                          ...(Array.isArray(order.payments) ? order.payments.filter((p: any) => p.date).map((p: any) => normalizeISODate(p.date)) : []),
+                        ].filter(Boolean).sort();
+                        const lastPaidISO = paidDates.length > 0 ? paidDates[paidDates.length - 1] : "";
 
                         return (
                           <TableRow key={order.id} className="hover:bg-slate-50/50">
@@ -407,9 +437,9 @@ const FinancialPage = () => {
                             <TableCell className="text-slate-700">{order.farm?.name || "Fazenda"}</TableCell>
                             <TableCell className="text-slate-700">
                               <div className="font-medium">{order.serviceName || order.type}</div>
-                              {Array.isArray(order.paymentSchedules) && order.paymentSchedules.length > 0 && (
+                              {schedules.length > 0 && (
                                 <div className="text-[10px] text-amber-700 font-semibold mt-0.5">
-                                  💰 {order.paymentSchedules.filter((s: any) => s.status === 'Pago').length}/{order.paymentSchedules.length} pagamentos quitados
+                                  💰 {schedules.filter((s: any) => s.status === 'Pago').length}/{schedules.length} pagamentos quitados
                                 </div>
                               )}
                               {Array.isArray(order.plots) && order.plots.length > 0 && (
@@ -418,14 +448,74 @@ const FinancialPage = () => {
                                 </div>
                               )}
                             </TableCell>
-                            <TableCell className="text-right font-medium text-slate-900">
+                            <TableCell className="text-right font-medium text-slate-900 whitespace-nowrap">
                               {formatBRL(total)}
                             </TableCell>
-                            <TableCell className="text-right text-emerald-700 font-medium">
+                            <TableCell className="text-right text-emerald-700 font-medium whitespace-nowrap">
                               {formatBRL(paid)}
                             </TableCell>
-                            <TableCell className={`text-right font-semibold ${remaining > 0 ? "text-orange-600" : "text-slate-400"}`}>
+                            <TableCell className={`text-right font-semibold whitespace-nowrap ${remaining > 0 ? "text-orange-600" : "text-slate-400"}`}>
                               {formatBRL(remaining)}
+                            </TableCell>
+                            <TableCell className="text-center whitespace-nowrap">
+                              {isFullyPaid ? (
+                                <div className="inline-flex flex-col items-center">
+                                  <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
+                                    <Calendar className="h-3 w-3" />
+                                    {lastPaidISO ? formatShortDate(lastPaidISO) : "Quitado"}
+                                  </span>
+                                  {lastPaidISO && (
+                                    <span className="text-[10px] text-emerald-600/80">Pago em</span>
+                                  )}
+                                </div>
+                              ) : nextDue ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedOrderForFullPay(order)}
+                                  className="inline-flex flex-col items-center hover:underline cursor-pointer group"
+                                  title="Clique para visualizar ou alterar datas das parcelas"
+                                >
+                                  <span
+                                    className={`inline-flex items-center gap-1 text-xs font-semibold ${
+                                      isOverdue ? "text-red-600" : "text-blue-700"
+                                    }`}
+                                  >
+                                    <Calendar className="h-3 w-3" />
+                                    {formatShortDate(nextDueISO)}
+                                  </span>
+                                  <span className={`text-[10px] font-medium ${isOverdue ? "text-red-500" : "text-slate-500"}`}>
+                                    {isOverdue ? "Vencido" : "Próx."} • {formatBRL(Number(nextDue.amount) || 0)}
+                                  </span>
+                                  {lastPaidISO && (
+                                    <span className="text-[10px] text-emerald-700">
+                                      Últ. pago: {formatShortDate(lastPaidISO)}
+                                    </span>
+                                  )}
+                                </button>
+                              ) : lastPaidISO ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedOrderForFullPay(order)}
+                                  className="inline-flex flex-col items-center hover:underline cursor-pointer"
+                                  title="Clique para agendar próximas parcelas"
+                                >
+                                  <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
+                                    <Calendar className="h-3 w-3" />
+                                    {formatShortDate(lastPaidISO)}
+                                  </span>
+                                  <span className="text-[10px] text-slate-500">Últ. pagamento</span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedOrderForFullPay(order)}
+                                  className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-blue-700 hover:underline cursor-pointer"
+                                  title="Clique para definir data de vencimento"
+                                >
+                                  <Calendar className="h-3 w-3" />
+                                  Agendar data
+                                </button>
+                              )}
                             </TableCell>
                             <TableCell className="text-center">
                               <span
