@@ -134,16 +134,15 @@ export const EqualizaServiceForm: React.FC<EqualizaServiceFormProps> = ({
   const togglePlotForYear = (plotName: string, targetYear: number) => {
     setYearAllocations((prev) => {
       const next = { ...prev };
-      for (let yr = 1; yr <= numAnos; yr++) {
-        if (!next[yr]) next[yr] = [];
-        next[yr] = next[yr].filter((name) => name !== plotName);
+      const currentList = next[targetYear] || [];
+
+      // Alterna o talhão especificamente no ano clicado (permitindo reamostrar em anos subsequentes se desejado)
+      if (currentList.includes(plotName)) {
+        next[targetYear] = currentList.filter((name) => name !== plotName);
+      } else {
+        next[targetYear] = [...currentList, plotName];
       }
 
-      // Se já estava no targetYear, já foi removido (toggle off). Senão, adiciona no targetYear.
-      const wasInTarget = (prev[targetYear] || []).includes(plotName);
-      if (!wasInTarget) {
-        next[targetYear] = [...(next[targetYear] || []), plotName];
-      }
       return next;
     });
   };
