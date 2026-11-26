@@ -418,6 +418,41 @@ export const OrdersTable = ({
               const executedArea = order.executedArea || 0;
               const percentExec = totalArea > 0 ? Math.min(100, (executedArea / totalArea) * 100) : 0;
 
+              const eqProduct = Array.isArray(order.productsData)
+                ? order.productsData.find((p: any) => p.contractYears || p.anosCiclo || p.id === 'equaliza_contract')
+                : null;
+              const contractYears =
+                order.contractYears ||
+                order.serviceDetails?.contractYears ||
+                eqProduct?.contractYears ||
+                eqProduct?.anosCiclo ||
+                (order.serviceName?.match(/(\d+)\s*anos/i)?.[1] ? parseInt(order.serviceName.match(/(\d+)\s*anos/i)![1], 10) : null) ||
+                (Array.isArray(order.paymentSchedules) && order.paymentSchedules.length > 0
+                  ? Math.max(...order.paymentSchedules.map((p: any) => p.cycleYear || 1), 1)
+                  : 1);
+              const realizedSafrasFromVisits = new Set(
+                (order.schedules || [])
+                  .filter((s: any) => s.status === 'Realizado' && s.yearCycle)
+                  .map((s: any) => s.yearCycle)
+              ).size;
+              const realizedSafrasFromArea =
+                totalArea > 0 && contractYears > 1
+                  ? Math.min(contractYears, Math.floor((executedArea / totalArea) * contractYears))
+                  : (executedArea > 0 ? 1 : 0);
+              const executedSafras = Math.max(realizedSafrasFromVisits, realizedSafrasFromArea);
+
+              const hasPaymentSchedules = Array.isArray(order.paymentSchedules) && order.paymentSchedules.length > 0;
+              const totalPaymentCount = hasPaymentSchedules
+                ? order.paymentSchedules!.length
+                : (order.payment === 'Pago' && Array.isArray(order.payments) && order.payments.length > 0
+                    ? order.payments.length
+                    : (Array.isArray(order.payments) && order.payments.length > 0 ? order.payments.length + 1 : 1));
+              const paidPaymentCount = hasPaymentSchedules
+                ? order.paymentSchedules!.filter((s: any) => s.status === 'Pago').length
+                : (order.payment === 'Pago'
+                    ? totalPaymentCount
+                    : (Array.isArray(order.payments) ? order.payments.length : 0));
+
               return (
                 <div key={order.id} className="p-3.5 rounded-lg border bg-card space-y-2.5 shadow-xs">
                   <div className="flex items-start justify-between gap-2">
@@ -457,15 +492,18 @@ export const OrdersTable = ({
                               : "Venda Direta")
                           : (totalArea > 0 ? `${formatHa(executedArea)} / ${formatHa(totalArea)} ha (${percentExec.toFixed(0)}%)` : "-")}
                       </span>
+                      {contractYears > 1 && (
+                        <span className="text-[10px] text-emerald-800 font-semibold block mt-0.5">
+                          🌾 Safras: <strong>{executedSafras}/{contractYears}</strong>
+                        </span>
+                      )}
                     </div>
                     <div className="text-right">
                       <span className="text-muted-foreground block text-[11px]">Valor</span>
                       <span className="font-bold text-sm text-foreground">{order.value || "R$ 0,00"}</span>
-                      {order.paymentSchedules && order.paymentSchedules.length > 0 && (
-                        <span className="text-[10px] text-amber-800 font-medium block">
-                          💰 {order.paymentSchedules.filter((s: any) => s.status === 'Pago').length}/{order.paymentSchedules.length} pagos
-                        </span>
-                      )}
+                      <span className="text-[10px] text-amber-800 font-semibold block mt-0.5">
+                        💰 Pagamentos: <strong>{paidPaymentCount}/{totalPaymentCount}</strong>
+                      </span>
                     </div>
                   </div>
 
@@ -540,13 +578,30 @@ export const OrdersTable = ({
                   ? order.plots.map((p: any) => p.name).join(', ')
                   : null;
 
+                const eqProduct = Array.isArray(order.productsData)
+                  ? order.productsData.find((p: any) => p.contractYears || p.anosCiclo || p.id === 'equaliza_contract')
+                  : null;
                 const contractYears =
                   order.contractYears ||
-                  (order.serviceDetails?.contractYears) ||
+                  order.serviceDetails?.contractYears ||
+                  eqProduct?.contractYears ||
+                  eqProduct?.anosCiclo ||
                   (order.serviceName?.match(/(\d+)\s*anos/i)?.[1] ? parseInt(order.serviceName.match(/(\d+)\s*anos/i)![1], 10) : null) ||
                   (Array.isArray(order.paymentSchedules) && order.paymentSchedules.length > 0
                     ? Math.max(...order.paymentSchedules.map((p: any) => p.cycleYear || 1), 1)
                     : 1);
+
+                const hasPaymentSchedules = Array.isArray(order.paymentSchedules) && order.paymentSchedules.length > 0;
+                const totalPaymentCount = hasPaymentSchedules
+                  ? order.paymentSchedules!.length
+                  : (order.payment === 'Pago' && Array.isArray(order.payments) && order.payments.length > 0
+                      ? order.payments.length
+                      : (Array.isArray(order.payments) && order.payments.length > 0 ? order.payments.length + 1 : 1));
+                const paidPaymentCount = hasPaymentSchedules
+                  ? order.paymentSchedules!.filter((s: any) => s.status === 'Pago').length
+                  : (order.payment === 'Pago'
+                      ? totalPaymentCount
+                      : (Array.isArray(order.payments) ? order.payments.length : 0));
 
                 const realizedSafrasFromVisits = new Set(
                   (order.schedules || [])
@@ -682,18 +737,17 @@ export const OrdersTable = ({
                       <div className="font-bold text-slate-900 text-sm">
                         {order.value || 'R$ 0,00'}
                       </div>
-                      <div className="mt-1 flex flex-col items-start gap-0.5">
+                      <div className="mt-1 flex flex-col items-start gap-1 w-32">
                         <span className={cn("inline-block px-2 py-0.5 rounded-full text-[11px] font-medium border", getPaymentBadge(order.payment))}>
                           {order.payment}
                         </span>
-                        {order.paymentSchedules && order.paymentSchedules.length > 0 && (
-                          <div
-                            className="text-[10px] text-amber-800 font-medium flex items-center gap-1"
-                            title={`${order.paymentSchedules.filter((s: any) => s.status === 'Pago').length} de ${order.paymentSchedules.length} pagamentos/parcelas quitadas`}
-                          >
-                            <span>💰</span> {order.paymentSchedules.filter((s: any) => s.status === 'Pago').length}/{order.paymentSchedules.length} pagamentos
-                          </div>
-                        )}
+                        <div
+                          className="text-[10px] text-amber-800 font-semibold flex justify-between items-center pt-0.5 border-t border-muted/80 w-full"
+                          title={`${paidPaymentCount} de ${totalPaymentCount} pagamentos/parcelas quitadas`}
+                        >
+                          <span>💰 Pagamentos:</span>
+                          <span className="font-bold">{paidPaymentCount}/{totalPaymentCount}</span>
+                        </div>
                       </div>
                     </TableCell>
 

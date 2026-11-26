@@ -1056,7 +1056,17 @@ export const useOrders = () => {
       const newPaidAmount = (order.paidAmount || 0) + amountToPay;
 
       let newPaymentStatus = order.payment;
-      if (newPaidAmount >= orderTotal && orderTotal > 0) {
+      const allSchedulesPaid =
+        updatedSchedules.length > 0 && updatedSchedules.every((s) => s.status === 'Pago');
+      const anySchedulePaid = updatedSchedules.some((s) => s.status === 'Pago');
+
+      if (updatedSchedules.length > 0) {
+        if (allSchedulesPaid) {
+          newPaymentStatus = "Pago";
+        } else if (anySchedulePaid || newPaidAmount > 0) {
+          newPaymentStatus = "Parcial";
+        }
+      } else if (newPaidAmount >= orderTotal && orderTotal > 0) {
         newPaymentStatus = "Pago";
       } else if (newPaidAmount > 0) {
         newPaymentStatus = "Parcial";

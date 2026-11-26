@@ -1,4 +1,36 @@
 import { CostVariable } from './ConferenciaService';
+import { generateUUID } from '@/lib/utils';
+
+export type EqualizaPaymentPlanMode = 'semestral' | 'anual' | 'trimestral' | 'personalizado';
+
+export interface EqualizaPaymentItem {
+  id: string;
+  dueDate: string;
+  amount: number;
+  cycleYear: number;
+  cycleLabel: string;
+  installmentNumber: number;
+  totalInstallments: number;
+  description: string;
+  status: 'Pendente' | 'Pago' | 'Atrasado';
+  // Campos legados para compatibilidade
+  ano?: number;
+  numeroParcela?: number;
+  descricao?: string;
+  percentual?: number;
+}
+
+export interface EqualizaExecutionScheduleItem {
+  id: string;
+  scheduledDate: string;
+  description: string;
+  yearCycle: number;
+  cycleLabel: string;
+  stageName: string;
+  plotNames: string[];
+  status: 'Agendado' | 'Realizado' | 'Cancelado';
+  createdAt: string;
+}
 
 export interface EqualizaParams {
   totalAlqueires: number;
@@ -223,27 +255,149 @@ export class EqualizaService {
     };
   }
 
+  public generatePaymentSchedules(
+    anosContrato: number,
+    totalAnualContrato: number,
+    baseDate: Date = new Date(),
+    mode: EqualizaPaymentPlanMode = 'semestral'
+  ): EqualizaPaymentItem[] {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const baseYear = baseDate.getFullYear();
+    const augBase = new Date(baseYear, 7, 30);
+    const isAugPast = augBase < today;
+
+    const rawItems: Array<{
+      cycleYear: number;
+      cycleLabel: string;
+      description: string;
+      dueDate: string;
+      amount: number;
+      percentual: number;
+    }> = [];
+
+    for (let yr = 1; yr <= anosContrato; yr++) {
+      const yearOffset = yr - 1;
+      const cycleYearStart = isAugPast ? baseYear + 1 + yearOffset : baseYear + yearOffset;
+      const cycleLabel = `Ano ${yr} (Safra ${cycleYearStart}/${cycleYearStart + 1})`;
+
+      if (mode === 'anual') {
+        const dueYear = isAugPast ? baseYear + 1 + yearOffset : baseYear + yearOffset + 1;
+        rawItems.push({
+          cycleYear: yr,
+          cycleLabel,
+          description: `Ano ${yr} - Parcela Única Safra`,
+          dueDate: `${dueYear}-03-30`,
+          amount: Math.round(totalAnualContrato * 100) / 100,
+          percentual: 100,
+        });
+      } else if (mode === 'trimestral') {
+        const quarterAmt = Math.round((totalAnualContrato / 4) * 100) / 100;
+        const remainder = Math.round((totalAnualContrato - quarterAmt * 4) * 100) / 100;
+        const dates = isAugPast
+          ? [
+              { label: 'Março', date: `${baseYear + 1 + yearOffset}-03-30` },
+              { label: 'Junho', date: `${baseYear + 1 + yearOffset}-06-30` },
+              { label: 'Setembro', date: `${baseYear + 1 + yearOffset}-09-30` },
+              { label: 'Dezembro', date: `${baseYear + 1 + yearOffset}-12-30` },
+            ]
+          : [
+              { label: 'Agosto', date: `${baseYear + yearOffset}-08-30` },
+              { label: 'Novembro', date: `${baseYear + yearOffset}-11-30` },
+              { label: 'Fevereiro', date: `${baseYear + yearOffset + 1}-02-28` },
+              { label: 'Maio', date: `${baseYear + yearOffset + 1}-05-30` },
+            ];
+
+        dates.forEach((d, idx) => {
+          rawItems.push({
+            cycleYear: yr,
+            cycleLabel,
+            description: `Ano ${yr} - Trimestral (${d.label})`,
+            dueDate: d.date,
+            amount: idx === dates.length - 1 ? Math.round((quarterAmt + remainder) * 100) / 100 : quarterAmt,
+            percentual: 25,
+          });
+        });
+      } else {
+        // Semestral padrão (Agosto e Março - 50% / 50%)
+        const halfAmt = Math.round((totalAnualContrato * 0.5) * 100) / 100;
+        const secondHalf = Math.round((totalAnualContrato - halfAmt) * 100) / 100;
+
+        if (!isAugPast) {
+          const augYear = baseYear + yearOffset;
+          const marYear = augYear + 1;
+          rawItems.push({
+            cycleYear: yr,
+            cycleLabel,
+            description: `Ano ${yr} - Parcela 50% Agosto`,
+            dueDate: `${augYear}-08-30`,
+            amount: halfAmt,
+            percentual: 50,
+          });
+          rawItems.push({
+            cycleYear: yr,
+            cycleLabel,
+            description: `Ano ${yr} - Parcela 50% Março`,
+            dueDate: `${marYear}-03-30`,
+            amount: secondHalf,
+            percentual: 50,
+          });
+        } else {
+          const refYear = baseYear + 1 + yearOffset;
+          rawItems.push({
+            cycleYear: yr,
+            cycleLabel,
+            description: `Ano ${yr} - Parcela 50% Março`,
+            dueDate: `${refYear}-03-30`,
+            amount: halfAmt,
+            percentual: 50,
+          });
+          rawItems.push({
+            cycleYear: yr,
+            cycleLabel,
+            description: `Ano ${yr} - Parcela 50% Agosto`,
+            dueDate: `${refYear}-08-30`,
+            amount: secondHalf,
+            percentual: 50,
+          });
+        }
+      }
+    }
+
+    const totalInstallments = rawItems.length;
+    return rawItems.map((item, idx) => ({
+      id: generateUUID(),
+      dueDate: item.dueDate,
+      amount: item.amount,
+      cycleYear: item.cycleYear,
+      cycleLabel: item.cycleLabel,
+      installmentNumber: idx + 1,
+      totalInstallments,
+      description: item.description,
+      status: 'Pendente' as const,
+      ano: item.cycleYear,
+      numeroParcela: idx + 1,
+      descricao: item.description,
+      percentual: item.percentual,
+    }));
+  }
+
   public generateSuggestedSchedules(
     anosContrato: number,
     yearAllocations: Array<{ ano: number; plotNames: string[] }>,
     options: { incluirFolha?: boolean; incluirCompactacao?: boolean } = {},
     baseDate: Date = new Date()
-  ) {
+  ): EqualizaExecutionScheduleItem[] {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const baseYear = baseDate.getFullYear();
     const augBase = new Date(baseYear, 7, 15);
     const isAugPast = augBase < today;
+    const nowIso = new Date().toISOString();
 
-    const schedules: Array<{
-      scheduledDate: string;
-      description: string;
-      yearCycle: number;
-      cycleLabel: string;
-      stageName: string;
-      plotNames: string[];
-    }> = [];
+    const schedules: EqualizaExecutionScheduleItem[] = [];
 
     for (let yr = 1; yr <= anosContrato; yr++) {
       const yearOffset = yr - 1;
@@ -254,56 +408,71 @@ export class EqualizaService {
 
       // 1. Amostragem em Grid (AP)
       schedules.push({
+        id: generateUUID(),
         scheduledDate: `${currentCycleYear}-08-15`,
         description: `Amostragem de Solo em Grid (AP) - ${cycleLabel}`,
         yearCycle: yr,
         cycleLabel,
         stageName: 'Amostragem de Solo em Grid (AP)',
         plotNames: apPlots,
+        status: 'Agendado',
+        createdAt: nowIso,
       });
 
       // 2. Amostragem de Conferência
       schedules.push({
+        id: generateUUID(),
         scheduledDate: `${currentCycleYear}-09-10`,
         description: `Conferência de Solo nos demais talhões - ${cycleLabel}`,
         yearCycle: yr,
         cycleLabel,
         stageName: 'Conferência de Solo',
         plotNames: [],
+        status: 'Agendado',
+        createdAt: nowIso,
       });
 
       // 3. Compactação (se incluída)
       if (options.incluirCompactacao) {
         schedules.push({
+          id: generateUUID(),
           scheduledDate: `${currentCycleYear}-10-05`,
           description: `Avaliação de Compactação do Solo - ${cycleLabel}`,
           yearCycle: yr,
           cycleLabel,
           stageName: 'Compactação de Solo',
           plotNames: apPlots,
+          status: 'Agendado',
+          createdAt: nowIso,
         });
       }
 
       // 4. Análise Foliar (se incluída)
       if (options.incluirFolha) {
         schedules.push({
+          id: generateUUID(),
           scheduledDate: `${currentCycleYear + 1}-01-15`,
           description: `Coleta Foliar (Safra) - ${cycleLabel}`,
           yearCycle: yr,
           cycleLabel,
           stageName: 'Coleta Foliar (Safra)',
           plotNames: apPlots,
+          status: 'Agendado',
+          createdAt: nowIso,
         });
       }
 
       // 5. Apresentação e Devolutiva
       schedules.push({
+        id: generateUUID(),
         scheduledDate: `${currentCycleYear + 1}-03-05`,
         description: `Devolutiva e Apresentação de Mapas - ${cycleLabel}`,
         yearCycle: yr,
         cycleLabel,
         stageName: 'Reunião de Devolutiva / Apresentação de Mapas',
         plotNames: apPlots,
+        status: 'Agendado',
+        createdAt: nowIso,
       });
     }
 

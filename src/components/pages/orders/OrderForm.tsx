@@ -610,12 +610,33 @@ export const OrderForm = ({
             <EqualizaServiceForm
               initialAlqueires={calculatedAlqueires}
               availablePlots={formData.plots || []}
+              initialSchedules={editingOrder ? (formData.schedules as any) : undefined}
+              initialPaymentSchedules={editingOrder ? (formData.paymentSchedules as any) : undefined}
+              initialServiceDetails={
+                editingOrder
+                  ? formData.serviceDetails ||
+                    (Array.isArray(formData.productsData)
+                      ? formData.productsData.find((p: any) => p.id === "equaliza_contract")?.serviceDetails
+                      : undefined)
+                  : undefined
+              }
               onValuesChange={handleValuesChange}
+              onAreaChange={(areaHa) => {
+                if (areaHa > 0) {
+                  onInputChange("area", areaHa.toFixed(2));
+                }
+              }}
               onProductsChange={(products) => onInputChange("productsData", products)}
               onServiceDetailsChange={(details) => {
                 onInputChange("serviceDetails", details);
                 if (details.contractYears) {
                   onInputChange("contractYears", details.contractYears);
+                }
+                if (Array.isArray(details.autoPlannedSchedules)) {
+                  onInputChange("schedules", details.autoPlannedSchedules);
+                }
+                if (Array.isArray(details.autoPlannedPayments)) {
+                  onInputChange("paymentSchedules", details.autoPlannedPayments);
                 }
               }}
             />
