@@ -98,6 +98,8 @@ interface Execution {
   status: string;
   paymentStatus?: string;
   notes?: string;
+  responsibleName?: string;
+  creatorName?: string;
   partialExecutions: PartialExecution[];
   productsData?: any[];
   rawOrder?: any;
@@ -220,6 +222,7 @@ export const SchedulePage = () => {
   const [filterClient, setFilterClient] = useState("all");
   const [filterFarm, setFilterFarm] = useState("all");
   const [filterService, setFilterService] = useState("all");
+  const [filterResponsible, setFilterResponsible] = useState("all");
   const [filterCollaborator, setFilterCollaborator] = useState("all");
   const [filterEquipment, setFilterEquipment] = useState("all");
   const [filterState, setFilterState] = useState("all");
@@ -413,6 +416,8 @@ export const SchedulePage = () => {
             status: o.status || "Pendente",
             paymentStatus: o.payment || "Aguardando",
             notes: latestSchedule?.notes || latestSchedule?.description || "",
+            responsibleName: o.responsible_name || o.responsibleName || o.creator_name || o.creatorName || o.user?.name || "Sem Responsável",
+            creatorName: o.creator_name || o.creatorName || o.user?.name || "",
             productsData: Array.isArray(o.products_data) ? o.products_data : (Array.isArray(o.productsData) ? o.productsData : []),
             rawOrder: o,
             partialExecutions: rawExecutions.map(e => ({
@@ -446,6 +451,15 @@ export const SchedulePage = () => {
   const uniqueServices = useMemo(() => Array.from(new Set(executions.map(e => e.serviceName))).filter(Boolean), [executions]);
   const uniqueStates = useMemo(() => Array.from(new Set(executions.map(e => e.state))).filter(s => s && s !== "-"), [executions]);
   const uniqueCities = useMemo(() => Array.from(new Set(executions.map(e => e.city))).filter(c => c && c !== "-"), [executions]);
+  const uniqueResponsibles = useMemo(() => {
+    const names = new Set<string>();
+    executions.forEach((e) => {
+      if (e.responsibleName && e.responsibleName !== "Sem Responsável" && e.responsibleName.trim() !== "") {
+        names.add(e.responsibleName.trim());
+      }
+    });
+    return Array.from(names).sort();
+  }, [executions]);
 
   // Filtragem combinada
   const filteredExecutions = useMemo(() => {
@@ -456,6 +470,7 @@ export const SchedulePage = () => {
           e.clientName.toLowerCase().includes(q) ||
           e.farmName.toLowerCase().includes(q) ||
           e.serviceName.toLowerCase().includes(q) ||
+          (e.responsibleName && e.responsibleName.toLowerCase().includes(q)) ||
           (e.city && e.city.toLowerCase().includes(q)) ||
           (e.state && e.state.toLowerCase().includes(q));
         if (!matchesQuery) return false;
@@ -464,6 +479,7 @@ export const SchedulePage = () => {
       if (filterClient !== "all" && e.clientName !== filterClient) return false;
       if (filterFarm !== "all" && e.farmName !== filterFarm) return false;
       if (filterService !== "all" && e.serviceName !== filterService) return false;
+      if (filterResponsible !== "all" && (e.responsibleName || "").toLowerCase().trim() !== filterResponsible.toLowerCase().trim()) return false;
       if (filterState !== "all" && e.state !== filterState) return false;
       if (filterCity !== "all" && e.city !== filterCity) return false;
       if (filterStatus.length === 0) {
@@ -477,7 +493,7 @@ export const SchedulePage = () => {
 
       return true;
     });
-  }, [executions, searchTerm, filterClient, filterFarm, filterService, filterCollaborator, filterEquipment, filterState, filterCity, filterStatus]);
+  }, [executions, searchTerm, filterClient, filterFarm, filterService, filterResponsible, filterCollaborator, filterEquipment, filterState, filterCity, filterStatus]);
 
   // Identifica se o serviço selecionado é uma aplicação que envolve produtos (ATV, Pulverização, Insumos)
   const isSelectedApplicationService = useMemo(() => {
@@ -1480,6 +1496,19 @@ export const SchedulePage = () => {
           </div>
 
           <div>
+            <Label className="text-xs font-semibold">Responsável</Label>
+            <Select value={filterResponsible} onValueChange={setFilterResponsible}>
+              <SelectTrigger className="mt-1 text-xs bg-background h-9">
+                <SelectValue placeholder="Todos os responsáveis" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os responsáveis</SelectItem>
+                {uniqueResponsibles.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
             <Label className="text-xs font-semibold">Operador</Label>
             <Select value={filterCollaborator} onValueChange={setFilterCollaborator}>
               <SelectTrigger className="mt-1 text-xs bg-background h-9">
@@ -1544,6 +1573,7 @@ export const SchedulePage = () => {
                 setFilterClient("all");
                 setFilterFarm("all");
                 setFilterService("all");
+                setFilterResponsible("all");
                 setFilterCollaborator("all");
                 setFilterEquipment("all");
                 setFilterState("all");
@@ -1611,6 +1641,17 @@ export const SchedulePage = () => {
                     <Clock className="h-3.5 w-3.5 text-primary" />
                     {execution.scheduledDate ? new Date(execution.scheduledDate + 'T00:00:00').toLocaleDateString('pt-BR') : "Não definida"}
                   </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t border-muted/30">
+                  <span className="flex items-center gap-1 truncate">
+                    👤 Responsável: <strong className="text-foreground font-medium">{execution.responsibleName || "Sistema"}</strong>
+                  </span>
+                  {execution.creatorName && execution.responsibleName && execution.creatorName.toLowerCase().trim() !== execution.responsibleName.toLowerCase().trim() && (
+                    <span className="text-[10px] bg-amber-50 text-amber-800 px-1.5 py-0.5 rounded border border-amber-200 shrink-0">
+                      Criado por {execution.creatorName}
+                    </span>
+                  )}
                 </div>
 
                 <div className="space-y-1">

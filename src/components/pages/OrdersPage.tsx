@@ -43,6 +43,7 @@ const OrdersPage = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [serviceFilter, setServiceFilter] = useState("all");
+  const [responsibleFilter, setResponsibleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
 
   const toggleKpiStatus = (status: string) => {
@@ -210,7 +211,12 @@ const OrdersPage = () => {
       statusFilter.includes(order.status) ||
       (statusFilter.includes("Em Andamento") && order.status === "Aprovado");
 
-    return matchesSearch && matchesService && matchesStatus;
+    const orderResp = (order.responsibleName || order.creatorName || (order as any).userName || "").trim().toLowerCase();
+    const matchesResponsible =
+      responsibleFilter === "all" ||
+      orderResp === responsibleFilter.trim().toLowerCase();
+
+    return matchesSearch && matchesService && matchesStatus && matchesResponsible;
   });
 
   const serviceOptions = useMemo(() => {
@@ -218,6 +224,17 @@ const OrdersPage = () => {
     orders.forEach((o) => {
       const n = o.serviceName || o.type;
       if (n) names.add(n);
+    });
+    return Array.from(names).sort();
+  }, [orders]);
+
+  const responsibleOptions = useMemo(() => {
+    const names = new Set<string>();
+    orders.forEach((o) => {
+      const resp = o.responsibleName || o.creatorName || (o as any).userName;
+      if (resp && typeof resp === "string" && resp.trim() !== "") {
+        names.add(resp.trim());
+      }
     });
     return Array.from(names).sort();
   }, [orders]);
@@ -232,7 +249,11 @@ const OrdersPage = () => {
     return { pendentes, emAndamento, concluidos, totalValorFiltrado };
   }, [orders, filteredOrders]);
 
-  const hasActiveFilters = searchTerm.trim() !== "" || serviceFilter !== "all" || statusFilter.length > 0;
+  const hasActiveFilters =
+    searchTerm.trim() !== "" ||
+    serviceFilter !== "all" ||
+    responsibleFilter !== "all" ||
+    statusFilter.length > 0;
 
   return (
     <div className="space-y-6 pt-1">
@@ -319,13 +340,25 @@ const OrdersPage = () => {
               </div>
 
               <Select value={serviceFilter} onValueChange={(v) => { setServiceFilter(v); setCurrentPage(1); }}>
-                <SelectTrigger className="w-full sm:w-48">
+                <SelectTrigger className="w-full sm:w-44">
                   <SelectValue placeholder="Serviço" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os Serviços</SelectItem>
                   {serviceOptions.map((srv) => (
                     <SelectItem key={srv} value={srv}>{srv}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={responsibleFilter} onValueChange={(v) => { setResponsibleFilter(v); setCurrentPage(1); }}>
+                <SelectTrigger className="w-full sm:w-44">
+                  <SelectValue placeholder="Responsável" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Responsáveis</SelectItem>
+                  {responsibleOptions.map((resp) => (
+                    <SelectItem key={resp} value={resp}>{resp}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -354,6 +387,7 @@ const OrdersPage = () => {
                   onClick={() => {
                     setSearchTerm("");
                     setServiceFilter("all");
+                    setResponsibleFilter("all");
                     setStatusFilter([]);
                     setCurrentPage(1);
                   }}
