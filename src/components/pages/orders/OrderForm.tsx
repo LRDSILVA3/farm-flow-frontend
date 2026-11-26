@@ -407,6 +407,14 @@ export const OrderForm = ({
               initialAlqueires={calculatedAlqueires}
               initialNumPontos={parseInt(formData.productsData?.[0]?.quantity?.toString() || "0")}
               totalFarmAlqueires={currentFarmTotalAlqueires}
+              plots={formData.plots || []}
+              onPlotsChange={(updatedPlots) => onInputChange("plots", updatedPlots)}
+              onAreaChange={(areaHa) => {
+                const cur = parseFloat(formData.area || "0") || 0;
+                if (Math.abs(cur - areaHa) > 0.05) {
+                  onInputChange("area", areaHa.toFixed(2));
+                }
+              }}
               onValuesChange={handleValuesChange}
               onProductsChange={(products) => onInputChange("productsData", products)}
             />

@@ -622,11 +622,18 @@ export const OrderPrintDialog: React.FC<OrderPrintDialogProps> = ({
               <div>
                 Data Prov. Coleta..: <span className="font-normal">
                   {Array.isArray(order.plots) && order.plots.some((p: any) => p.dataProvavelColeta)
-                    ? order.plots.filter((p: any) => p.dataProvavelColeta).map((p: any) => `${p.name || 'Talhão'}: ${p.dataProvavelColeta}`).join(' | ')
+                    ? order.plots
+                        .filter((p: any) => p.dataProvavelColeta)
+                        .map((p: any) => {
+                          const d = p.dataProvavelColeta;
+                          const fmt = typeof d === 'string' && d.includes('-') ? d.split('-').reverse().join('/') : d;
+                          return `${p.name || 'Talhão'}: ${fmt}`;
+                        })
+                        .join(' | ')
                     : todayStr}
                 </span>
               </div>
-              {Array.isArray(order.plots) && order.plots.some((p: any) => p.dataProvavelColeta || p.observacao) && (
+              {Array.isArray(order.plots) && order.plots.some((p: any) => p.dataProvavelColeta || p.observacao || p.dataPlantio || p.variedade) && (
                 <div className="mt-2 pt-1 border-t border-dashed border-gray-300">
                   <div className="font-semibold text-[10px] uppercase text-gray-700 mb-1">Detalhamento dos Talhões:</div>
                   <table className="w-full text-[10px] text-left border border-collapse border-gray-400">
@@ -634,19 +641,45 @@ export const OrderPrintDialog: React.FC<OrderPrintDialogProps> = ({
                       <tr>
                         <th className="border border-gray-400 px-1 py-0.5">Talhão</th>
                         <th className="border border-gray-400 px-1 py-0.5">Área</th>
+                        {order.plots.some((p: any) => p.dataPlantio) && (
+                          <th className="border border-gray-400 px-1 py-0.5">Data Plantio</th>
+                        )}
+                        {order.plots.some((p: any) => p.variedade) && (
+                          <th className="border border-gray-400 px-1 py-0.5">Variedade (P/M/T)</th>
+                        )}
                         <th className="border border-gray-400 px-1 py-0.5">Data Prov. Coleta</th>
-                        <th className="border border-gray-400 px-1 py-0.5">Observações</th>
+                        {order.plots.some((p: any) => p.observacao) && (
+                          <th className="border border-gray-400 px-1 py-0.5">Observações</th>
+                        )}
                       </tr>
                     </thead>
                     <tbody>
-                      {order.plots.map((p: any, idx: number) => (
-                        <tr key={idx}>
-                          <td className="border border-gray-400 px-1 py-0.5 font-medium">{p.name || `Talhão ${idx + 1}`}</td>
-                          <td className="border border-gray-400 px-1 py-0.5">{p.area ? `${p.area} ha` : '-'}</td>
-                          <td className="border border-gray-400 px-1 py-0.5">{p.dataProvavelColeta || '-'}</td>
-                          <td className="border border-gray-400 px-1 py-0.5">{p.observacao || '-'}</td>
-                        </tr>
-                      ))}
+                      {order.plots.map((p: any, idx: number) => {
+                        const fmtDate = (d: any) => {
+                          if (!d) return '-';
+                          if (typeof d === 'string' && d.includes('-')) {
+                            const parts = d.split('-');
+                            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                          }
+                          return d;
+                        };
+                        return (
+                          <tr key={idx}>
+                            <td className="border border-gray-400 px-1 py-0.5 font-medium">{p.name || `Talhão ${idx + 1}`}</td>
+                            <td className="border border-gray-400 px-1 py-0.5">{p.area ? `${p.area} ha` : '-'}</td>
+                            {order.plots.some((item: any) => item.dataPlantio) && (
+                              <td className="border border-gray-400 px-1 py-0.5">{fmtDate(p.dataPlantio)}</td>
+                            )}
+                            {order.plots.some((item: any) => item.variedade) && (
+                              <td className="border border-gray-400 px-1 py-0.5">{p.variedade || '-'}</td>
+                            )}
+                            <td className="border border-gray-400 px-1 py-0.5">{fmtDate(p.dataProvavelColeta)}</td>
+                            {order.plots.some((item: any) => item.observacao) && (
+                              <td className="border border-gray-400 px-1 py-0.5">{p.observacao || '-'}</td>
+                            )}
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

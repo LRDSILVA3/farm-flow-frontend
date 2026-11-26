@@ -14,10 +14,23 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 
+export interface FoliarPlotItem {
+  id?: string;
+  name?: string;
+  area?: string | number;
+  dataPlantio?: string;
+  variedade?: string;
+  dataProvavelColeta?: string;
+  [key: string]: any;
+}
+
 interface FoliarServiceFormProps {
   initialAlqueires: number;
   initialNumPontos: number;
   totalFarmAlqueires: number;
+  plots?: any[];
+  onPlotsChange?: (plots: any[]) => void;
+  onAreaChange?: (areaHa: number) => void;
   onValuesChange: (calculatedValue: number) => void;
   onProductsChange?: (products: any[]) => void;
 }
@@ -26,6 +39,9 @@ export const FoliarServiceForm: React.FC<FoliarServiceFormProps> = ({
   initialAlqueires,
   initialNumPontos,
   totalFarmAlqueires,
+  plots,
+  onPlotsChange,
+  onAreaChange,
   onValuesChange,
   onProductsChange,
 }) => {
@@ -38,6 +54,12 @@ export const FoliarServiceForm: React.FC<FoliarServiceFormProps> = ({
   const [alqueires, setAlqueires] = useState<number | null>(initialAlqueires === 0 ? null : initialAlqueires);
   const [numPontos, setNumPontos] = useState<number | null>(initialNumPontos === 0 ? null : initialNumPontos);
 
+  // Planejamento agronômico por talhão (Data Plantio, Variedade (P/M/T), Provável Coleta)
+  const [localPlots, setLocalPlots] = useState<FoliarPlotItem[]>(() => {
+    if (plots && plots.length > 0) return plots;
+    return [{ id: '1', name: 'Área 1', area: (initialAlqueires || 0) * 2.42, dataPlantio: '', variedade: '', dataProvavelColeta: '' }];
+  });
+
   const [calculationResult, setCalculationResult] = useState<FoliarCalculationResult | null>(null);
 
   const foliarService = useMemo(() => {
@@ -46,6 +68,32 @@ export const FoliarServiceForm: React.FC<FoliarServiceFormProps> = ({
     }
     return null;
   }, [costVariables]);
+
+  useEffect(() => {
+    if (plots && plots.length > 0) {
+      setLocalPlots(plots);
+    }
+  }, [plots]);
+
+  const onPlotsChangeRef = React.useRef(onPlotsChange);
+  React.useEffect(() => {
+    onPlotsChangeRef.current = onPlotsChange;
+  }, [onPlotsChange]);
+
+  const handlePlotFieldChange = (index: number, field: 'dataPlantio' | 'variedade' | 'dataProvavelColeta', val: string) => {
+    const base = (plots && plots.length > 0) ? plots : localPlots;
+    const updated = base.map((p, i) => (i === index ? { ...p, [field]: val } : p));
+    setLocalPlots(updated);
+    if (onPlotsChangeRef.current) {
+      onPlotsChangeRef.current(updated);
+    }
+  };
+
+  const displayPlots = useMemo(() => {
+    if (plots && plots.length > 0) return plots;
+    if (localPlots && localPlots.length > 0) return localPlots;
+    return [{ id: '1', name: 'Área 1', area: (alqueires || 0) * 2.42, dataPlantio: '', variedade: '', dataProvavelColeta: '' }];
+  }, [plots, localPlots, alqueires]);
 
   const onValuesChangeRef = React.useRef(onValuesChange);
   const onProductsChangeRef = React.useRef(onProductsChange);
@@ -98,7 +146,8 @@ export const FoliarServiceForm: React.FC<FoliarServiceFormProps> = ({
             name: `SERVIÇO DE COLETA DE ANÁLISE FOLIAR (${((distanciaFazendaKm || 0) * 2).toFixed(1)} Km ida/volta)`,
             quantity: alqToCalc > 0 ? alqToCalc : points,
             unit: alqToCalc > 0 ? 'ALQ' : 'PTOS',
-            price: precoServicoUnit
+            price: precoServicoUnit,
+            plotsPlan: displayPlots,
           },
           ...(points > 0 ? [{
             id: 'analise_foliar',
@@ -207,7 +256,19 @@ export const FoliarServiceForm: React.FC<FoliarServiceFormProps> = ({
             <DecimalInput
               id="foliar-alqueires"
               value={alqueires}
-              onValueChange={(newAlq) => setAlqueires(newAlq)}
+              onValueChange={(newAlq) => {
+                setAlqueires(newAlq);
+                if (newAlq !== null && onAreaChange) {
+                  onAreaChange(newAlq * 2.42);
+                }
+                if (localPlots.length <= 1) {
+                  const updated = [{ ...displayPlots[0], area: (newAlq || 0) * 2.42 }];
+                  setLocalPlots(updated);
+                  if (onPlotsChangeRef.current) {
+                    onPlotsChangeRef.current(updated);
+                  }
+                }
+              }}
               placeholder="0,00"
             />
           </div>
@@ -233,6 +294,73 @@ export const FoliarServiceForm: React.FC<FoliarServiceFormProps> = ({
               }}
               min="0"
             />
+          </div>
+        </div>
+
+        {/* Planejamento Agronômico por Talhão / Área (Data Plantio, Variedade P/M/T, Provável Coleta - Conforme Planilha INPUT FOLHA) */}
+        <div className="pt-3 border-t space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-semibold">Planejamento Agronômico por Talhão / Área:</Label>
+            <span className="text-xs text-muted-foreground">
+              {displayPlots.length} {displayPlots.length === 1 ? 'área' : 'áreas'}
+            </span>
+          </div>
+
+          <div className="border rounded-md overflow-x-auto bg-background">
+            <table className="w-full text-xs text-left">
+              <thead className="bg-muted/60 text-muted-foreground font-medium border-b">
+                <tr>
+                  <th className="py-2 px-3">Talhão / Área</th>
+                  <th className="py-2 px-3">Área</th>
+                  <th className="py-2 px-3 min-w-[140px]">Data Plantio</th>
+                  <th className="py-2 px-3 min-w-[150px]">Variedade (P/M/T)</th>
+                  <th className="py-2 px-3 min-w-[140px]">Provável Coleta</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {displayPlots.map((plot, idx) => {
+                  const plotAreaHa = parseFloat(plot.area || '0') || 0;
+                  const plotAreaAlq = plotAreaHa > 0 ? (plotAreaHa / 2.42).toFixed(2) : '-';
+                  return (
+                    <tr key={plot.id || idx} className="hover:bg-muted/30">
+                      <td className="py-2 px-3 font-medium text-foreground">
+                        {plot.name || `Talhão ${idx + 1}`}
+                      </td>
+                      <td className="py-2 px-3 text-muted-foreground">
+                        {plotAreaHa > 0
+                          ? `${plotAreaHa.toFixed(2)} ha (${plotAreaAlq} alq)`
+                          : `${((alqueires || 0) * 2.42).toFixed(2)} ha (${(alqueires || 0).toFixed(2)} alq)`}
+                      </td>
+                      <td className="py-2 px-3">
+                        <Input
+                          type="date"
+                          value={plot.dataPlantio || ''}
+                          onChange={(e) => handlePlotFieldChange(idx, 'dataPlantio', e.target.value)}
+                          className="h-8 text-xs bg-card"
+                        />
+                      </td>
+                      <td className="py-2 px-3">
+                        <Input
+                          type="text"
+                          placeholder="Ex: TMG 7062 (P)"
+                          value={plot.variedade || ''}
+                          onChange={(e) => handlePlotFieldChange(idx, 'variedade', e.target.value)}
+                          className="h-8 text-xs bg-card"
+                        />
+                      </td>
+                      <td className="py-2 px-3">
+                        <Input
+                          type="date"
+                          value={plot.dataProvavelColeta || ''}
+                          onChange={(e) => handlePlotFieldChange(idx, 'dataProvavelColeta', e.target.value)}
+                          className="h-8 text-xs bg-card"
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
