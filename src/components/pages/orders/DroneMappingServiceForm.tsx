@@ -15,12 +15,14 @@ import { cn } from '@/lib/utils';
 
 interface DroneMappingServiceFormProps {
   initialAlqueires: number;
+  onAreaChange?: (areaHa: number) => void;
   onValuesChange: (calculatedValue: number) => void;
   onProductsChange?: (products: any[]) => void;
 }
 
 export const DroneMappingServiceForm: React.FC<DroneMappingServiceFormProps> = ({
   initialAlqueires,
+  onAreaChange,
   onValuesChange,
   onProductsChange,
 }) => {
@@ -172,8 +174,13 @@ export const DroneMappingServiceForm: React.FC<DroneMappingServiceFormProps> = (
             <DecimalInput
               id="drone-alqueires"
               value={alqueires}
-              onValueChange={(newAlq) => setAlqueires(newAlq)}
-              placeholder="Ex: 10"
+              onValueChange={(newAlq) => {
+                setAlqueires(newAlq);
+                if (newAlq !== null && onAreaChange) {
+                  onAreaChange(newAlq * 2.42);
+                }
+              }}
+              placeholder="0,00"
             />
           </div>
 
@@ -188,7 +195,7 @@ export const DroneMappingServiceForm: React.FC<DroneMappingServiceFormProps> = (
                 setDistanciaKm(value === '' ? null : parseFloat(value));
               }}
               min="0"
-              placeholder="Ex: 10"
+              placeholder="0 (digite a distância)"
             />
           </div>
         </div>

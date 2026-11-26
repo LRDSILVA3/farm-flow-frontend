@@ -423,6 +423,12 @@ export const OrderForm = ({
           {activeSpecializedService === "Voo de Drone (Mapeamento)" && (
             <DroneMappingServiceForm
               initialAlqueires={calculatedAlqueires}
+              onAreaChange={(areaHa) => {
+                const cur = parseFloat(formData.area || "0") || 0;
+                if (Math.abs(cur - areaHa) > 0.05) {
+                  onInputChange("area", areaHa.toFixed(2));
+                }
+              }}
               onValuesChange={handleValuesChange}
               onProductsChange={(products) => onInputChange("productsData", products)}
             />
